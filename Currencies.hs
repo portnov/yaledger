@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeOperators, TypeSynonymInstances #-}
+{-# LANGUAGE TypeOperators, TypeSynonymInstances, PatternGuards #-}
 
 module Currencies where
 
@@ -192,9 +192,12 @@ setRate (c1 := (x :# c2)) = do
   put $ st {rates = m}
 
 putRecord :: Dated Record -> LState ()
-putRecord rr = modify add
+putRecord rr | At dt (PR post) <- rr = do
+    post' <- checkPosting post
+    modify (add $ At dt (PR post'))
+             | otherwise = modify (add rr)
   where
-    add st = st {records = records st ++ [rr]}
+    add r st = st {records = records st ++ [r]}
 
 doRecord :: Dated Record -> LState ()
 doRecord rr@(At dt (PR post)) = do
