@@ -54,4 +54,9 @@ r6 = r3
 
 r7 = At today $ VR "cash" (45 :# rur)
 
-posts = forM_ [r1,r2,r3,r4,r5,r6,r7] doRecord
+pp81 = "expense" :<+ 100 :# rur
+pp82 = Auto cash
+p8 = Posting 'R' "8" [pp81,pp82]
+r8 = At today $ RegR (RegularPosting (date 2010 02 27) (Months 1) p8)
+
+posts = doRecords (date 2010 08 01) [r1,r2,r3,r4,r5,r6,r7,r8] 

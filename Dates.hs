@@ -239,10 +239,14 @@ convertFrom dt =
 
 modifyDate fn x dt = convertFrom $ fn x $ convertTo dt
 
+addInterval :: DateTime -> DateInterval -> DateTime
 addInterval dt (Days ds) = modifyDate addDays ds dt
 addInterval dt (Weeks ws) = modifyDate addDays (ws*7) dt
 addInterval dt (Months ms) = modifyDate addGregorianMonthsClip ms dt
 addInterval dt (Years ys) = modifyDate addGregorianYearsClip ys dt
+
+datesFromEvery :: DateTime -> DateInterval -> [DateTime]
+datesFromEvery dt int = scanl addInterval dt (repeat int)
 
 maybePlural ∷ String → Parser String
 maybePlural str = do
