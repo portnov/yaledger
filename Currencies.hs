@@ -7,7 +7,8 @@ import Control.Monad.State.Class
 import qualified Data.Map as M
 import Data.Maybe
 import Data.List
-import Data.Generics
+import Data.Generics hiding (GT)
+import Text.Regex.PCRE hiding (match)
 
 import Dates
 import Lists
@@ -21,7 +22,7 @@ showRates rates = unlines $ map showPair $ M.assocs rates
     showPair ((c1,c2), x) = c1 ++ " → " ++ c2 ++ ":\t" ++ show x
 
 data Amount = Double :# Currency
-  deriving (Data,Typeable)
+  deriving (Eq,Data,Typeable)
 infixr 7 :#
 
 instance Show Amount where
@@ -33,7 +34,7 @@ data Account = Account {
                 incFrom :: Maybe Account,
                 decTo :: Maybe Account,
                 history :: [(DateTime,Double)] }
-  deriving (Data,Typeable)
+  deriving (Eq,Data,Typeable)
 
 instance Show Account where
   show (Account name curr _ _ hist) = name ++ ":" ++ curr ++ "\n" ++ strHist
@@ -45,10 +46,11 @@ data LedgerState = LS {
                      accounts :: M.Map String Account,
                      records :: [Dated Record],
                      rates :: Rates,
-                     templates :: M.Map String Template}
+                     templates :: M.Map String Template,
+                     ruled :: [(RuleWhen, Rule, Posting)] }
 
 instance Show LedgerState where
-  show st@(LS now accs recs rates _) = unlines $ [show now, showAccs, showRates rates]
+  show st@(LS now accs recs rates _ _) = unlines $ [show now, showAccs, showRates rates]
                                               ++ ["Balances:\n" ++ showPairs (balances st)]
                                               ++ map show recs
     where
@@ -89,14 +91,14 @@ data Posting = Posting {
                 status :: Char,
                 description :: String,
                 parts :: [Part] }
-  deriving (Data,Typeable)
+  deriving (Eq,Data,Typeable)
 
 instance Show Posting where
   show (Posting s d ps) = unlines $ (s:' ':d):map show ps
 
 data AmountParam = F Amount
                  | Int :? Amount
-  deriving (Data,Typeable)
+  deriving (Eq, Data,Typeable)
 infixl 5 :?
 
 instance Show AmountParam where
@@ -109,7 +111,7 @@ defAmount (_ :? amount) = amount
 
 data Part = String :<+ AmountParam
           | Auto Account
-  deriving (Data,Typeable)
+  deriving (Eq, Data,Typeable)
 infixl 6 :<+
 
 instance Show Part where
@@ -134,6 +136,8 @@ data Record = PR Posting
             | RegR RegularPosting 
             | TR Template
             | CTR String [Amount]
+            | RuledP RuleWhen Rule Posting
+            | RuledC RuleWhen Rule String [Amount]
   deriving (Data,Typeable)
 
 instance Show Record where
@@ -143,6 +147,8 @@ instance Show Record where
   show (RegR rp) = show rp
   show (TR tp) = show tp
   show (CTR name args) = name ++ "(" ++ (intercalate ", " $ map show args) ++ ")"
+  show (RuledP when rule post) = show when ++ " " ++ show rule ++ " -->\n" ++ show post
+  show (RuledC when rule name args) = show when ++ " " ++ show rule ++ " --> " ++ name ++ "(" ++ (intercalate ", " $ map show args) ++ ")"
 
 data SetRate = Currency := Amount
   deriving (Data,Typeable)
@@ -150,6 +156,14 @@ infixl 6 :=
 
 instance Show SetRate where
   show (c := am) = c ++ " := " ++ show am
+
+data Rule = DescrMatch String
+          | String :> Amount
+          | String :< Amount
+  deriving (Show,Data,Typeable)
+
+data RuleWhen = Before | After
+  deriving (Show,Data,Typeable)
 
 datedSeq :: Dated a -> DateInterval -> [Dated a]
 datedSeq (At dt x) int = [At d x | d <- datesFromEvery dt int]
@@ -179,6 +193,13 @@ getRate rates c1 c2 = fromMaybe 1.0 $ M.lookup (c1,c2) rates
 convert :: Rates -> Double -> Currency -> Currency -> Double
 convert rates x c1 c2 | c1 == c2  = x
                       | otherwise = x*getRate rates c1 c2
+
+compareAmounts :: Amount -> Amount -> LState Ordering
+compareAmounts a1 a2 = do
+  rs <- gets rates
+  let x = getValue a1
+      y = convert rs (getValue a2) (getCurrency a2) (getCurrency a1)
+  return $ compare x y
 
 putAmount :: String -> Amount -> LState ()
 putAmount name (x :# c) = do
@@ -299,6 +320,9 @@ putRecord rr | At dt (PR post) <- rr = do
   where
     add r st = st {records = records st ++ [r]}
 
+orM :: (Monad m) => [m Bool] -> m Bool
+orM = (liftM or) . sequence
+
 subst :: Posting -> [Amount] -> Posting
 subst tpl args = everywhere (mkT subst') tpl
   where
@@ -308,10 +332,50 @@ subst tpl args = everywhere (mkT subst') tpl
         then F def
         else F (args !! i)
 
+getAccounts :: Posting -> [(String,Amount)]
+getAccounts post = map convert $ parts post
+  where
+    convert (acc :<+ a) = (acc, defAmount a)
+    convert (Auto a) = error $ "Internal error: unexpected Auto posting-part: " ++ show a
+
+amountGT :: Amount -> Amount -> LState Bool
+amountGT a1 a2 = do
+  c <- compareAmounts a1 a2
+  return $ c == GT
+
+amountLT :: Amount -> Amount -> LState Bool
+amountLT a1 a2 = do
+  c <- compareAmounts a1 a2
+  return $ c == LT
+
+matchName :: String -> (String,Amount) -> Bool
+matchName regex (name,_) = name =~ regex
+
+match :: Rule -> Posting -> LState Bool
+match (DescrMatch regex) post = return $ (description post) =~ regex
+match (regex :> amount) post = orM $ map match' $ filter (matchName regex) $ getAccounts post
+  where
+    match' (acc,amount') = amountGT amount' amount
+match (regex :< amount) post = orM $ map match' $ filter (matchName regex) $ getAccounts post
+  where
+    match' (acc,amount') = amountLT amount' amount
+
+applyRules :: Posting -> LState [Posting]
+applyRules post = do
+  rls <- gets ruled
+  liftM nub $ liftM concat $ forM rls $ \(when,rule,post') -> do
+    m <- match rule post
+    if not m
+      then return []
+      else return $ case when of
+                      Before -> [post', post]
+                      After -> [post, post']
+
 doRecord :: Dated Record -> LState ()
 doRecord rr@(At dt (PR post)) = do
   modify (setDate dt)
-  doPosting post
+  posts <- applyRules post
+  forM posts doPosting
   putRecord rr
 doRecord rr@(At dt (RR ss)) = do
   modify (setDate dt)
@@ -342,6 +406,16 @@ doRecord (At dt (CTR name args)) = do
   tpl <- getTemplate name
   let post = subst (tBody tpl) args
   doRecord $ At dt (PR post)
+doRecord (At _ (RuledP when rule post)) = do
+  st <- get
+  let rl = ruled st
+  put $ st {ruled = rl ++ [(when,rule,post)]}
+doRecord (At _ (RuledC when rule name args)) = do
+  tpl <- getTemplate name
+  let post = subst (tBody tpl) args
+  st <- get
+  let rl = ruled st
+  put $ st {ruled = rl ++ [(when,rule,post)]}
 
 doRecords :: DateTime -> [Dated Record] -> LState ()
 doRecords dt lst = forM_ (allToList ((< dt).getDate) lst) doRecord
