@@ -224,13 +224,13 @@ pAbsDate year = do
       return $ date `addTime` t
 
 data DateIntervalType = Day | Week | Month | Year
-  deriving (Eq,Show,Read)
+  deriving (Eq,Show,Read,Data,Typeable)
 
 data DateInterval = Days ℤ
                   | Weeks ℤ
                   | Months ℤ
                   | Years ℤ
-  deriving (Eq,Show)
+  deriving (Eq,Show,Data,Typeable)
 
 convertTo dt = fromGregorian (fromIntegral $ year dt) (month dt) (day dt)
 convertFrom dt = 
