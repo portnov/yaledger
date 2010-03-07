@@ -79,8 +79,11 @@ r13 = simpleRecord 13 'T' "test" cash "bank" (20#rur)
 p14 = posting1 'B' "percents" income "bank" (5#perc)
 r14 = At (today 14) $ PR p14
 
+p15 = posting1 'P' "percents" income "bank" (10#perc)
+r15 = At (today 15) $ RegR (RegularPosting (date 2010 03 08) (Months 1) p15)
+
 posts = doRecords (date 2010 08 01)
-    [r0, r3,r14]
+    [r0, r3,r14,r15]
 --     [r0, r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14] 
 
 onePost = doRecords (date 2010 08 01) [r1]
