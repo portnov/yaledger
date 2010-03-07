@@ -363,18 +363,22 @@ match (regex :< amount) post = orM $ map match' $ filter (matchName regex) $ get
 applyRules :: Posting -> LState [Posting]
 applyRules post = do
   rls <- gets ruled
-  liftM nub $ liftM concat $ forM rls $ \(when,rule,post') -> do
+  res <- forM rls $ \(when,rule,post') -> do
     m <- match rule post
     if not m
-      then return []
+      then return [post]
       else return $ case when of
                       Before -> [post', post]
                       After -> [post, post']
+  case res of
+    [] -> return [post]
+    r -> return $ nub $ concat r
 
 doRecord :: Dated Record -> LState ()
 doRecord rr@(At dt (PR post)) = do
   modify (setDate dt)
-  posts <- applyRules post
+  post' <- checkPosting post
+  posts <- applyRules post'
   forM posts doPosting
   putRecord rr
 doRecord rr@(At dt (RR ss)) = do

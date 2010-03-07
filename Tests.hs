@@ -11,6 +11,18 @@ euro = "€"
 
 n # curr = F (n :# curr)
 
+posting1 s descr from to sum = Posting s descr [p1,p2]
+  where
+    p1 = to :<+ sum
+    p2 = Auto from
+
+posting2 s descr from to sum1 sum2 = Posting s descr [p1,p2]
+  where
+    p1 = from :<+ sum1
+    p2 = to :<+ sum2
+
+simpleRecord n s descr from to sum = At (today n) $ PR $ posting1 s descr from to sum
+
 myRates = M.fromList [((rur,euro), 1.0/30.0),
                       ((euro,rur), 30.0)]
 
@@ -24,27 +36,18 @@ start = Account "start" rur Nothing Nothing []
 accs = M.fromList $ map (\acc -> (accName acc, acc)) [income,expense,bank,cash,corr,start]
 
 today n = DateTime 2010 02 28 n 0 0
-s0 = LS (today 0) accs [] myRates M.empty
 
-pp01 = "cash" :<+ 200#rur
-pp02 = Auto start
-p0 = Posting 'S' "start" [pp01,pp02]
-r0 = At (today 0) $ PR p0
+s0 :: LedgerState
+s0 = LS (today 0) accs [] myRates M.empty []
 
-pp11 = "expense" :<+ 10#rur
-pp12 = "cash" :<+ (-10)#rur
-p1 = Posting '!' "1" [pp11,pp12]
+r0 = simpleRecord 0 'S' "start" start "cash" (200#rur)
+
+p1 = posting2 '!' "1" "cash" "expense" (10#rur) ((-10)#rur)
 r1 = At (today 1) $ PR p1
 
-pp21 = "cash" :<+ 50#rur
-pp22 = Auto income
-p2 = Posting '!' "2" [pp21,pp22]
-r2 = At (today 2) $ PR p2
+r2 = simpleRecord 2 '!' "2" income "cash" (50#rur)
 
-pp31 = "bank" :<+ 2#euro
-pp32 = Auto income
-p3 = Posting '!' "3" [pp31,pp32]
-r3 = At (today 3) $ PR p3
+r3 = simpleRecord 3 '!' "3" income "bank" (2#euro)
 
 pp41 = "expense" :<+ 15#rur
 pp42 = "cash" :<+ 10#rur
@@ -54,26 +57,26 @@ r4 = At (today 4) $ PR p4
 
 r5 = At (today 5) $ RR $ euro := 28:#rur
 
--- pp61 = "bank" :<+ 2 :# euro
--- pp62 = Auto income
--- p6 = Posting [pp61,pp62]
--- r6 = At today $ PR p6
-r6 = At (today 6) $ PR p3
+r6 = simpleRecord 6 '!' "6" income "bank" (2#euro)
 
 r7 = At (today 7) $ VR "cash" (45:#rur)
 
-pp81 = "expense" :<+ 100#rur
-pp82 = Auto cash
-p8 = Posting 'R' "8" [pp81,pp82]
+p8 = posting1 'R' "8" cash "expense" (100#rur)
 r8 = At (today 8) $ RegR (RegularPosting (date 2010 02 27) (Months 1) p8)
 
-pp91 = "expense" :<+ (0 :? 10:#rur)
-pp92 = Auto cash
-p9 = Posting 'T' "template" [pp91,pp92]
+p9 = posting1 'T' "template" cash "expense" (0 :? 10:#rur)
 tpl1 = Template "Test" 1 p9
 r9 = At (today 9) $ TR tpl1
 
 r10 = At (today 10) $ CTR "Test" []
 r11 = At (today 11) $ CTR "Test" [15:#rur]
 
-posts = doRecords (date 2010 08 01) [r0, r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11] 
+p12 = posting1 'R' "ruled" cash "expense" (1#rur)
+r12 = At (today 0) $ RuledP Before ("bank" :> (1:#rur)) p12
+
+r13 = simpleRecord 13 'T' "test" cash "bank" (20#rur)
+
+posts = doRecords (date 2010 08 01)
+    [r0, r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13] 
+
+onePost = doRecords (date 2010 08 01) [r1]
