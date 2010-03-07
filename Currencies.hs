@@ -198,7 +198,7 @@ compareAmounts :: Amount -> Amount -> LState Ordering
 compareAmounts a1 a2 = do
   rs <- gets rates
   let x = getValue a1
-      y = convert rs (getValue a2) (getCurrency a2) (getCurrency a1)
+      y = convert rs  (getValue a2) (getCurrency a2) (getCurrency a1)
   return $ compare x y
 
 putAmount :: String -> Amount -> LState ()
@@ -294,11 +294,19 @@ checkPosting :: Posting -> LState Posting
 checkPosting post = do
   let srcParts = parts post
   rs <- gets rates
-  parts' <- case filter isAuto srcParts of
-              [p] -> return $ fixParts rs (filter (not . isAuto) srcParts) p
-              []  -> checkParts rs srcParts
+  parts' <- forM srcParts $ \p -> do
+              case p of
+                name :<+ (F (x :# "%")) -> do
+                  acc <- getAccount name
+                  let (s :# c) = sumAccount acc
+                      y = s*x/100.0
+                  return $ name :<+ (F (y :# c))
+                p' -> return p'
+  parts'' <- case filter isAuto parts' of
+              [p] -> return $ fixParts rs (filter (not . isAuto) parts') p
+              []  -> checkParts rs parts'
               _   -> fail "More than one lines without amount given"
-  return $ post {parts = parts'}
+  return $ post {parts = parts''}
 
 doPosting :: Posting -> LState ()
 doPosting post = do
@@ -375,12 +383,12 @@ applyRules post = do
     r -> return $ nub $ concat r
 
 doRecord :: Dated Record -> LState ()
-doRecord rr@(At dt (PR post)) = do
+doRecord (At dt (PR post)) = do
   modify (setDate dt)
   post' <- checkPosting post
   posts <- applyRules post'
   forM posts doPosting
-  putRecord rr
+  putRecord (At dt (PR post'))
 doRecord rr@(At dt (RR ss)) = do
   modify (setDate dt)
   setRate ss

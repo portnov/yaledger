@@ -8,6 +8,7 @@ import Currencies
 
 rur = "р."
 euro = "€"
+perc = "%"
 
 n # curr = F (n :# curr)
 
@@ -75,8 +76,11 @@ p12 = posting1 'R' "ruled" cash "expense" (1#rur)
 r12 = At (today 0) $ RuledP Before ("bank" :> (1:#rur)) p12
 
 r13 = simpleRecord 13 'T' "test" cash "bank" (20#rur)
+p14 = posting1 'B' "percents" income "bank" (5#perc)
+r14 = At (today 14) $ PR p14
 
 posts = doRecords (date 2010 08 01)
-    [r0, r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13] 
+    [r0, r3,r14]
+--     [r0, r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14] 
 
 onePost = doRecords (date 2010 08 01) [r1]
