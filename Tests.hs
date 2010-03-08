@@ -65,7 +65,7 @@ r7 = At (today 7) $ VR "cash" (45:#rur)
 p8 = posting1 'R' "8" cash "expense" (100#rur)
 r8 = At (today 8) $ RegR (RegularPosting (date 2010 02 27) (Months 1) p8)
 
-p9 = posting1 'T' "template" cash "expense" (0 :? 10:#rur)
+p9 = posting1 'T' "template" cash "expense" (P 100 0 (10:#rur))
 tpl1 = Template "Test" 1 p9
 r9 = At (today 9) $ TR tpl1
 
@@ -82,8 +82,13 @@ r14 = At (today 14) $ PR p14
 p15 = posting1 'P' "percents" income "bank" (10#perc)
 r15 = At (today 15) $ RegR (RegularPosting (date 2010 03 08) (Months 1) p15)
 
+p16 = posting1 'C' "tax" bank "expense" $ P 5 0 (0:#rur)
+r16 = At (today 16) $ RuledP Before ("bank" :< (0:#rur)) p16
+
+r17 = simpleRecord 17 '!' "test" bank "cash" (1#euro)
+
 posts = doRecords (date 2010 08 01)
-    [r0, r3,r14,r15]
+    [r0, r3,r14,r15,r16,r17]
 --     [r0, r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14] 
 
 onePost = doRecords (date 2010 08 01) [r1]

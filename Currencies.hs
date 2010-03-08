@@ -97,17 +97,16 @@ instance Show Posting where
   show (Posting s d ps) = unlines $ (s:' ':d):map show ps
 
 data AmountParam = F Amount
-                 | Int :? Amount
+                 | P Double Int Amount
   deriving (Eq, Data,Typeable)
-infixl 5 :?
 
 instance Show AmountParam where
   show (F amount) = show amount
-  show (n :? def) = '#':show n ++ "?=" ++ show def
+  show (P p n def) = show p ++ "%(#" ++ show n ++ "=" ++ show def ++ ")"
 
 defAmount :: AmountParam -> Amount
 defAmount (F amount) = amount
-defAmount (_ :? amount) = amount
+defAmount (P _ _ def) = def
 
 data Part = String :<+ AmountParam
           | Auto Account
@@ -331,20 +330,28 @@ putRecord rr | At dt (PR post) <- rr = do
 orM :: (Monad m) => [m Bool] -> m Bool
 orM = (liftM or) . sequence
 
+getPercents (x :# c) p = (x*p/100.0) :# c
+
 subst :: Posting -> [Amount] -> Posting
 subst tpl args = everywhere (mkT subst') tpl
   where
     subst' (F x) = F x
-    subst' (i :? def) = 
+    subst' (P p i def) = 
       if i >= length args
         then F def
-        else F (args !! i)
+        else F $ getPercents (args !! i) p
 
 getAccounts :: Posting -> [(String,Amount)]
 getAccounts post = map convert $ parts post
   where
     convert (acc :<+ a) = (acc, defAmount a)
     convert (Auto a) = error $ "Internal error: unexpected Auto posting-part: " ++ show a
+
+getAmounts :: Posting -> [Amount]
+getAmounts post = concatMap get (parts post)
+  where
+    get (_ :<+ a) = [defAmount a]
+    get (Auto _)  = []
 
 amountGT :: Amount -> Amount -> LState Bool
 amountGT a1 a2 = do
@@ -375,9 +382,10 @@ applyRules post = do
     m <- match rule post
     if not m
       then return [post]
-      else return $ case when of
-                      Before -> [post', post]
-                      After -> [post, post']
+      else let post'' = subst post' (getAmounts post)
+           in  return $ case when of
+                          Before -> [post'', post]
+                          After -> [post, post'']
   case res of
     [] -> return [post]
     r -> return $ nub $ concat r
