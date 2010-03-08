@@ -17,8 +17,8 @@ import Lists
 datedSeq :: Dated a -> DateInterval -> [Dated a]
 datedSeq (At dt x) int = [At d x | d <- datesFromEvery dt int]
 
-regularToList :: RegularPosting -> [Dated Record]
-regularToList (RegularPosting date int post) = datedSeq (At date $ PR post) int
+regularToList :: RegularTransaction -> [Dated Record]
+regularToList (RegularTransaction date int post) = datedSeq (At date $ PR post) int
 
 allToList :: (Dated Record -> Bool) -> [Dated Record] -> [Dated Record]
 allToList pred recs = takeWhile pred $ mergeOn getDate (ones : map toList regs)
@@ -79,10 +79,10 @@ getCurrency (_ :# c) = c
 getValue :: Amount -> Double
 getValue (x :# _) = x
 
-getAmount :: Part -> Amount
+getAmount :: Posting -> Amount
 getAmount (_ :<+ a) = defAmount a
 
-isAuto :: Part -> Bool
+isAuto :: Posting -> Bool
 isAuto (Auto _) = True
 isAuto _        = False
 
@@ -114,25 +114,25 @@ getTemplate name = do
     Nothing -> fail $ "Unknown template: " ++ name
     Just tpl -> return tpl
 
-fixParts :: Rates -> [Part] -> Part -> [Part]
-fixParts rates parts (Auto acc) = parts ++ [accName acc :<+ (F amount)]
+fixPostings :: Rates -> [Posting] -> Posting -> [Posting]
+fixPostings rates parts (Auto acc) = parts ++ [accName acc :<+ (F amount)]
   where
     amount = negateAmount $ sumAmounts rates $ map getAmount parts
 
-checkParts :: Rates -> [Part] -> LState [Part]
-checkParts rates parts = 
+checkPostings :: Rates -> [Posting] -> LState [Posting]
+checkPostings rates parts = 
   if (getValue $ sumAmounts rates $ map getAmount parts) == 0.0
     then return parts
-    else fail "Posting does not balance"
+    else fail "Transaction does not balance"
 
-doPart :: Part -> LState ()
-doPart (acc :<+ amount) = putAmount acc (defAmount amount)
+doPosting :: Posting -> LState ()
+doPosting (acc :<+ amount) = putAmount acc (defAmount amount)
 
-checkPosting :: Posting -> LState Posting
-checkPosting post = do
-  let srcParts = parts post
+checkTransaction :: Transaction -> LState Transaction
+checkTransaction post = do
+  let srcPostings = parts post
   rs <- gets rates
-  parts' <- forM srcParts $ \p -> do
+  parts' <- forM srcPostings $ \p -> do
               case p of
                 name :<+ (F (x :# "%")) -> do
                   acc <- getAccount name
@@ -141,15 +141,15 @@ checkPosting post = do
                   return $ name :<+ (F (y :# c))
                 p' -> return p'
   parts'' <- case filter isAuto parts' of
-              [p] -> return $ fixParts rs (filter (not . isAuto) parts') p
-              []  -> checkParts rs parts'
+              [p] -> return $ fixPostings rs (filter (not . isAuto) parts') p
+              []  -> checkPostings rs parts'
               _   -> fail "More than one lines without amount given"
   return $ post {parts = parts''}
 
-doPosting :: Posting -> LState ()
-doPosting post = do
-  post' <- checkPosting post
-  forM_ (parts post') doPart
+doTransaction :: Transaction -> LState ()
+doTransaction post = do
+  post' <- checkTransaction post
+  forM_ (parts post') doPosting
 
 setRate :: SetRate -> LState ()
 setRate (c1 := (x :# c2)) = do
@@ -160,7 +160,7 @@ setRate (c1 := (x :# c2)) = do
 
 putRecord :: Dated Record -> LState ()
 putRecord rr | At dt (PR post) <- rr = do
-    post' <- checkPosting post
+    post' <- checkTransaction post
     modify (add $ At dt (PR post'))
              | otherwise = modify (add rr)
   where
@@ -171,7 +171,7 @@ orM = (liftM or) . sequence
 
 getPercents (x :# c) p = (x*p/100.0) :# c
 
-subst :: Posting -> [Amount] -> Posting
+subst :: Transaction -> [Amount] -> Transaction
 subst tpl args = everywhere (mkT subst') tpl
   where
     subst' (F x) = F x
@@ -180,13 +180,13 @@ subst tpl args = everywhere (mkT subst') tpl
         then F def
         else F $ getPercents (args !! i) p
 
-getAccounts :: Posting -> [(String,Amount)]
+getAccounts :: Transaction -> [(String,Amount)]
 getAccounts post = map convert $ parts post
   where
     convert (acc :<+ a) = (acc, defAmount a)
     convert (Auto a) = error $ "Internal error: unexpected Auto posting-part: " ++ show a
 
-getAmounts :: Posting -> [Amount]
+getAmounts :: Transaction -> [Amount]
 getAmounts post = concatMap get (parts post)
   where
     get (_ :<+ a) = [defAmount a]
@@ -205,7 +205,7 @@ amountLT a1 a2 = do
 matchName :: String -> (String,Amount) -> Bool
 matchName regex (name,_) = name =~ regex
 
-match :: Rule -> Posting -> LState Bool
+match :: Rule -> Transaction -> LState Bool
 match (DescrMatch regex) post = return $ (description post) =~ regex
 match (regex :> amount) post = orM $ map match' $ filter (matchName regex) $ getAccounts post
   where
@@ -214,7 +214,7 @@ match (regex :< amount) post = orM $ map match' $ filter (matchName regex) $ get
   where
     match' (acc,amount') = amountLT amount' amount
 
-applyRules :: Posting -> LState [Posting]
+applyRules :: Transaction -> LState [Transaction]
 applyRules post = do
   rls <- gets ruled
   res <- forM rls $ \(when,rule,post') -> do
@@ -232,9 +232,9 @@ applyRules post = do
 doRecord :: Dated Record -> LState ()
 doRecord (At dt (PR post)) = do
   modify (setDate dt)
-  post' <- checkPosting post
+  post' <- checkTransaction post
   posts <- applyRules post'
-  forM posts doPosting
+  forM posts doTransaction
   putRecord (At dt (PR post'))
 doRecord rr@(At dt (RR ss)) = do
   modify (setDate dt)
@@ -248,13 +248,13 @@ doRecord (At dt (VR name amount)) = do
   if getValue delta > 0.0
     then do
            inc <- getIncFrom name
-           let post = At dt $ PR $ Posting 'A' "Autogenerated posting" [name :<+ (F delta), Auto inc]
+           let post = At dt $ PR $ Transaction 'A' "Autogenerated posting" [name :<+ (F delta), Auto inc]
            doRecord post
     else if getValue delta == 0.0
            then return ()
            else do
                   dec <- getDecTo name
-                  let post = At dt $ PR $ Posting 'A' "Autogenerated posting" [name :<+ (F delta), Auto dec]
+                  let post = At dt $ PR $ Transaction 'A' "Autogenerated posting" [name :<+ (F delta), Auto dec]
                   doRecord post
 doRecord (At _ (TR tpl)) = do
   st <- get

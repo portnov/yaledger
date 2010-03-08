@@ -13,12 +13,12 @@ perc = "%"
 
 n # curr = F (n :# curr)
 
-posting1 s descr from to sum = Posting s descr [p1,p2]
+posting1 s descr from to sum = Transaction s descr [p1,p2]
   where
     p1 = to :<+ sum
     p2 = Auto from
 
-posting2 s descr from to sum1 sum2 = Posting s descr [p1,p2]
+posting2 s descr from to sum1 sum2 = Transaction s descr [p1,p2]
   where
     p1 = from :<+ sum1
     p2 = to :<+ sum2
@@ -54,7 +54,7 @@ r3 = simpleRecord 3 '!' "3" income "bank" (2#euro)
 pp41 = "expense" :<+ 15#rur
 pp42 = "cash" :<+ 10#rur
 pp43 = Auto bank
-p4 = Posting '!' "4" [pp41,pp42,pp43]
+p4 = Transaction '!' "4" [pp41,pp42,pp43]
 r4 = At (today 4) $ PR p4
 
 r5 = At (today 5) $ RR $ euro := 28:#rur
@@ -64,7 +64,7 @@ r6 = simpleRecord 6 '!' "6" income "bank" (2#euro)
 r7 = At (today 7) $ VR "cash" (45:#rur)
 
 p8 = posting1 'R' "8" cash "expense" (100#rur)
-r8 = At (today 8) $ RegR (RegularPosting (date 2010 02 27) (Months 1) p8)
+r8 = At (today 8) $ RegR (RegularTransaction (date 2010 02 27) (Months 1) p8)
 
 p9 = posting1 'T' "template" cash "expense" (P 100 0 (10:#rur))
 tpl1 = Template "Test" 1 p9
@@ -81,7 +81,7 @@ p14 = posting1 'B' "percents" income "bank" (5#perc)
 r14 = At (today 14) $ PR p14
 
 p15 = posting1 'P' "percents" income "bank" (10#perc)
-r15 = At (today 15) $ RegR (RegularPosting (date 2010 03 08) (Months 1) p15)
+r15 = At (today 15) $ RegR (RegularTransaction (date 2010 03 08) (Months 1) p15)
 
 p16 = posting1 'C' "tax" bank "expense" $ P 5 0 (0:#rur)
 r16 = At (today 16) $ RuledP Before ("bank" :< (0:#rur)) p16

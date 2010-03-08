@@ -1,4 +1,4 @@
-{-# LANGUAGE UnicodeSyntax, DeriveDataTypeable #-}
+{-# LANGUAGE UnicodeSyntax, DeriveDataTypeable, PatternGuards #-}
 module Dates
 --   (pDate, parseDate, pSpecDates, getCurrentDateTime)
   where
@@ -57,10 +57,17 @@ times n p = do
   case t of
     Just t' → return (ts ++ [t'])
     Nothing → return ts
+
+readInt :: String -> Parser Int
+readInt s | [x] <- parse = return x
+          | otherwise    = fail $ "Cannot parse number: " ++ s
+  where
+    parse = [x | (x,_) <- reads s]
                                
 number ∷ Int → Int → Parser Int
 number n m = do
-  t ← read `fmap` (n `times` digit)
+  ts ← n `times` digit
+  t <- readInt ts
   if t > m
     then fail "number too large"
     else return t
@@ -256,6 +263,23 @@ yesterday = do
 
 pDate ∷ DateTime → Parser DateTime
 pDate date =  (try $ pRelDate date) <|> (try $ pAbsDate $ year date)
+
+pDateOrSeries :: DateTime -> Parser (Either DateTime (DateTime, DateInterval))
+pDateOrSeries date = (Right `fmap` (try series)) <|> (Left `fmap` (try $ pAbsDate $ year date))
+  where
+    series :: Parser (DateTime, DateInterval)
+    series = do
+      dt <- pAbsDate (year date)
+      string "/"
+      n <- read `fmap` (many1 digit)
+      char ' '
+      tp <- pDateInterval 
+      let int = case tp of
+                 Day -> Days n
+                 Week -> Weeks n
+                 Month -> Months n
+                 Year -> Years n
+      return (dt,int)
 
 parseDate ∷ DateTime → String → Either ParseError DateTime
 parseDate date s = parse (pDate date) "" s
