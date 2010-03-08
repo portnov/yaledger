@@ -3,6 +3,7 @@ module Tests where
 -- import Control.Monad.State
 import qualified Data.Map as M
 
+import Types
 import Dates hiding (today)
 import Currencies
 

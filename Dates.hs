@@ -13,47 +13,7 @@ import Data.Time.LocalTime
 import Text.ParserCombinators.Parsec
 
 import Unicode
-
-data DateTime =
-  DateTime {
-    year ∷ Int,
-    month ∷ Int,
-    day ∷ Int,
-    hour ∷ Int,
-    minute ∷ Int,
-    second ∷ Int }
-  deriving (Eq,Ord,Data,Typeable)
-
-months ∷ [String]
-months = ["january",
-          "february",
-          "march",
-          "april",
-          "may",
-          "june",
-          "july",
-          "august",
-          "september",
-          "october",
-          "november",
-          "december"]
-
-capitalize [] = []
-capitalize (x:xs) = (toUpper x):xs
-
-showMonth i = capitalize $ months !! (i-1)
-
-instance Show DateTime where
-  show (DateTime y m d h min s) = 
-    show d ⧺ " " ⧺ showMonth m ⧺ " " ⧺ show y ⧺ ", " ⧺
-      show h ⧺ ":" ⧺ show min ⧺ ":" ⧺ show s
-
-data Time = 
-  Time {
-    tHour ∷ Int,
-    tMinute ∷ Int,
-    tSecond ∷ Int }
-  deriving (Eq,Ord,Show,Data,Typeable)
+import Types
 
 getCurrentDateTime = do
   zt ← getZonedTime
@@ -222,15 +182,6 @@ pAbsDate year = do
     Just _ → do
       t ← choice $ map try [time12,time24]
       return $ date `addTime` t
-
-data DateIntervalType = Day | Week | Month | Year
-  deriving (Eq,Show,Read,Data,Typeable)
-
-data DateInterval = Days ℤ
-                  | Weeks ℤ
-                  | Months ℤ
-                  | Years ℤ
-  deriving (Eq,Show,Data,Typeable)
 
 convertTo dt = fromGregorian (fromIntegral $ year dt) (month dt) (day dt)
 convertFrom dt = 
