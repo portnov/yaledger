@@ -58,16 +58,9 @@ times n p = do
     Just t' → return (ts ++ [t'])
     Nothing → return ts
 
-readInt :: String -> Parser Int
-readInt s | [x] <- parse = return x
-          | otherwise    = fail $ "Cannot parse number: " ++ s
-  where
-    parse = [x | (x,_) <- reads s]
-                               
 number ∷ Int → Int → Parser Int
 number n m = do
-  ts ← n `times` digit
-  t <- readInt ts
+  t ← readM "number" =<< (n `times` digit)
   if t > m
     then fail "number too large"
     else return t
@@ -215,7 +208,7 @@ maybePlural str = do
 pDateInterval ∷ Parser DateIntervalType
 pDateInterval = do
   s ← choice $ map maybePlural ["day", "week", "month", "year"]
-  return $ read s
+  return $ readE "date interval type" s
 
 pRelDate ∷ DateTime → Parser DateTime
 pRelDate date = do
@@ -229,10 +222,10 @@ futureDate = do
   char ' '
   tp ← pDateInterval
   case tp of
-    Day →   return $ Days (read n)
-    Week →  return $ Weeks (read n)
-    Month → return $ Months (read n)
-    Year →  return $ Years (read n)
+    Day →   return $ Days (readE "days" n)
+    Week →  return $ Weeks (readE "weeks" n)
+    Month → return $ Months (readE "months" n)
+    Year →  return $ Years (readE "years" n)
 
 passDate ∷ Parser DateInterval
 passDate = do
@@ -241,10 +234,10 @@ passDate = do
   tp ← pDateInterval
   string " ago"
   case tp of
-    Day →   return $ Days $ - (read n)
-    Week →  return $ Weeks $ - (read n)
-    Month → return $ Months $ - (read n)
-    Year →  return $ Years $ - (read n)
+    Day →   return $ Days $ - (readE "days" n)
+    Week →  return $ Weeks $ - (readE "weeks" n)
+    Month → return $ Months $ - (readE "months" n)
+    Year →  return $ Years $ - (readE "years" n)
 
 today ∷ Parser DateInterval
 today = do
@@ -264,22 +257,32 @@ yesterday = do
 pDate ∷ DateTime → Parser DateTime
 pDate date =  (try $ pRelDate date) <|> (try $ pAbsDate $ year date)
 
+pDateOnly :: Int -> Parser DateTime
+pDateOnly year = 
+  choice $ map try $ map ($ year) $ [
+                              const euroNumDate,
+                              const americanDate,
+                              const strDate,
+                              strDate',
+                              euroNumDate',
+                              americanDate']
+
 pDateOrSeries :: DateTime -> Parser (Either DateTime (DateTime, DateInterval))
-pDateOrSeries date = (Right `fmap` (try series)) <|> (Left `fmap` (try $ pAbsDate $ year date))
-  where
-    series :: Parser (DateTime, DateInterval)
-    series = do
-      dt <- pAbsDate (year date)
-      string "/"
-      n <- read `fmap` (many1 digit)
-      char ' '
-      tp <- pDateInterval 
-      let int = case tp of
-                 Day -> Days n
-                 Week -> Weeks n
-                 Month -> Months n
-                 Year -> Years n
-      return (dt,int)
+pDateOrSeries date = (Right `fmap` (try $ pSeries $ year date)) <|> (Left `fmap` (try $ pAbsDate $ year date))
+
+pSeries :: Int -> Parser (DateTime, DateInterval)
+pSeries year = do
+  dt <- pAbsDate year
+  string "/"
+  n <- (readE "periods number") `fmap` (many1 digit)
+  char ' '
+  tp <- pDateInterval 
+  let int = case tp of
+             Day -> Days n
+             Week -> Weeks n
+             Month -> Months n
+             Year -> Years n
+  return (dt,int)
 
 parseDate ∷ DateTime → String → Either ParseError DateTime
 parseDate date s = parse (pDate date) "" s
