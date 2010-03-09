@@ -19,6 +19,16 @@ import qualified Tree as T
 mkPath :: String -> [String]
 mkPath str = split "/" str
 
+sumAccountsTree :: Rates-> T.Tree Currency Account-> T.Tree Amount Account
+sumAccountsTree rs tree = T.partFold foldA plus foldS tree
+  where
+    foldA :: Currency -> [Account] -> Amount
+    foldA c accs = convertAmount rs c $ sumAmounts rs $ map sumAccount accs
+    plus :: Amount -> Amount -> Amount
+    plus a1 a2 = amountPlus rs a1 a2
+    foldS :: [Amount] -> Amount
+    foldS = sumAmounts rs
+
 datedSeq :: Dated a -> DateInterval -> [Dated a]
 datedSeq (At dt x) int = [At d x | d <- datesFromEvery dt int]
 
@@ -48,6 +58,9 @@ convert :: Rates -> Double -> Currency -> Currency -> Double
 convert rates x c1 c2 | c1 == c2  = x
                       | otherwise = x*getRate rates c1 c2
 
+convertAmount :: Rates -> Currency -> Amount -> Amount
+convertAmount rs c2 (a:#c1) = (convert rs a c1 c2):#c2
+
 compareAmounts :: Amount -> Amount -> LState Ordering
 compareAmounts a1 a2 = do
   rs <- gets rates
@@ -71,6 +84,7 @@ amountPlus :: Rates -> Amount -> Amount -> Amount
 amountPlus rates (x :# c1) (y :# c2) = (x + convert rates y c2 c1) :# c1
 
 sumAmounts :: Rates -> [Amount] -> Amount
+sumAmounts _ [] = 0 :# ""
 sumAmounts rates amounts = foldl (amountPlus rates) (0 :# firstCur) amounts
   where
     firstCur = getCurrency (head amounts)

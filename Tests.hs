@@ -36,7 +36,11 @@ bank = Account "bank" euro Nothing Nothing []
 corr = Account "correct" rur Nothing Nothing []
 start = Account "start" rur Nothing Nothing []
 
-accs = Node "root" rur $ map (\acc -> Leaf (accName acc) acc) [income,expense,bank,cash,corr,start]
+mkLeaf acc = Leaf (accName acc) acc
+
+acts = Node "actives" rur $ map mkLeaf [bank,cash]
+
+accs = Node "root" rur $ acts : map mkLeaf [income,expense,corr,start]
 
 today n = DateTime 2010 02 28 n 0 0
 
@@ -89,7 +93,8 @@ r16 = At (today 16) $ RuledP Before ("bank" :< (0:#rur)) p16
 r17 = simpleRecord 17 '!' "test" "bank" "cash" (1#euro)
 
 posts = doRecords (date 2010 08 01)
-    [r0, r3,r14,r15,r16,r17]
+      [r0, r1, r2, r3]
+--     [r0, r3,r14,r15,r16,r17]
 --     [r0, r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14] 
 
 onePost = doRecords (date 2010 08 01) [r1]

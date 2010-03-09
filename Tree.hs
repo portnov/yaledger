@@ -56,16 +56,42 @@ changeLeaf tree path new =
                                    | otherwise = leaf
     changed leaf@(Leaf name x) _ = leaf
                       
+sumTree :: (Num a) => Tree n a -> Tree (a,n) a
+sumTree (Leaf name x) = Leaf name x
+sumTree (Node name n lst) = Node name (s,n) lst'
+  where
+    lst' = map sumTree lst
+    leafs = filter isLeaf lst'
+    nodes = filter (not . isLeaf) lst'
+    s = sum [x | Leaf _ x <- leafs]
+      + sum [x | Node _ (x,_) _ <- nodes]
+    isLeaf (Leaf _ _) = True
+    isLeaf _          = False
 
+partFold :: (n -> [a] -> s) -> (s -> s -> s) -> ([s] -> s) -> Tree n a -> Tree s a
+partFold _ _ _ (Leaf name x) = Leaf name x
+partFold foldA plus foldS (Node name n lst) = Node name s lst'
+  where
+    lst' = map (partFold foldA plus foldS) lst
+    leafs = filter isLeaf lst'
+    nodes = filter (not . isLeaf) lst'
+    s = foldA n [x | Leaf _ x <- leafs]
+      `plus` foldS [x | Node _ x _ <- nodes]
+    isLeaf (Leaf _ _) = True
+    isLeaf _          = False
 
-testTree :: Tree Int Char
-testTree = Node "root" 1 $ [
-  Node "2" 2 $ [
-    Node "3" 3 [Leaf "L1" 'A', Leaf "L2" 'B', Leaf "L3" 'C'],
-    Node "Node" 4 $ [
-      Leaf "Leaf" 'D',
-      Node "5" 5 [Leaf "Leaf" 'E'],
-      Leaf "L4" 'F' ]],
-  Node "Node" 17 $ [
-    Leaf "L5" 'G',
-    Node "Leaf" 6 [Leaf "L6" 'H']]]
+showTree :: (Show n, Show a) => Int -> Tree n a -> String
+showTree k (Leaf name a) = (replicate k ' ') ++ name ++ ": " ++ show a
+showTree k (Node name n lst) = (replicate k ' ') ++ name ++ ": " ++ show n ++ "\n" ++ (unlines $ map (showTree $ k+2) lst)
+
+testTree :: Tree Char Int
+testTree = Node "root" 'R' $ [
+  Node "2" 'A' $ [
+    Node "3" 'B' [Leaf "L1" 1, Leaf "L2" 2, Leaf "L3" 3],
+    Node "Node" 'C' $ [
+      Leaf "Leaf" 4,
+      Node "5" 'D' [Leaf "Leaf" 5],
+      Leaf "L4" 6 ]],
+  Node "Node" 'E' $ [
+    Leaf "L5" 7,
+    Node "Leaf" 'F' [Leaf "L6" 8]]]
