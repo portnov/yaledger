@@ -38,7 +38,7 @@ start = Account "start" rur Nothing Nothing []
 
 mkLeaf acc = Leaf (accName acc) acc
 
-acts = Node "actives" rur $ map mkLeaf [bank,cash]
+acts = Node "actives" euro $ map mkLeaf [bank,cash]
 
 accs = Node "root" rur $ acts : map mkLeaf [income,expense,corr,start]
 
@@ -96,5 +96,10 @@ posts = doRecords (date 2010 08 01)
       [r0, r1, r2, r3]
 --     [r0, r3,r14,r15,r16,r17]
 --     [r0, r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14] 
+
+Right (_,s1) = runState posts s0
+sums = sumAccountsTree (rates s1) (accounts s1)
+
+doTest = putStrLn $ showTree 0 sums
 
 onePost = doRecords (date 2010 08 01) [r1]
