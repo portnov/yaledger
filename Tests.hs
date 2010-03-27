@@ -29,12 +29,12 @@ simpleRecord n s descr from to sum = At (today n) $ PR $ posting1 s descr from t
 myRates = M.fromList [((rur,euro), 1.0/30.0),
                       ((euro,rur), 30.0)]
 
-income = Account "income" rur Nothing Nothing []
-expense = Account "expense" rur Nothing Nothing []
-cash = Account "cash" rur Nothing (Just corr) []
-bank = Account "bank" euro Nothing Nothing []
-corr = Account "correct" rur Nothing Nothing []
-start = Account "start" rur Nothing Nothing []
+income = Account "income" rur NoLink NoLink []
+expense = Account "expense" rur NoLink NoLink []
+cash = Account "cash" rur NoLink (LinkTo corr) []
+bank = Account "bank" euro NoLink NoLink []
+corr = Account "correct" rur NoLink NoLink []
+start = Account "start" rur NoLink NoLink []
 
 mkLeaf acc = Leaf (accName acc) acc
 

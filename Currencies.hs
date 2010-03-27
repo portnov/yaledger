@@ -116,15 +116,15 @@ getIncFrom :: String -> LState Account
 getIncFrom name = do
   acc <- getAccount name
   case incFrom acc of
-    Nothing -> fail $ "income account for " ++ name ++ " is not set"
-    Just acc' -> return acc'
+    NoLink -> fail $ "income account for " ++ name ++ " is not set"
+    LinkTo acc' -> return acc'
 
 getDecTo :: String -> LState Account
 getDecTo name = do
   acc <- getAccount name
   case decTo acc of
-    Nothing -> fail $ "outcome account for " ++ name ++ " is not set"
-    Just acc' -> return acc'
+    NoLink -> fail $ "outcome account for " ++ name ++ " is not set"
+    LinkTo acc' -> return acc'
 
 getTemplate :: String -> LState Template
 getTemplate name = do

@@ -2,24 +2,128 @@
 
 module Parser where
   
-import Text.ParserCombinators.Parsec
-
+import Text.ParserCombinators.Parsec hiding (spaces,newline)
+import qualified Text.ParserCombinators.Parsec.Expr as PE 
+import qualified Text.ParserCombinators.Parsec.Language as L 
+import qualified Text.ParserCombinators.Parsec.Token as T 
+ 
 import Types
 import Dates
+import qualified Tree as T
 
-pAmount :: Parser Amount
+emptyPState = ParserState []
+
+spaces :: MParser String
+spaces = many1 $ oneOf " \t"
+
+spaces0 :: MParser String
+spaces0 = many $ oneOf " \t"
+
+word :: MParser String
+word = many1 $ noneOf " \t\n\r;{}"
+
+newline :: MParser String
+newline = many1 $ oneOf "\n\r"
+
+localDef = L.haskellStyle {
+              L.identStart = L.identLetter localDef,
+              L.identLetter = noneOf " \t\r\n" }
+lexer = T.makeTokenParser localDef
+ 
+symbol = T.symbol lexer 
+
+anySymbol = do
+  w <- word
+  skipMany $ oneOf " \t"
+  return w
+
+braces = T.braces lexer
+
+separator = many1 $ oneOf " \t\r\n"
+  
+
+maybeLink p = do
+  x <- optionMaybe p
+  case x of
+    Nothing -> return NoLink
+    Just a  -> return $ ByName a
+
+p1 >>- p2 = do
+  x <- p1
+  p2
+  return x
+
+getDefCurrency :: MParser Currency
+getDefCurrency = do
+  st <- getState
+  let lst = defaultCurrencies st
+  case lst of
+    [] -> fail "Currency not specified and no default currency"
+    (c:_) -> return c
+
+setDefCurrency :: Currency -> MParser ()
+setDefCurrency c = do
+  st <- getState
+  let lst = defaultCurrencies st
+  setState $ st { defaultCurrencies = c: defaultCurrencies st }
+
+popDefCurrency :: MParser ()
+popDefCurrency = do
+  st <- getState
+  let lst = defaultCurrencies st
+  case lst of
+    [] -> error "Internal error: could not `pop` default currency"
+    (_:cs) -> setState $ st { defaultCurrencies = cs }
+
+optionalCurrency = do
+  c' <- optionMaybe anySymbol
+  case c' of
+    Nothing -> getDefCurrency 
+    Just c -> return c
+
+pAccount :: MParser AccountsTree
+pAccount = do
+    spaces0
+    symbol "@account"
+    name <- anySymbol
+    c <- optionalCurrency 
+    i <- maybeLink incFrom
+    o <- maybeLink outTo
+    return $ T.Leaf name $ Account name c i o []
+  where
+    incFrom = do
+      symbol "getFrom"
+      x <- anySymbol
+      return x
+    outTo = do
+      symbol "putTo"
+      x <- anySymbol
+      return x
+
+pGroup :: MParser AccountsTree
+pGroup = do
+    spaces0
+    symbol "@group"
+    name <- anySymbol
+    c  <- optionalCurrency 
+    setDefCurrency c
+    children <- braces $ (try pAccount <|> try pGroup) `sepEndBy` (symbol ";")
+    popDefCurrency 
+    return $ T.Node name c children
+
+pAmount :: MParser Amount
 pAmount = (try two) <|> one
   where
     one = do
       n <- pNumber
-      c <- many1 $ noneOf " \t\n\r"
+      c <- anySymbol
       return (n :# c)
     two = do
       c <- noneOf "0123456789 \t\n\r"
       n <- pNumber
       return (n :# [c])
 
-pParam :: Parser (Int,Amount)
+pParam :: MParser (Int,Amount)
 pParam = do
   char '#'
   n <- (readM "parameter number") =<< (many1 digit)
@@ -27,7 +131,7 @@ pParam = do
   a <- pAmount
   return (n,a)
 
-pAmountParam :: Parser AmountParam
+pAmountParam :: MParser AmountParam
 pAmountParam = (try onlyParam) <|>  (try paramPercent) <|> onlyAmount
   where
     onlyAmount = F `fmap` pAmount
@@ -41,7 +145,7 @@ pAmountParam = (try onlyParam) <|>  (try paramPercent) <|> onlyAmount
       char ')'
       return $ P p n a
 
-pRecord :: Int -> Parser Record
+pRecord :: Int -> MParser Record
 pRecord y = choice $ map try $ [
             PR `fmap` pTransaction,
             RR `fmap` pSetRate,
@@ -55,136 +159,124 @@ pRecord y = choice $ map try $ [
     mkRuledP (rw,rule,tr) = RuledP rw rule tr
     mkRuledC (rw,rule,name,args) = RuledC rw rule name args
 
-pRecords :: Int -> Parser [Dated Record]
+pRecords :: Int -> MParser [Dated Record]
 pRecords y = (dated y $ pRecord y) `sepBy` (many1 $ oneOf "\n\r")
 
-pTransaction :: Parser Transaction
+pTransaction :: MParser Transaction
 pTransaction = do
   s <- noneOf "\n\r"
-  many1 $ oneOf " \t"
   descr <- many1 $ noneOf "\n\r"
   oneOf "\n\r"
   parts <- many1 pPosting
   return $ Transaction s descr parts
 
-pPosting :: Parser Posting
+pPosting :: MParser Posting
 pPosting = do
-    many1 $ oneOf " \t"
+    spaces
     p <- (try concretePosting) <|> autoPosting
-    oneOf "\n\r"
+    newline
     return p
   where
     concretePosting = do
-      name <- many1 $ noneOf " \t\n\r"
-      many1 $ oneOf " \t"
+      name <- anySymbol
       a <- pAmountParam 
       return (name :<+ a)
     autoPosting = 
-      Auto `fmap` (many1 $ noneOf " \t\n\r")
+      Auto `fmap` anySymbol
 
-dated :: Int -> Parser a -> Parser (Dated a)
+dated :: Int -> MParser a -> MParser (Dated a)
 dated year parser = do
   dt <- pDateOnly year
-  many1 $ oneOf " \t"
+  spaces
   a <- parser
   return (At dt a)
 
-pSetRate :: Parser SetRate
+pSetRate :: MParser SetRate
 pSetRate = do
-  string "#rate"
-  many1 $ oneOf " \t"
-  from <- many1 $ noneOf " \t\r\n"
-  string " = "
+  symbol "@rate"
+  from <- anySymbol
+  symbol "="
   to <- pAmount
   return $ from := to
 
-pVerify :: Parser (String,Amount)
+pVerify :: MParser (String,Amount)
 pVerify = do
-  string "#balance"
-  many1 $ oneOf " \t"
+  symbol "@balance"
   name <- many1 $ noneOf " \t\r\n"
-  many1 $ oneOf " \t"
+  spaces
   val <- pAmount
   return (name, val)
 
-pRegular :: Int -> Parser RegularTransaction
+pRegular :: Int -> MParser RegularTransaction
 pRegular year = do
-  string "#regular"
-  many1 $ oneOf " \t"
+  symbol "@regular"
   (start,int) <- pSeries year
-  oneOf "\n\r"
-  many $ oneOf " \t"
+  newline
+  spaces
   tr <- pTransaction 
   return $ RegularTransaction start int tr
 
-pTemplate :: Parser Template
+pTemplate :: MParser Template
 pTemplate = do
-  string "#template"
-  many1 $ oneOf " \t"
-  name <- many1 $ noneOf " \t\r\n"
-  oneOf "\n\r"
+  symbol "@template"
+  name <- anySymbol
+  newline
   tr <- pTransaction
   return $ Template name 1 tr
 
-pCallTemplate :: Parser (String, [Amount])
+pCallTemplate :: MParser (String, [Amount])
 pCallTemplate = do
-  string "#call"
-  many1 $ oneOf " \t"
-  name <- many1 $ noneOf " \t\r\n"
-  lst <- pAmount `sepBy` (many1 $ oneOf " \t")
-  oneOf "\n\r"
+  symbol "@call"
+  name <- anySymbol
+  lst <- pAmount `sepBy` spaces
+  newline
   return (name, lst)
 
-pRuleWhen :: Parser RuleWhen
+pRuleWhen :: MParser RuleWhen
 pRuleWhen = (read . capitalize) `fmap` (string "before" <|> string "after")
 
-pRule :: Parser Rule
+pRule :: MParser Rule
 pRule = (try descr) <|> (try $ cmp '<') <|> (try $ cmp '>')
   where
     descr = do
       string "description like"
-      many1 $ oneOf " \t"
-      regex <- many1 $ noneOf " \t\r\n"
-      oneOf "\n\r"
+      spaces
+      regex <- anySymbol
+      newline
       return $ DescrMatch regex
     cmp ch = do
-        name <- many1 $ noneOf " \t\r\n"
-        many $ oneOf " \t"
+        name <- anySymbol
         char ch
-        many $ oneOf " \t"
+        spaces0
         a <- pAmount
-        oneOf "\n\r"
+        newline
         return $ name `op` a
       where
         op | ch == '<' = (:<)
            | otherwise = (:>)
 
-
-pRuledP :: Parser (RuleWhen, Rule, Transaction)
+pRuledP :: MParser (RuleWhen, Rule, Transaction)
 pRuledP = do
-  string "#rule"
-  many1 $ oneOf " \t"
+  symbol "@rule"
   rw <- pRuleWhen 
-  many1 $ oneOf " \t"
+  spaces
   rule <- pRule
-  oneOf "\n\r"
+  newline
   tr <- pTransaction 
   return (rw, rule, tr)
 
-pRuledC :: Parser (RuleWhen,Rule, String, [Amount])
+pRuledC :: MParser (RuleWhen,Rule, String, [Amount])
 pRuledC = do
-  string "#ruleCall"
-  many1 $ oneOf " \t"
+  symbol "@ruleCall"
   rw <- pRuleWhen 
-  many1 $ oneOf " \t"
+  spaces
   rule <- pRule
-  many1 $ oneOf " \t"
-  name <- many1 $ noneOf " \t\r\n"
-  many1 $ oneOf " \t"
-  lst <- pAmount `sepBy` (many1 $ oneOf " \t")
+  spaces
+  name <- anySymbol
+  lst <- pAmount `sepBy` spaces
   return (rw, rule, name, lst)
 
-pSign ∷ (Num a) ⇒ Parser a
+pSign ∷ (Num a) ⇒ MParser a
 pSign = do
   s ← optionMaybe $ oneOf "+-"
   return $ case s of
@@ -192,7 +284,7 @@ pSign = do
              Just '-' → -1
              Nothing → 1
 
-pNumber ∷ Parser Double
+pNumber ∷ MParser Double
 pNumber = do
   sgn ← pSign
   m ← pMantiss
@@ -203,7 +295,7 @@ pNumber = do
         else many1 digit
   return $ sgn * m * 10^(osgn*(readE "order" o∷Int))
 
-pMantiss ∷ Parser Double
+pMantiss ∷ MParser Double
 pMantiss = do
   i ← readM "integer part" =<< many1 digit
   p ← optionMaybe $ oneOf ".,"

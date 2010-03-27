@@ -7,9 +7,12 @@ import Data.Generics
 import Data.Char
 import Data.List
 import qualified Data.Map as M
+import Text.ParserCombinators.Parsec (GenParser)
 
 import Unicode
 import Tree
+
+type Name = String
 
 data DateTime =
   DateTime {
@@ -76,11 +79,16 @@ infixr 7 :#
 instance Show Amount where
   show (x :# c) = show x ++ c
 
+data Link a = NoLink
+            | LinkTo a
+            | ByName Name
+  deriving (Eq,Show,Data,Typeable)
+
 data Account = Account {
-                accName :: String,
+                accName :: Name,
                 accCurrency :: Currency,
-                incFrom :: Maybe Account,
-                decTo :: Maybe Account,
+                incFrom :: Link Account,
+                decTo :: Link Account,
                 history :: [(DateTime,Double)] }
   deriving (Eq,Data,Typeable)
 
@@ -97,6 +105,13 @@ instance Show AccountsTree where
 
 mkAccMap :: [Account] -> M.Map String Account
 mkAccMap lst = M.fromList [(accName a, a) | a <- lst]
+
+data ParserState = 
+  ParserState {
+    defaultCurrencies :: [Currency]
+  }
+
+type MParser a = GenParser Char ParserState a
 
 data LedgerState = LS {
                      now :: DateTime,
