@@ -5,7 +5,7 @@ module Parser where
 import Text.ParserCombinators.Parsec hiding (spaces,newline)
 import qualified Text.ParserCombinators.Parsec.Expr as PE 
 import qualified Text.ParserCombinators.Parsec.Language as L 
-import qualified Text.ParserCombinators.Parsec.Token as T 
+import qualified Text.ParserCombinators.Parsec.Token as Tok 
  
 import Types
 import Dates
@@ -28,16 +28,16 @@ newline = many1 $ oneOf "\n\r"
 localDef = L.haskellStyle {
               L.identStart = L.identLetter localDef,
               L.identLetter = noneOf " \t\r\n" }
-lexer = T.makeTokenParser localDef
+lexer = Tok.makeTokenParser localDef
  
-symbol = T.symbol lexer 
+symbol = Tok.symbol lexer 
 
 anySymbol = do
   w <- word
   skipMany $ oneOf " \t"
   return w
 
-braces = T.braces lexer
+braces = Tok.braces lexer
 
 separator = many1 $ oneOf " \t\r\n"
   
@@ -80,6 +80,18 @@ optionalCurrency = do
   case c' of
     Nothing -> getDefCurrency 
     Just c -> return c
+
+convertTree :: AccountsTree -> AccountsTree
+convertTree tree = lookupAll tree tree
+  where
+    lookupAll t (T.Node name c children) = T.Node name c $ map (lookupAll t) children
+    lookupAll t (T.Leaf name (Account name' c from to hist)) = T.Leaf name $ Account name' c (lookup from t) (lookup to t) hist
+    lookup NoLink _ = NoLink
+    lookup (LinkTo to) _ = LinkTo to
+    lookup (ByName n) tr = 
+      case T.lookupPath n tr of
+        Just x -> LinkTo x
+        Nothing -> NoLink
 
 pAccount :: MParser AccountsTree
 pAccount = do

@@ -93,9 +93,17 @@ data Account = Account {
   deriving (Eq,Data,Typeable)
 
 instance Show Account where
-  show (Account name curr _ _ hist) = name ++ ":" ++ curr ++ "\n" ++ strHist
+  show (Account name curr from to hist) = name ++ showFrom from ++ showTo to ++ ":" ++ curr ++ "\n" ++ strHist
     where
       strHist = unlines $ map (\(dt,x) -> show dt ++ ":\t" ++ show x) hist
+      
+      showFrom NoLink = ""
+      showFrom (LinkTo acc) = " <- " ++ accName acc
+      showFrom (ByName n) = " <- [" ++ n ++ "]"
+
+      showTo NoLink = ""
+      showTo (LinkTo acc) = " -> " ++ accName acc
+      showTo (ByName n) = " -> [" ++ n ++ "]"
 
 type AccountsTree = Tree Currency Account
 

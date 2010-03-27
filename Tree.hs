@@ -5,6 +5,7 @@ module Tree
 
 import Prelude hiding (lookup)
 import Data.Generics
+import Data.List.Utils (split)
 
 data Tree n a =
       Node {getName :: String, nodeData :: n, children :: [Tree n a]}
@@ -42,6 +43,9 @@ lookup path tree =
   case search tree path of
     [Right x] -> Just x  
     _         -> Nothing
+
+lookupPath :: String -> Tree n a -> Maybe a
+lookupPath path tree = lookup (split "/" path) tree
 
 changeLeaf :: Tree n a -> [String] -> a -> Tree n a
 changeLeaf tree path new =
