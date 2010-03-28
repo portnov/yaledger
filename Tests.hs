@@ -2,11 +2,13 @@ module Tests where
 
 -- import Control.Monad.State
 import qualified Data.Map as M
+import Text.ParserCombinators.Parsec (runParser,eof,getState)
 
 import Types
 import Tree
 import Dates hiding (today)
 import Currencies
+import Parser
 
 rur = "р."
 euro = "€"
@@ -45,7 +47,12 @@ accs = Node "root" rur $ acts : map mkLeaf [income,expense,corr,start]
 today n = DateTime 2010 02 28 n 0 0
 
 s0 :: LedgerState
-s0 = LS (today 0) accs [] myRates M.empty []
+s0 = LS (today 0) accs [] myRates M.empty [] []
+
+mkState :: AccountsTree -> IO LedgerState
+mkState tree = do
+  dt <- getCurrentDateTime
+  return $ LS dt tree [] myRates M.empty [] []
 
 r0 = simpleRecord 0 'S' "start" "start" "cash" (200#rur)
 
@@ -103,3 +110,32 @@ sums = sumAccountsTree (rates s1) (accounts s1)
 doTest = putStrLn $ showTree 0 sums
 
 onePost = doRecords (date 2010 08 01) [r1]
+
+forceEither eith = 
+  case eith of
+    Right x -> x
+    Left e -> error $ show e
+
+withState p = do
+  x <- p
+  s <- getState
+  return (x,s)
+
+tryParse parser st src str = 
+  case runParser parser st src str of
+    Right x -> x
+    Left e -> error $ "Cannot parse:\n" ++ show e ++ "\n [ERROR]\n"
+
+parseTest = do
+  str <- readFile "/home/portnov/.yaledger"
+  let (accs,recs) = tryParse (ledgerSource 2010) emptyPState "" str
+  st <- mkState accs
+  let y = year $ now st
+      x = case runState (doRecords (now st) recs) st of
+            Right ((),y) -> y
+            Left e -> error $ show e
+  print "Records read:"
+  print recs
+  print "Results:"
+  print x
+

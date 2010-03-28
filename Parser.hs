@@ -20,7 +20,7 @@ spaces0 :: MParser String
 spaces0 = many $ oneOf " \t"
 
 word :: MParser String
-word = many1 $ noneOf " \t\n\r;{}"
+word = many1 $ noneOf " \t\n\r;{}()"
 
 newline :: MParser String
 newline = many1 $ oneOf "\n\r"
@@ -93,6 +93,13 @@ convertTree tree = lookupAll tree tree
         Just x -> LinkTo x
         Nothing -> NoLink
 
+ledgerSource :: Int -> MParser (AccountsTree, [Dated Record])
+ledgerSource y = do
+  accsS <- pGroup
+  let accs = convertTree accsS
+  recs <- pRecords y >>- eof
+  return (accs, recs)
+
 pAccount :: MParser AccountsTree
 pAccount = do
     spaces0
@@ -138,7 +145,7 @@ pAmount = (try two) <|> one
 pParam :: MParser (Int,Amount)
 pParam = do
   char '#'
-  n <- (readM "parameter number") =<< (many1 digit)
+  n <- readM "parameter number" =<< many1 digit
   char '='
   a <- pAmount
   return (n,a)
@@ -163,6 +170,7 @@ pRecord y = choice $ map try $ [
             RR `fmap` pSetRate,
             RegR `fmap` pRegular y,
             TR `fmap` pTemplate,
+            mkVR `fmap` pVerify,
             mkCTR `fmap` pCallTemplate,
             mkRuledP `fmap` pRuledP,
             mkRuledC `fmap` pRuledC]
@@ -170,9 +178,10 @@ pRecord y = choice $ map try $ [
     mkCTR (name, args) = CTR name args
     mkRuledP (rw,rule,tr) = RuledP rw rule tr
     mkRuledC (rw,rule,name,args) = RuledC rw rule name args
+    mkVR (name,a) = VR name a
 
 pRecords :: Int -> MParser [Dated Record]
-pRecords y = (dated y $ pRecord y) `sepBy` (many1 $ oneOf "\n\r")
+pRecords y = many1 (dated y $ pRecord y)
 
 pTransaction :: MParser Transaction
 pTransaction = do
@@ -214,9 +223,9 @@ pSetRate = do
 pVerify :: MParser (String,Amount)
 pVerify = do
   symbol "@balance"
-  name <- many1 $ noneOf " \t\r\n"
-  spaces
+  name <- anySymbol
   val <- pAmount
+  optional newline
   return (name, val)
 
 pRegular :: Int -> MParser RegularTransaction
@@ -245,7 +254,7 @@ pCallTemplate = do
   return (name, lst)
 
 pRuleWhen :: MParser RuleWhen
-pRuleWhen = (read . capitalize) `fmap` (string "before" <|> string "after")
+pRuleWhen = (read . capitalize) `fmap` (symbol "before" <|> symbol "after")
 
 pRule :: MParser Rule
 pRule = (try descr) <|> (try $ cmp '<') <|> (try $ cmp '>')
@@ -271,9 +280,9 @@ pRuledP :: MParser (RuleWhen, Rule, Transaction)
 pRuledP = do
   symbol "@rule"
   rw <- pRuleWhen 
-  spaces
+--   spaces
   rule <- pRule
-  newline
+--   newline
   tr <- pTransaction 
   return (rw, rule, tr)
 

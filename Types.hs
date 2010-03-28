@@ -127,12 +127,14 @@ data LedgerState = LS {
                      records :: [Dated Record],
                      rates :: Rates,
                      templates :: M.Map String Template,
-                     ruled :: [(RuleWhen, Rule, Transaction)] }
+                     ruled :: [(RuleWhen, Rule, Transaction)],
+                     messages :: [String] }
 
 instance Show LedgerState where
-  show st@(LS now accs recs rates _ _) = unlines $ [show now, showAccs, showRates rates]
+  show st@(LS now accs recs rates _ _ msgs) = unlines $ [show now, showAccs, showRates rates]
                                               ++ ["Balances:\n" ++ showPairs (balances st)]
-                                              ++ map show recs
+                                              ++ ["Log:\n" ++ unlines msgs]
+--                                               ++ map show recs
     where
       showAccs = unlines $ map show $ leafs accs
 
@@ -181,7 +183,7 @@ data AmountParam = F Amount
   deriving (Eq, Data,Typeable)
 
 instance Show AmountParam where
-  show (F amount) = show amount
+  show (F amount) = "F: " ++ show amount
   show (P p n def) = show p ++ "%(#" ++ show n ++ "=" ++ show def ++ ")"
 
 defAmount :: AmountParam -> Amount
@@ -244,10 +246,10 @@ data Rule = DescrMatch String
 data RuleWhen = Before | After
   deriving (Show,Read,Data,Typeable)
 
-showPairs :: (Show a, Show b) => [(a,b)] -> String
+showPairs :: (Show b) => [(String,b)] -> String
 showPairs pairs = unlines $ map showPair pairs
   where
-    showPair (a,b) = show a ++ "\t" ++ show b
+    showPair (a,b) = a ++ "\t" ++ show b
 
 balances :: LedgerState -> [(String, Amount)]
 balances st = [(accName acc, sumAccount acc) | acc <- leafs $ accounts st]
@@ -257,13 +259,13 @@ sumAccount acc = (sum $ map snd $ history acc) :# (accCurrency acc)
 
 readE :: (Read a) => String -> String -> a
 readE d s | [x] <- parse = x
-          | otherwise    = error $ "Cannot read " ++ d ++ ": «" ++ s ++ "»"
+          | otherwise    = error $ "readE: Cannot read " ++ d ++ ": «" ++ s ++ "»"
   where
     parse = [x | (x,_) <- reads s]
 
 readM :: (Monad m, Read a) => String -> String -> m a
 readM d s | [x] <- parse = return x
-          | otherwise    = fail $ "Cannot read " ++ d ++ ": «" ++ s ++ "»"
+          | otherwise    = fail $ "readM: Cannot read " ++ d ++ ": «" ++ s ++ "»"
   where
     parse = [x | (x,_) <- reads s]
                                
