@@ -90,8 +90,9 @@ convertTree tree = lookupAll tree tree
     lookup (LinkTo to) _ = LinkTo to
     lookup (ByName n) tr = 
       case T.lookupPath n tr of
-        Just x -> LinkTo x
-        Nothing -> NoLink
+        [x] -> LinkTo x
+        []   -> error $ "Unknown account: " ++ n
+        _    -> error $ "Ambigous account spec: " ++ n
 
 ledgerSource :: Int -> MParser (AccountsTree, [Dated Record])
 ledgerSource y = do
@@ -148,7 +149,7 @@ pParam = do
   n <- readM "parameter number" =<< many1 digit
   char '='
   a <- pAmount
-  return (n,a)
+  return (n-1, a)
 
 pAmountParam :: MParser AmountParam
 pAmountParam = (try onlyParam) <|>  (try paramPercent) <|> onlyAmount

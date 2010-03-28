@@ -5,6 +5,7 @@ module Tree
 
 import Prelude hiding (lookup)
 import Data.Generics
+import Data.Either
 import Data.List.Utils (split)
 
 data Tree n a =
@@ -38,13 +39,11 @@ search' tree path =
       bad'  = concatMap (\c -> search' c path)        bad
   in  good' ++ bad'
 
-lookup :: [String] -> Tree n a -> Maybe a
+lookup :: [String] -> Tree n a -> [a]
 lookup path tree =
-  case search tree path of
-    [Right x] -> Just x  
-    _         -> Nothing
+  rights $ search tree path
 
-lookupPath :: String -> Tree n a -> Maybe a
+lookupPath :: String -> Tree n a -> [a]
 lookupPath path tree = lookup (split "/" path) tree
 
 changeLeaf :: Tree n a -> [String] -> a -> Tree n a
@@ -85,8 +84,8 @@ partFold foldA plus foldS (Node name n lst) = Node name s lst'
     isLeaf _          = False
 
 showTree :: (Show n, Show a) => Int -> Tree n a -> String
-showTree k (Leaf name a) = (replicate k ' ') ++ name ++ ": " ++ show a
-showTree k (Node name n lst) = (replicate k ' ') ++ name ++ ": " ++ show n ++ "\n" ++ (unlines $ map (showTree $ k+2) lst)
+showTree k (Leaf name a) = (replicate k ' ') ++ name ++ ":\t" ++ show a
+showTree k (Node name n lst) = (replicate k ' ') ++ name ++ ":\t" ++ show n ++ "\n" ++ (unlines $ map (showTree $ k+2) lst)
 
 testTree :: Tree Char Int
 testTree = Node "root" 'R' $ [

@@ -8,6 +8,7 @@ import Data.Char
 import Data.List
 import qualified Data.Map as M
 import Text.ParserCombinators.Parsec (GenParser)
+import Text.Printf
 
 import Unicode
 import Tree
@@ -77,7 +78,7 @@ data Amount = Double :# Currency
 infixr 7 :#
 
 instance Show Amount where
-  show (x :# c) = show x ++ c
+  show (x :# c) = printf "%.2f" x ++ c
 
 data Link a = NoLink
             | LinkTo a
@@ -144,7 +145,7 @@ data LError = LError {
                 eReason :: String }
 
 instance Show LError where
-  show (LError rec st reason) = "Error: " ++ reason ++ " (at " ++ show rec ++ ")\n" ++ show st
+  show (LError rec st reason) = "Error: " ++ reason ++ " (at " ++ show rec ++ ")\n" -- ++ show st
 
 newtype AState s a = AState { runState :: s -> Either LError (a, s) }
 type LState a = AState LedgerState a

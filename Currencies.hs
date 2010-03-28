@@ -19,15 +19,23 @@ import qualified Tree as T
 mkPath :: String -> [String]
 mkPath str = split "/" str
 
-sumAccountsTree :: Rates-> T.Tree Currency Account-> T.Tree Amount Account
+sumAccountsTree :: Rates -> AccountsTree -> T.Tree Amount Account
 sumAccountsTree rs tree = T.partFold foldA plus foldS tree
   where
     foldA :: Currency -> [Account] -> Amount
     foldA c accs = convertAmount rs c $ sumAmounts rs $ map sumAccount accs
+
     plus :: Amount -> Amount -> Amount
     plus a1 a2 = amountPlus rs a1 a2
+
     foldS :: [Amount] -> Amount
     foldS = sumAmounts rs
+
+calcBalances :: Rates -> AccountsTree -> T.Tree Amount Amount
+calcBalances rs tree = convert (sumAccountsTree rs tree)
+  where
+    convert (T.Node name a children) = T.Node name a (map convert children)
+    convert (T.Leaf name acc) = T.Leaf name (sumAccount acc)
 
 writeLog :: String -> LState ()
 writeLog msg = do
@@ -114,9 +122,10 @@ isAuto _        = False
 getAccount :: String -> LState Account
 getAccount name = do
   accs <- gets accounts
-  case T.lookup (mkPath name) accs of
-    Nothing -> fail $ "Unknown account: " ++ name
-    Just acc -> return acc
+  case T.lookupPath name accs of
+    [] -> fail $ "Unknown account: " ++ name
+    [acc] -> return acc
+    _  -> fail $ "Ambigous account spec: "++ name
 
 getIncFrom :: String -> LState Account
 getIncFrom name = do
@@ -290,6 +299,8 @@ doRecord (At _ (TR tpl)) = do
 doRecord (At dt (CTR name args)) = do
   tpl <- getTemplate name
   let post = subst (tBody tpl) args
+  writeLog (show args)
+  writeLog (show post)
   doRecord $ At dt (PR post)
 doRecord (At _ (RuledP when rule post)) = do
   st <- get

@@ -134,8 +134,7 @@ parseTest = do
       x = case runState (doRecords (now st) recs) st of
             Right ((),y) -> y
             Left e -> error $ show e
-  print "Records read:"
-  print recs
-  print "Results:"
   print x
+  putStrLn $ showTree 0 $ calcBalances (rates x) (accounts x)
+
 
