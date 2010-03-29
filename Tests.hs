@@ -7,7 +7,8 @@ import Text.ParserCombinators.Parsec (runParser,eof,getState)
 import Types
 import Tree
 import Dates hiding (today)
-import Currencies
+import Transactions
+import Accounts
 import Parser
 
 rur = "р."
@@ -99,7 +100,7 @@ r16 = At (today 16) $ RuledP Before ("bank" :< (0:#rur)) p16
 
 r17 = simpleRecord 17 '!' "test" "bank" "cash" (1#euro)
 
-posts = doRecords (date 2010 08 01)
+posts = doRecords Nothing (Just $ date 2010 08 01)
       [r0, r1, r2, r3]
 --     [r0, r3,r14,r15,r16,r17]
 --     [r0, r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14] 
@@ -109,7 +110,7 @@ sums = sumAccountsTree (rates s1) (accounts s1)
 
 doTest = putStrLn $ showTree 0 sums
 
-onePost = doRecords (date 2010 08 01) [r1]
+onePost = doRecords Nothing (Just $ date 2010 08 01) [r1]
 
 forceEither eith = 
   case eith of
@@ -131,7 +132,7 @@ parseTest = do
   let (accs,recs) = tryParse (ledgerSource 2010) emptyPState "" str
   st <- mkState accs
   let y = year $ now st
-      x = case runState (doRecords (now st) recs) st of
+      x = case runState (doRecords Nothing (Just $ now st) recs) st of
             Right ((),y) -> y
             Left e -> error $ show e
   print x
