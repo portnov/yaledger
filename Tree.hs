@@ -13,6 +13,9 @@ data Tree n a =
     | Leaf {getName :: String, leafData :: a}
   deriving (Eq, Data, Typeable)
 
+mkPath :: String -> [String]
+mkPath str = split "/" str
+
 getData :: Tree n a -> Either n a
 getData (Node _ n _) = Left n
 getData (Leaf _ a)   = Right a
@@ -24,6 +27,10 @@ getChildren (Leaf _ _)   = []
 leafs :: Tree n a -> [a]
 leafs (Node _ _ lst) = concatMap leafs lst
 leafs (Leaf _ a) = [a]
+
+leafNames :: Tree n a -> [String]
+leafNames (Node _ _ lst) = concatMap leafNames lst
+leafNames (Leaf n _) = [n]
 
 search :: Tree n a -> [String] -> [Either n a]
 search tree path = map getData $ search' tree path
@@ -44,7 +51,13 @@ lookup path tree =
   rights $ search tree path
 
 lookupPath :: String -> Tree n a -> [a]
-lookupPath path tree = lookup (split "/" path) tree
+lookupPath path tree = lookup (mkPath path) tree
+
+lookupNode :: String -> Tree n a -> [String]
+lookupNode path tree = 
+  case search' tree (mkPath path) of
+    [Node _ _ lst] -> concatMap leafNames lst
+    _           -> []
 
 changeLeaf :: Tree n a -> [String] -> a -> Tree n a
 changeLeaf tree path new =

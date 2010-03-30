@@ -120,6 +120,8 @@ data ParserState =
     defaultCurrencies :: [Currency]
   }
 
+emptyPState = ParserState []
+
 type MParser a = GenParser Char ParserState a
 
 data LedgerState = LS {
@@ -191,8 +193,8 @@ defAmount :: AmountParam -> Amount
 defAmount (F amount) = amount
 defAmount (P _ _ def) = def
 
-data Posting = String :<+ AmountParam
-             | Auto String
+data Posting = Name :<+ AmountParam
+             | Auto Name
   deriving (Eq, Data,Typeable)
 infixl 6 :<+
 
@@ -204,7 +206,7 @@ data RegularTransaction = RegularTransaction DateTime DateInterval Transaction
   deriving (Show,Data,Typeable)
 
 data Template = Template {
-                  tName :: String,
+                  tName :: Name,
                   tNParams :: Int,
                   tBody :: Transaction }
   deriving (Data,Typeable)
@@ -214,12 +216,12 @@ instance Show Template where
 
 data Record = PR Transaction
             | RR SetRate
-            | VR String Amount
+            | VR Name Amount
             | RegR RegularTransaction 
             | TR Template
-            | CTR String [Amount]
+            | CTR Name [Amount]
             | RuledP RuleWhen Rule Transaction
-            | RuledC RuleWhen Rule String [Amount]
+            | RuledC RuleWhen Rule Name [Amount]
   deriving (Data,Typeable)
 
 instance Show Record where
@@ -246,6 +248,35 @@ data Rule = DescrMatch String
 
 data RuleWhen = Before | After
   deriving (Show,Read,Data,Typeable)
+
+
+data Query =
+  Q {
+    startDate :: Maybe DateTime,
+    endDate   :: Maybe DateTime,
+    statusIs  :: Maybe Char }
+  deriving (Show)
+
+data CmdLine =
+  CmdLine {
+    qFlags :: [QFlag],
+    srcFile :: FilePath,
+    mode :: Mode }
+  deriving (Show)
+
+data QFlag = StartDate DateTime
+           | EndDate   DateTime
+           | Status    Char
+  deriving (Show)
+
+data Mode = Balance
+          | Register String
+  deriving (Show)
+
+data Option = QF QFlag
+            | SourceFile FilePath
+            | MF Mode
+  deriving (Show)
 
 showPairs :: (Show b) => [(String,b)] -> String
 showPairs pairs = unlines $ map showPair pairs

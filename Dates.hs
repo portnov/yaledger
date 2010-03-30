@@ -1,6 +1,5 @@
 {-# LANGUAGE UnicodeSyntax, DeriveDataTypeable, PatternGuards #-}
 module Dates
---   (pDate, parseDate, pSpecDates, getCurrentDateTime)
   where
 
 import Data.Char (toUpper)
@@ -14,6 +13,9 @@ import Text.ParserCombinators.Parsec
 
 import Unicode
 import Types
+
+showDate :: DateTime -> String
+showDate dt = show (year dt) ++ "/" ++ show (month dt) ++ "/" ++ show (day dt)
 
 getCurrentDateTime = do
   zt ← getZonedTime
@@ -256,6 +258,12 @@ yesterday = do
 
 pDate ∷ DateTime → MParser DateTime
 pDate date =  (try $ pRelDate date) <|> (try $ pAbsDate $ year date)
+
+parseAbsDate :: DateTime -> String -> DateTime
+parseAbsDate dt str =
+  case runParser (pAbsDate $ year dt) emptyPState "<date>" str of
+    Right date -> date
+    Left e -> error $ show e
 
 pDateOnly :: Int -> MParser DateTime
 pDateOnly year = 

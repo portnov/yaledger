@@ -16,9 +16,6 @@ import Dates
 import Lists
 import qualified Tree as T
 
-mkPath :: String -> [String]
-mkPath str = split "/" str
-
 writeLog :: String -> LState ()
 writeLog msg = do
   st <- get
@@ -65,6 +62,11 @@ getValue (x :# _) = x
 
 getAmount :: Posting -> Amount
 getAmount (_ :<+ a) = defAmount a
+getAmount (Auto _) = error "Internal error: cannot get amount of `Auto` posting"
+
+getAccountName :: Posting -> Name
+getAccountName (n :<+ _) = n
+getAccountName (Auto n)  = n
 
 isAuto :: Posting -> Bool
 isAuto (Auto _) = True

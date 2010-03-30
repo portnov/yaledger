@@ -7,6 +7,7 @@ import Text.ParserCombinators.Parsec (runParser,eof,getState)
 import Types
 import Tree
 import Dates hiding (today)
+import Currencies
 import Transactions
 import Accounts
 import Parser
@@ -135,7 +136,18 @@ parseTest = do
       x = case runState (doRecords Nothing (Just $ now st) recs) st of
             Right ((),y) -> y
             Left e -> error $ show e
-  print x
-  putStrLn $ showTree 0 $ calcBalances (rates x) (accounts x)
+  let tree = calcBalances (rates x) (accounts x)
+  putStrLn $ showTree 0 tree 
+  let accs = lookupNode "расходы" tree
+  putStr "Date "
+  putStrLn $ unwords $ accs
+  putStrLn $ unlines $ map showRec $ map (\r -> (getDate r, amountsList' r accs)) (records x)
+    where
+      showRec :: (DateTime, [Maybe Amount]) -> String
+      showRec (dt, lst) = showDate dt ++ " " ++ (unwords $ map showMaybe lst)
+
+      showMaybe :: Maybe Amount -> String
+      showMaybe (Just x) = show $ getValue x
+      showMaybe Nothing = "NA"
 
 

@@ -11,8 +11,6 @@ import Types
 import Dates
 import qualified Tree as T
 
-emptyPState = ParserState []
-
 spaces :: MParser String
 spaces = many1 $ oneOf " \t"
 

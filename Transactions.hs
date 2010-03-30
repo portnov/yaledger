@@ -22,17 +22,36 @@ regularToList :: RegularTransaction -> [Dated Record]
 regularToList (RegularTransaction date int post) = datedSeq (At date $ PR post) int
 
 allToList :: (Dated Record -> Bool) -> [Dated Record] -> [Dated Record]
-allToList pred recs = filter pred $ mergeOn getDate (ones : map toList regs)
+allToList pred recs = filter pred' $ mergeOn getDate (ones : map toList regs)
   where
+    isReg :: Dated Record -> Bool
     isReg (At _ (RegR _)) = True
     isReg _               = False
+
+    isNotPR :: Dated Record -> Bool
+    isNotPR (At _ (PR _)) = False
+    isNotPR _             = True
+
     regs :: [Dated Record]
     regs = filter isReg recs
+
     ones :: [Dated Record]
     ones = filter (not.isReg) recs
+
     toList :: Dated Record -> [Dated Record]
     toList (At _ (RegR reg)) = regularToList reg
     toList x = [x]
+
+    pred' :: Dated Record -> Bool
+    pred' r = (pred r) || (isNotPR r)
+
+amountsList :: Transaction -> [Name] -> [Maybe Amount]
+amountsList (Transaction _ _ posts) accs = 
+  let lst = [(last $ T.mkPath $ getAccountName p, getAmount p) | p <- posts]
+  in  map (\a -> lookup a lst) accs
+
+amountsList' :: Dated Record -> [Name] -> [Maybe Amount]
+amountsList' (At _ (PR tr)) accs = amountsList tr accs
 
 fixPostings :: Rates -> [Posting] -> Posting -> [Posting]
 fixPostings rates parts (Auto acc) = parts ++ [acc :<+ (F amount)]
@@ -54,7 +73,7 @@ putAmount name (x :# c) = do
   acc <- getAccount name
   let y = convert rs x c (accCurrency acc)
       acc' = acc {history = (history acc) ++ [(dt,y)]}
-      m = T.changeLeaf accs (mkPath name) acc'
+      m = T.changeLeaf accs (T.mkPath name) acc'
   put $ st {accounts = m}
 
 doPosting :: Posting -> LState ()
