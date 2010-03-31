@@ -29,8 +29,8 @@ allToList pred recs = filter pred' $ mergeOn getDate (ones : map toList regs)
     isReg _               = False
 
     isNotPR :: Dated Record -> Bool
-    isNotPR (At _ (PR _)) = False
-    isNotPR _             = True
+    isNotPR (At _ (PR _)) = True
+    isNotPR _             = False
 
     regs :: [Dated Record]
     regs = filter isReg recs
@@ -43,7 +43,7 @@ allToList pred recs = filter pred' $ mergeOn getDate (ones : map toList regs)
     toList x = [x]
 
     pred' :: Dated Record -> Bool
-    pred' r = (pred r) || (isNotPR r)
+    pred' r = (pred r) -- || (isNotPR r)
 
 amountsList :: Transaction -> [Name] -> [Maybe Amount]
 amountsList (Transaction _ _ posts) accs = 
@@ -149,7 +149,7 @@ applyRules post = do
     if not m
       then return [post]
       else let post'' = subst post' (getAmounts post)
-           in  do writeLog $ show post''
+           in  do -- writeLog $ show post''
                   return $ case when of
                             Before -> [post'', post]
                             After -> [post, post'']
@@ -192,8 +192,8 @@ doRecord (At _ (TR tpl)) = do
 doRecord (At dt (CTR name args)) = do
   tpl <- getTemplate name
   let post = subst (tBody tpl) args
-  writeLog (show args)
-  writeLog (show post)
+--   writeLog (show args)
+--   writeLog (show post)
   doRecord $ At dt (PR post)
 doRecord (At _ (RuledP when rule post)) = do
   st <- get
@@ -216,5 +216,7 @@ doRecords dtStart dtEnd lst =
    in  doRecords' (cmp . getDate) lst
 
 doRecords' :: (Dated Record -> Bool) -> [Dated Record] -> LState ()
-doRecords' pred lst = forM_ (allToList pred lst) doRecord
+doRecords' pred lst = forM_ (allToList pred lst) $ \r -> do
+    writeLog (show $ getDate r)
+    doRecord r
 

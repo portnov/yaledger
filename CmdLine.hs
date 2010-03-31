@@ -10,10 +10,10 @@ import Data.List
 import Types
 import Dates
 
-emptyCmdLine :: DateTime -> IO CmdLine
-emptyCmdLine dt = do
+emptyCmdLine :: IO CmdLine
+emptyCmdLine = do
   home <- getEnv "HOME"
-  return $ CmdLine [EndDate dt] (home </> ".yaledger") Balance
+  return $ CmdLine [] (home </> ".yaledger") Balance
 
 defaultQuery :: DateTime -> Query
 defaultQuery dt = Q {
@@ -21,9 +21,9 @@ defaultQuery dt = Q {
     endDate   = Just dt,
     statusIs  = Nothing }
 
-parseOptions :: DateTime -> [Option] -> IO CmdLine
-parseOptions dt opts = do
-    ecl <- emptyCmdLine dt
+parseOptions :: [Option] -> IO CmdLine
+parseOptions opts = do
+    ecl <- emptyCmdLine 
     return $ foldl plus ecl opts
   where
     plus cl (QF f)         = cl {qFlags = f: qFlags cl}
@@ -59,14 +59,17 @@ mkStatusQ str = QF $ Status (head str)
 parseCmdLine :: DateTime -> [String] -> IO CmdLine
 parseCmdLine dt args = 
       case getOpt RequireOrder (options dt) (map decodeString args) of
-        (flags, [],      [])     -> parseOptions dt flags
-        (flags, nonOpts, [])     -> parseOptions dt (parseMode nonOpts:flags)
+        (flags, [],      [])     -> parseOptions (fix flags)
+        (flags, nonOpts, [])     -> parseOptions (parseMode nonOpts:fix flags)
         (_,     _,       msgs)   -> error $ concat msgs ++ usage
     where
       parseMode :: [String] -> Option
       parseMode [mode]      | mode `isPrefixOf` "balance"  = MF Balance
       parseMode [mode,path] | mode `isPrefixOf` "register" = MF $ Register path
       parseMode lst                                        = error $ "Unknown mode: " ++ show lst
+
+      fix [] = [QF $ EndDate dt]
+      fix x  = x
 
 
 
