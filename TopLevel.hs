@@ -27,7 +27,7 @@ readLedger dt path = do
 
 runQuery :: DateTime -> (Dated Record -> Bool) -> AccountsTree -> [Dated Record] -> LedgerState 
 runQuery dt pred accs recs = 
-  let st = LS dt accs [] M.empty M.empty [] []
+  let st = LS dt accs undefined [] M.empty M.empty [] []
   in  case runState (doRecords' pred recs) st of
         Right ((), y) -> y
         Left e        -> error $ show e

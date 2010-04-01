@@ -90,11 +90,12 @@ data Account = Account {
                 accCurrency :: Currency,
                 incFrom :: Link Account,
                 decTo :: Link Account,
+                hold :: Amount,
                 history :: [(DateTime,Double)] }
   deriving (Eq,Data,Typeable)
 
 instance Show Account where
-  show (Account name curr from to hist) = name ++ showFrom from ++ showTo to ++ ":" ++ curr ++ "\n" ++ strHist
+  show (Account name curr from to _ hist) = name ++ showFrom from ++ showTo to ++ ":" ++ curr ++ "\n" ++ strHist
     where
       strHist = unlines $ map (\(dt,x) -> show dt ++ ":\t" ++ show x) hist
       
@@ -129,6 +130,7 @@ type MParser a = GenParser Char ParserState a
 data LedgerState = LS {
                      now :: DateTime,
                      accounts :: AccountsTree,
+                     currentRecord :: Dated Record,
                      records :: [Dated Record],
                      rates :: Rates,
                      templates :: M.Map String Template,
@@ -136,12 +138,17 @@ data LedgerState = LS {
                      messages :: [String] }
 
 instance Show LedgerState where
-  show st@(LS now accs recs rates _ _ msgs) = unlines $ [show now, showAccs, showRates rates]
+  show st@(LS now accs _ recs rates _ _ msgs) = unlines $ [show now, showAccs, showRates rates]
                                               ++ ["Balances:\n" ++ showPairs (balances st)]
                                               ++ ["Log:\n" ++ unlines msgs]
 --                                               ++ map show recs
     where
       showAccs = unlines $ map show $ leafs accs
+
+setCurrentRecord :: Dated Record -> LState ()
+setCurrentRecord rec = do
+  st <- get
+  put $ st {currentRecord = rec}
 
 data LError = LError {
                 eRecord :: Maybe Record,
@@ -160,7 +167,9 @@ instance Monad (AState LedgerState) where
                case runState m s of
                  Right (a,s') -> runState (k a) s'
                  Left err     -> Left err
-  fail str = AState $ \s -> Left (LError Nothing s str)
+  fail str = AState $ \s -> let str' = "At record:\n" ++ (show $ currentRecord s) ++ ":\n" ++ str
+                            in  Left (LError Nothing s str')
+      
 
 instance MonadState LedgerState (AState LedgerState) where
     get   = AState $ \s -> Right (s, s)

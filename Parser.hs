@@ -83,7 +83,7 @@ convertTree :: AccountsTree -> AccountsTree
 convertTree tree = lookupAll tree tree
   where
     lookupAll t (T.Node name c children) = T.Node name c $ map (lookupAll t) children
-    lookupAll t (T.Leaf name (Account name' c from to hist)) = T.Leaf name $ Account name' c (lookup from t) (lookup to t) hist
+    lookupAll t (T.Leaf name (Account name' c from to hld hist)) = T.Leaf name $ Account name' c (lookup from t) (lookup to t) hld hist
 
     lookup NoLink _ = NoLink
     lookup (LinkTo to) _ = LinkTo to
@@ -110,7 +110,8 @@ pAccount = do
     c <- optionalCurrency 
     i <- maybeLink incFrom
     o <- maybeLink outTo
-    return $ T.Leaf name $ Account name c i o []
+    h <- option (0:#"") pHold
+    return $ T.Leaf name $ Account name c i o h []
   where
     incFrom = do
       symbol "getFrom"
@@ -120,6 +121,9 @@ pAccount = do
       symbol "putTo"
       x <- anySymbol
       return x
+    pHold = do
+      symbol "hold"
+      pAmount
 
 pGroup :: MParser AccountsTree
 pGroup = do

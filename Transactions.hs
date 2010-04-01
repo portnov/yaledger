@@ -15,6 +15,8 @@ import qualified Tree as T
 import Currencies
 import Accounts
 
+import Debug.Trace
+
 datedSeq :: Dated a -> DateInterval -> [Dated a]
 datedSeq (At dt x) int = [At d x | d <- datesFromEvery dt int]
 
@@ -71,8 +73,18 @@ putAmount name (x :# c) = do
       rs   = rates st
       dt   = now st
   acc <- getAccount name
-  let y = convert rs x c (accCurrency acc)
-      acc' = acc {history = (history acc) ++ [(dt,y)]}
+
+  let hld = hold acc
+      checkHold = (getValue hld /= 0.0)
+      y = convert rs x c (accCurrency acc)
+
+  when checkHold $ do
+      let was = sumAccount acc
+          will = amountPlus rs was (x :# c)
+      b <- amountLT will hld
+      when b $ fail $ "Hold violation for " ++ accName acc ++ ": hold " ++ show hld ++ ", will " ++ show will
+
+  let acc' = acc {history = (history acc) ++ [(dt,y)]}
       m = T.changeLeaf accs (T.mkPath name) acc'
   put $ st {accounts = m}
 
@@ -158,17 +170,22 @@ applyRules post = do
     r -> return $ nub $ concat r
 
 doRecord :: Dated Record -> LState ()
-doRecord (At dt (PR post)) = do
+doRecord rec = do
+  setCurrentRecord rec
+  doRecord' rec
+
+doRecord' :: Dated Record -> LState ()
+doRecord' (At dt (PR post)) = do
   modify (setDate dt)
   post' <- checkTransaction post
   posts <- applyRules post'
   forM posts doTransaction
   putRecord (At dt (PR post'))
-doRecord rr@(At dt (RR ss)) = do
+doRecord' rr@(At dt (RR ss)) = do
   modify (setDate dt)
   setRate ss
   putRecord rr
-doRecord (At dt (VR name amount)) = do
+doRecord' (At dt (VR name amount)) = do
   acc <- getAccount name
   rs <- gets rates
   let was = sumAccount acc
@@ -184,22 +201,22 @@ doRecord (At dt (VR name amount)) = do
                   dec <- getDecTo name
                   let post = At dt $ PR $ Transaction 'A' "Correct balances" [name :<+ (F delta), Auto $ accName dec]
                   doRecord post
-doRecord (At _ (TR tpl)) = do
+doRecord' (At _ (TR tpl)) = do
   st <- get
   let ts = templates st
       m = M.insert (tName tpl) tpl ts
   put $ st {templates = m}
-doRecord (At dt (CTR name args)) = do
+doRecord' (At dt (CTR name args)) = do
   tpl <- getTemplate name
   let post = subst (tBody tpl) args
 --   writeLog (show args)
 --   writeLog (show post)
   doRecord $ At dt (PR post)
-doRecord (At _ (RuledP when rule post)) = do
+doRecord' (At _ (RuledP when rule post)) = do
   st <- get
   let rl = ruled st
   put $ st {ruled = rl ++ [(when,rule,post)]}
-doRecord (At _ (RuledC when rule name args)) = do
+doRecord' (At _ (RuledC when rule name args)) = do
   tpl <- getTemplate name
   let post = subst (tBody tpl) args
   st <- get
