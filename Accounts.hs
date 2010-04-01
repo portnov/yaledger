@@ -23,11 +23,14 @@ sumAccountsTree rs tree = T.partFold foldA plus foldS tree
     foldS :: [Amount] -> Amount
     foldS = sumAmounts rs
 
-calcBalances :: Rates -> AccountsTree -> T.Tree Amount Amount
+calcBalances :: Rates -> AccountsTree -> T.Tree Amount ABalance
 calcBalances rs tree = convert (sumAccountsTree rs tree)
   where
     convert (T.Node name a children) = T.Node name a (map convert children)
-    convert (T.Leaf name acc) = T.Leaf name (sumAccount acc)
+    convert (T.Leaf name acc) = T.Leaf name (pair acc)
+
+    pair acc = let s = sumAccount acc
+               in  ABalance s (amountPlus rs s (negateAmount $ hold acc))
 
 getAccount :: String -> LState Account
 getAccount name = do

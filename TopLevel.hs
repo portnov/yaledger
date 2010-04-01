@@ -32,7 +32,7 @@ runQuery dt pred accs recs =
         Right ((), y) -> y
         Left e        -> error $ show e
 
-balance :: LedgerState -> T.Tree Amount Amount
+balance :: LedgerState -> T.Tree Amount ABalance
 balance st = calcBalances (rates st) (accounts st)
 
 printBalance :: LedgerState -> IO ()

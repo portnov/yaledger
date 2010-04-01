@@ -260,6 +260,15 @@ data Rule = DescrMatch String
 data RuleWhen = Before | After
   deriving (Show,Read,Data,Typeable)
 
+data ABalance = ABalance {
+                 fullSum :: Amount,
+                 available :: Amount }
+
+instance Show ABalance where
+  show (ABalance s a) = 
+    if s == a
+      then show s
+      else show s ++ " (available " ++ show a ++ ")"
 
 data Query =
   Q {
