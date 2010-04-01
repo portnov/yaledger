@@ -133,7 +133,8 @@ tryParse parser st src str =
 
 parseTest = do
   str <- readFile "/home/portnov/.yaledger"
-  let (accs,recs) = tryParse (ledgerSource 2010) emptyPState "" str
+  date <- getCurrentDateTime 
+  let (accs,recs) = tryParse ledgerSource (emptyPState date) "" str
   st <- mkState accs
   let y = year $ now st
       x = case runState (doRecords Nothing (Just $ now st) recs) st of

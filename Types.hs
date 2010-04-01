@@ -117,9 +117,11 @@ mkAccMap lst = M.fromList [(accName a, a) | a <- lst]
 
 data ParserState = 
   ParserState {
-    defaultCurrencies :: [Currency]
+    defaultCurrencies :: [Currency],
+    currentDateTime :: DateTime
   }
 
+emptyPState :: DateTime -> ParserState
 emptyPState = ParserState []
 
 type MParser a = GenParser Char ParserState a

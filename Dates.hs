@@ -17,6 +17,7 @@ import Types
 showDate :: DateTime -> String
 showDate dt = show (year dt) ++ "/" ++ show (month dt) ++ "/" ++ show (day dt)
 
+getCurrentDateTime :: IO DateTime
 getCurrentDateTime = do
   zt ← getZonedTime
   let lt = zonedTimeToLocalTime zt
@@ -27,6 +28,11 @@ getCurrentDateTime = do
       min = todMin ltod
       s = round $ todSec ltod
   return $ DateTime (fromIntegral y) m d h min s
+
+getCurrentDateTime' :: MParser DateTime
+getCurrentDateTime' = do
+  st <- getState
+  return $ currentDateTime st
 
 uppercase ∷ String → String
 uppercase = map toUpper
@@ -168,9 +174,11 @@ time12 = do
   hd ← ampm
   return $ Time (h+hd) m s
 
-pAbsDate ∷ Int → MParser DateTime
-pAbsDate year = do
-  date ← choice $ map try $ map ($ year) $ [
+pAbsDate ∷ MParser DateTime
+pAbsDate = do
+  now <- getCurrentDateTime'
+  let y = year now
+  date ← choice $ map try $ map ($ y) $ [
                               const euroNumDate,
                               const americanDate,
                               const strDate,
@@ -212,8 +220,9 @@ pDateInterval = do
   s ← choice $ map maybePlural ["day", "week", "month", "year"]
   return $ readE "date interval type" s
 
-pRelDate ∷ DateTime → MParser DateTime
-pRelDate date = do
+pRelDate ∷ MParser DateTime
+pRelDate = do
+  date <- getCurrentDateTime'
   offs ← (try futureDate) <|> (try passDate) <|> (try today) <|> (try tomorrow) <|> yesterday
   return $ date `addInterval` offs
 
@@ -256,18 +265,22 @@ yesterday = do
   string "yesterday"
   return $ Days (-1)
 
-pDate ∷ DateTime → MParser DateTime
-pDate date =  (try $ pRelDate date) <|> (try $ pAbsDate $ year date)
+pDate ∷ MParser DateTime
+pDate = do
+  date <- getCurrentDateTime'
+  (try pRelDate) <|> (try pAbsDate)
 
 parseAbsDate :: DateTime -> String -> DateTime
 parseAbsDate dt str =
-  case runParser (pAbsDate $ year dt) emptyPState "<date>" str of
+  case runParser pAbsDate (emptyPState dt) "<date>" str of
     Right date -> date
     Left e -> error $ show e
 
-pDateOnly :: Int -> MParser DateTime
-pDateOnly year = 
-  choice $ map try $ map ($ year) $ [
+pDateOnly :: MParser DateTime
+pDateOnly = do
+  date <- getCurrentDateTime'
+  let y = year date
+  choice $ map try $ map ($ y) $ [
                               const euroNumDate,
                               const americanDate,
                               const strDate,
@@ -275,12 +288,15 @@ pDateOnly year =
                               euroNumDate',
                               americanDate']
 
-pDateOrSeries :: DateTime -> MParser (Either DateTime (DateTime, DateInterval))
-pDateOrSeries date = (Right `fmap` (try $ pSeries $ year date)) <|> (Left `fmap` (try $ pAbsDate $ year date))
+pDateOrSeries :: MParser (Either DateTime (DateTime, DateInterval))
+pDateOrSeries = do
+  date <- getCurrentDateTime'
+  (Right `fmap` (try pSeries)) <|> (Left `fmap` (try pAbsDate))
 
-pSeries :: Int -> MParser (DateTime, DateInterval)
-pSeries year = do
-  dt <- pAbsDate year
+pSeries :: MParser (DateTime, DateInterval)
+pSeries = do
+  now <- getCurrentDateTime'
+  dt <- pAbsDate
   string "/"
   n <- (readE "periods number") `fmap` (many1 digit)
   char ' '
@@ -291,3 +307,4 @@ pSeries year = do
              Month -> Months n
              Year -> Years n
   return (dt, int)
+

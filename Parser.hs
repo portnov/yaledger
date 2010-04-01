@@ -84,6 +84,7 @@ convertTree tree = lookupAll tree tree
   where
     lookupAll t (T.Node name c children) = T.Node name c $ map (lookupAll t) children
     lookupAll t (T.Leaf name (Account name' c from to hist)) = T.Leaf name $ Account name' c (lookup from t) (lookup to t) hist
+
     lookup NoLink _ = NoLink
     lookup (LinkTo to) _ = LinkTo to
     lookup (ByName n) tr = 
@@ -92,8 +93,10 @@ convertTree tree = lookupAll tree tree
         []   -> error $ "Unknown account: " ++ n
         _    -> error $ "Ambigous account spec: " ++ n
 
-ledgerSource :: Int -> MParser (AccountsTree, [Dated Record])
-ledgerSource y = do
+ledgerSource :: MParser (AccountsTree, [Dated Record])
+ledgerSource = do
+  now <- getCurrentDateTime'
+  let y = year now
   accsS <- pGroup
   let accs = convertTree accsS
   recs <- pRecords y >>- eof
@@ -167,7 +170,7 @@ pRecord :: Int -> MParser Record
 pRecord y = choice $ map try $ [
             PR `fmap` pTransaction,
             RR `fmap` pSetRate,
-            RegR `fmap` pRegular y,
+            RegR `fmap` pRegular,
             TR `fmap` pTemplate,
             mkVR `fmap` pVerify,
             mkCTR `fmap` pCallTemplate,
@@ -180,7 +183,7 @@ pRecord y = choice $ map try $ [
     mkVR (name,a) = VR name a
 
 pRecords :: Int -> MParser [Dated Record]
-pRecords y = many1 (dated y $ pRecord y)
+pRecords y = many1 (dated $ pRecord y)
 
 pTransaction :: MParser Transaction
 pTransaction = do
@@ -204,9 +207,9 @@ pPosting = do
     autoPosting = 
       Auto `fmap` anySymbol
 
-dated :: Int -> MParser a -> MParser (Dated a)
-dated year parser = do
-  dt <- pDateOnly year
+dated :: MParser a -> MParser (Dated a)
+dated parser = do
+  dt <- pDateOnly 
   spaces
   a <- parser
   return (At dt a)
@@ -227,10 +230,10 @@ pVerify = do
   optional newline
   return (name, val)
 
-pRegular :: Int -> MParser RegularTransaction
-pRegular year = do
+pRegular :: MParser RegularTransaction
+pRegular = do
   symbol "@regular"
-  (start,int) <- pSeries year
+  (start,int) <- pSeries 
   newline
   spaces
   tr <- pTransaction 

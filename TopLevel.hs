@@ -22,7 +22,7 @@ readLedger :: DateTime -> FilePath -> IO (AccountsTree, [Dated Record])
 readLedger dt path = do
   str <- readFile path
   let y = year dt
-      (accs, recs) = tryParse (ledgerSource y) emptyPState path str
+      (accs, recs) = tryParse ledgerSource (emptyPState dt) path str
   return (accs, recs)
 
 runQuery :: DateTime -> (Dated Record -> Bool) -> AccountsTree -> [Dated Record] -> LedgerState 
