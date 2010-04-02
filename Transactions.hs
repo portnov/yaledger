@@ -222,6 +222,13 @@ doRecord' (At _ (RuledC when rule name args)) = do
   st <- get
   let rl = ruled st
   put $ st {ruled = rl ++ [(when,rule,post)]}
+doRecord' (At _ (Hold name hld)) = do
+  acc <- getAccount name
+  st <- get
+  let accs = accounts st
+      acc' = acc {hold = hld}
+      m = T.changeLeaf accs (T.mkPath name) acc'
+  put $ st {accounts = m}
 
 doRecords :: Maybe DateTime -> Maybe DateTime -> [Dated Record] -> LState ()
 doRecords dtStart dtEnd lst = 

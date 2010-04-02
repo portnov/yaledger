@@ -178,6 +178,7 @@ pRecord y = choice $ map try $ [
             TR `fmap` pTemplate,
             mkVR `fmap` pVerify,
             mkCTR `fmap` pCallTemplate,
+            mkHold `fmap` pHold,
             mkRuledP `fmap` pRuledP,
             mkRuledC `fmap` pRuledC]
   where
@@ -185,6 +186,7 @@ pRecord y = choice $ map try $ [
     mkRuledP (rw,rule,tr) = RuledP rw rule tr
     mkRuledC (rw,rule,name,args) = RuledC rw rule name args
     mkVR (name,a) = VR name a
+    mkHold (name,a) = Hold name a
 
 pRecords :: Int -> MParser [Dated Record]
 pRecords y = many1 (dated $ pRecord y)
@@ -225,6 +227,14 @@ pSetRate = do
   symbol "="
   to <- pAmount
   return $ from := to
+
+pHold :: MParser (String, Amount)
+pHold = do
+  symbol "@hold"
+  name <- anySymbol
+  h <- pAmount
+  optional newline
+  return (name, h)
 
 pVerify :: MParser (String,Amount)
 pVerify = do

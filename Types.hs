@@ -151,12 +151,12 @@ setCurrentRecord rec = do
   put $ st {currentRecord = rec}
 
 data LError = LError {
-                eRecord :: Maybe Record,
+                eRecord :: Maybe (Dated Record),
                 eState :: LedgerState,
                 eReason :: String }
 
 instance Show LError where
-  show (LError rec st reason) = "Error: " ++ reason ++ " (at " ++ show rec ++ ")\n" -- ++ show st
+  show (LError rec st reason) = "Error: " ++ reason ++ "\nat  record:\n" ++ show rec -- ++ show st
 
 newtype AState s a = AState { runState :: s -> Either LError (a, s) }
 type LState a = AState LedgerState a
@@ -167,8 +167,7 @@ instance Monad (AState LedgerState) where
                case runState m s of
                  Right (a,s') -> runState (k a) s'
                  Left err     -> Left err
-  fail str = AState $ \s -> let str' = "At record:\n" ++ (show $ currentRecord s) ++ ":\n" ++ str
-                            in  Left (LError Nothing s str')
+  fail str = AState $ \s -> Left (LError (Just $ currentRecord s) s str)
       
 
 instance MonadState LedgerState (AState LedgerState) where
@@ -231,6 +230,7 @@ data Record = PR Transaction
             | RegR RegularTransaction 
             | TR Template
             | CTR Name [Amount]
+            | Hold Name Amount
             | RuledP RuleWhen Rule Transaction
             | RuledC RuleWhen Rule Name [Amount]
   deriving (Data,Typeable)
@@ -242,6 +242,7 @@ instance Show Record where
   show (RegR rp) = show rp
   show (TR tp) = show tp
   show (CTR name args) = name ++ "(" ++ (intercalate ", " $ map show args) ++ ")"
+  show (Hold name a) = "Hold " ++  show a ++ " on " ++ name
   show (RuledP when rule post) = show when ++ " " ++ show rule ++ " -->\n" ++ show post
   show (RuledC when rule name args) = show when ++ " " ++ show rule ++ " --> " ++ name ++ "(" ++ (intercalate ", " $ map show args) ++ ")"
 
