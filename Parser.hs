@@ -94,8 +94,8 @@ convertTree tree = lookupAll tree tree
 
 ledgerSource :: Int -> MParser (AccountsTree, [Dated Record])
 ledgerSource y = do
-  accsS <- pGroup
-  let accs = convertTree accsS
+  accs <- pGroup
+--   let accs = convertTree accsS
   recs <- pRecords y >>- eof
   return (accs, recs)
 

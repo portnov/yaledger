@@ -37,17 +37,19 @@ getAccount name = do
     [acc] -> return acc
     _  -> fail $ "Ambigous account spec: "++ name
 
-getIncFrom :: String -> LState Account
+getIncFrom :: String -> LState String
 getIncFrom name = do
   acc <- getAccount name
   case incFrom acc of
     NoLink -> fail $ "income account for " ++ name ++ " is not set"
-    LinkTo acc' -> return acc'
+    LinkTo acc' -> return $ accName acc'
+    ByName name -> return name
 
-getDecTo :: String -> LState Account
+getDecTo :: String -> LState String
 getDecTo name = do
   acc <- getAccount name
   case decTo acc of
     NoLink -> fail $ "outcome account for " ++ name ++ " is not set"
-    LinkTo acc' -> return acc'
+    LinkTo acc' -> return $ accName acc'
+    ByName name -> return name
 

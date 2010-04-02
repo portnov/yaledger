@@ -182,13 +182,13 @@ doRecord' (At dt (VR name amount)) = do
   if getValue delta > 0.0
     then do
            inc <- getIncFrom name
-           let post = At dt $ PR $ Transaction 'A' "Correct balances" [name :<+ (F delta), Auto (accName inc)]
+           let post = At dt $ PR $ Transaction 'A' "Correct balances" [name :<+ (F delta), Auto inc]
            doRecord post
     else if getValue delta == 0.0
            then return ()
            else do
                   dec <- getDecTo name
-                  let post = At dt $ PR $ Transaction 'A' "Correct balances" [name :<+ (F delta), Auto (accName dec)]
+                  let post = At dt $ PR $ Transaction 'A' "Correct balances" [name :<+ (F delta), Auto dec]
                   doRecord post
 doRecord' (At _ (TR tpl)) = do
   st <- get
