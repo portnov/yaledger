@@ -29,8 +29,8 @@ allToList pred recs = filter pred' $ mergeOn getDate (ones : map toList regs)
     isReg _               = False
 
     isNotPR :: Dated Record -> Bool
-    isNotPR (At _ (PR _)) = True
-    isNotPR _             = False
+    isNotPR (At _ (PR _)) = False
+    isNotPR _             = True
 
     regs :: [Dated Record]
     regs = filter isReg recs
@@ -43,7 +43,7 @@ allToList pred recs = filter pred' $ mergeOn getDate (ones : map toList regs)
     toList x = [x]
 
     pred' :: Dated Record -> Bool
-    pred' r = (pred r) -- || (isNotPR r)
+    pred' r = (pred r) || (isNotPR r)
 
 amountsList :: Transaction -> [Name] -> [Maybe Amount]
 amountsList (Transaction _ _ posts) accs = 
@@ -158,48 +158,54 @@ applyRules post = do
     r -> return $ nub $ concat r
 
 doRecord :: Dated Record -> LState ()
-doRecord (At dt (PR post)) = do
+doRecord rec = do
+  setCurrentRecord rec
+  doRecord' rec
+
+doRecord' :: Dated Record -> LState ()
+doRecord' (At dt (PR post)) = do
   modify (setDate dt)
   post' <- checkTransaction post
   posts <- applyRules post'
   forM posts doTransaction
   putRecord (At dt (PR post'))
-doRecord rr@(At dt (RR ss)) = do
+doRecord' rr@(At dt (RR ss)) = do
   modify (setDate dt)
   setRate ss
   putRecord rr
-doRecord (At dt (VR name amount)) = do
+doRecord' (At dt (VR name amount)) = do
   acc <- getAccount name
   rs <- gets rates
+  accs <- gets accounts
   let was = sumAccount acc
       delta = amountPlus rs amount $ negateAmount was
   if getValue delta > 0.0
     then do
            inc <- getIncFrom name
-           let post = At dt $ PR $ Transaction 'A' "Correct balances" [name :<+ (F delta), Auto $ accName inc]
+           let post = At dt $ PR $ Transaction 'A' "Correct balances" [name :<+ (F delta), Auto (accName inc)]
            doRecord post
     else if getValue delta == 0.0
            then return ()
            else do
                   dec <- getDecTo name
-                  let post = At dt $ PR $ Transaction 'A' "Correct balances" [name :<+ (F delta), Auto $ accName dec]
+                  let post = At dt $ PR $ Transaction 'A' "Correct balances" [name :<+ (F delta), Auto (accName dec)]
                   doRecord post
-doRecord (At _ (TR tpl)) = do
+doRecord' (At _ (TR tpl)) = do
   st <- get
   let ts = templates st
       m = M.insert (tName tpl) tpl ts
   put $ st {templates = m}
-doRecord (At dt (CTR name args)) = do
+doRecord' (At dt (CTR name args)) = do
   tpl <- getTemplate name
   let post = subst (tBody tpl) args
 --   writeLog (show args)
 --   writeLog (show post)
   doRecord $ At dt (PR post)
-doRecord (At _ (RuledP when rule post)) = do
+doRecord' (At _ (RuledP when rule post)) = do
   st <- get
   let rl = ruled st
   put $ st {ruled = rl ++ [(when,rule,post)]}
-doRecord (At _ (RuledC when rule name args)) = do
+doRecord' (At _ (RuledC when rule name args)) = do
   tpl <- getTemplate name
   let post = subst (tBody tpl) args
   st <- get
