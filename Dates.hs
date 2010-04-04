@@ -280,8 +280,10 @@ pDateOrSeries date = (Right `fmap` (try $ pSeries $ year date)) <|> (Left `fmap`
 
 pSeries :: Int -> MParser (DateTime, DateInterval)
 pSeries year = do
-  dt <- pAbsDate year
-  string "/"
+  dt <- pDateOnly year
+  spaces
+  string "every"
+  spaces
   n <- (readE "periods number") `fmap` (many1 digit)
   char ' '
   tp <- pDateInterval 
