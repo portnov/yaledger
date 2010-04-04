@@ -274,6 +274,9 @@ data Condition =
 instance Show Condition where
   show (Condition _ p b) = "<Condition: " ++ show p ++ " " ++ show b ++ ">"
 
+mkDateCondition :: DateTime -> (DateTime -> DateTime -> Bool) -> Condition
+mkDateCondition dt op = Condition (\x r -> getDate r `op` x) dt True
+
 data CmdLine =
   CmdLine {
     qFlags :: [QFlag],
@@ -288,6 +291,7 @@ data QFlag = StartDate DateTime
 
 data Mode = Balance
           | Register String
+          | Saldo String String String -- Account, start date, end date
   deriving (Show)
 
 data Option = QF QFlag

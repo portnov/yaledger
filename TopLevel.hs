@@ -57,3 +57,24 @@ printRegister st path = do
 
     nonEmpty :: (DateTime, [Maybe Amount]) -> Bool
     nonEmpty (_,lst) = any isJust lst
+
+accountFromTree :: AccountsTree -> String -> Account
+accountFromTree accs path = 
+  case T.lookupPath path accs of
+    []    -> error $ "Unknown account: " ++ path
+    [acc] -> acc
+    _     -> error $ "Ambigous account spec: " ++ path
+
+saldo :: DateTime -> [Condition] -> AccountsTree -> [Dated Record] -> String -> String -> String -> Amount
+saldo now conds accs recs path start end = 
+    let y = year now
+        startD = tryParse (pDateOnly y) emptyPState "<start date>" start
+        endD   = tryParse (pDateOnly y) emptyPState "<end date>" end
+        startSt = runQuery now ((mkDateCondition startD (>=)):conds) accs recs
+        endSt   = runQuery now ((mkDateCondition endD   (<=)):conds) accs recs
+        accStart = accountFromTree (accounts startSt) path
+        accEnd   = accountFromTree (accounts endSt)   path
+        startAmount = sumAccount accStart
+        endAmount = sumAccount accEnd
+    in  amountPlus (rates endSt) startAmount (negateAmount endAmount)
+

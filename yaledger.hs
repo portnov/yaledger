@@ -18,5 +18,6 @@ main = do
   case mode cmd of
     Balance -> printBalance st
     Register path -> printRegister st path
+    Saldo path start end -> print $ saldo now pred accs recs path start end
 
 
