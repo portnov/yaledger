@@ -1,4 +1,4 @@
-{-# LANGUAGE UnicodeSyntax, DeriveDataTypeable, FlexibleInstances, MultiParamTypeClasses, PatternGuards, TypeSynonymInstances #-}
+{-# LANGUAGE UnicodeSyntax, DeriveDataTypeable, FlexibleInstances, MultiParamTypeClasses, PatternGuards, TypeSynonymInstances, ExistentialQuantification #-}
 
 module Types where
 
@@ -264,6 +264,15 @@ data Query =
     endDate   :: Maybe DateTime,
     statusIs  :: Maybe Char }
   deriving (Show)
+
+data Condition =
+  forall a. Show a => Condition {
+    matchFn :: a -> Dated Record -> Bool,
+    matchParam :: a,
+    areRecordsSortedBy :: Bool }
+
+instance Show Condition where
+  show (Condition _ p b) = "<Condition: " ++ show p ++ " " ++ show b ++ ">"
 
 data CmdLine =
   CmdLine {

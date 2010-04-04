@@ -25,10 +25,10 @@ readLedger dt path = do
       (accs, recs) = tryParse (ledgerSource y) emptyPState path str
   return (accs, recs)
 
-runQuery :: DateTime -> (Dated Record -> Bool) -> AccountsTree -> [Dated Record] -> LedgerState 
+runQuery :: DateTime -> [Condition] -> AccountsTree -> [Dated Record] -> LedgerState 
 runQuery dt pred accs recs = 
   let st = LS dt accs undefined [] M.empty M.empty [] []
-  in  case runState (doRecords' pred recs) st of
+  in  case runState (doRecords pred recs) st of
         Right ((), y) -> y
         Left e        -> error $ show e
 

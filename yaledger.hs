@@ -12,7 +12,7 @@ main = do
   args <- getArgs
   cmd <- parseCmdLine now args
   let qry =  parseQFlags now (qFlags cmd)
-      pred = buildQuery qry
+      pred = buildCondition qry
   (accs, recs) <- readLedger now (srcFile cmd)
   let st = runQuery now pred accs recs
   case mode cmd of

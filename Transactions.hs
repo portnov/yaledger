@@ -15,22 +15,42 @@ import qualified Tree as T
 import Currencies
 import Accounts
 
+isNotPR :: Dated Record -> Bool
+isNotPR (At _ (PR _)) = False
+isNotPR _             = True
+
+filterRecords :: [Condition] -> [Dated Record] -> [Dated Record]
+filterRecords cs recs = filterUnsorted unsorted (filterSorted sorted recs)
+  where
+    sorted = filter areRecordsSortedBy cs
+    unsorted = filter (not . areRecordsSortedBy) cs
+
+filterSorted :: [Condition] -> [Dated Record] -> [Dated Record]
+filterSorted cs recs = takeWhile pred' $ dropWhile (not . pred') recs
+  where
+    pred = foldl (liftM2 (&&)) (const True) [match param | Condition match param _ <- cs]
+    pred' :: Dated Record -> Bool
+    pred' r = (pred r) || (isNotPR r)
+
+filterUnsorted :: [Condition] -> [Dated Record] -> [Dated Record]
+filterUnsorted cs recs = filter pred' recs
+  where
+    pred = foldl (liftM2 (&&)) (const True) [match param | Condition match param _ <- cs]
+    pred' :: Dated Record -> Bool
+    pred' r = (pred r) || (isNotPR r)
+
 datedSeq :: Dated a -> DateInterval -> [Dated a]
 datedSeq (At dt x) int = [At d x | d <- datesFromEvery dt int]
 
 regularToList :: RegularTransaction -> [Dated Record]
 regularToList (RegularTransaction date int post) = datedSeq (At date $ PR post) int
 
-allToList :: (Dated Record -> Bool) -> [Dated Record] -> [Dated Record]
-allToList pred recs = filter pred' $ mergeOn getDate (ones : map toList regs)
+allToList :: [Condition] -> [Dated Record] -> [Dated Record]
+allToList pred recs = filterRecords pred $ mergeOn getDate (ones : map toList regs)
   where
     isReg :: Dated Record -> Bool
     isReg (At _ (RegR _)) = True
     isReg _               = False
-
-    isNotPR :: Dated Record -> Bool
-    isNotPR (At _ (PR _)) = False
-    isNotPR _             = True
 
     regs :: [Dated Record]
     regs = filter isReg recs
@@ -41,9 +61,6 @@ allToList pred recs = filter pred' $ mergeOn getDate (ones : map toList regs)
     toList :: Dated Record -> [Dated Record]
     toList (At _ (RegR reg)) = regularToList reg
     toList x = [x]
-
-    pred' :: Dated Record -> Bool
-    pred' r = (pred r) || (isNotPR r)
 
 amountsList :: Transaction -> [Name] -> [Maybe Amount]
 amountsList (Transaction _ _ posts) accs = 
@@ -212,17 +229,17 @@ doRecord' (At _ (RuledC when rule name args)) = do
   let rl = ruled st
   put $ st {ruled = rl ++ [(when,rule,post)]}
 
-doRecords :: Maybe DateTime -> Maybe DateTime -> [Dated Record] -> LState ()
-doRecords dtStart dtEnd lst = 
-  let cmp = case (dtStart, dtEnd) of
-              (Nothing,Nothing) -> const True
-              (Just s, Nothing) -> \dt -> dt >= s
-              (Nothing, Just e) -> \dt -> dt <= e
-              (Just s, Just e)  -> \dt -> (dt >= s) && (dt <= e)
-   in  doRecords' (cmp . getDate) lst
+-- doRecords :: Maybe DateTime -> Maybe DateTime -> [Dated Record] -> LState ()
+-- doRecords dtStart dtEnd lst = 
+--   let cmp = case (dtStart, dtEnd) of
+--               (Nothing,Nothing) -> const True
+--               (Just s, Nothing) -> \dt -> dt >= s
+--               (Nothing, Just e) -> \dt -> dt <= e
+--               (Just s, Just e)  -> \dt -> (dt >= s) && (dt <= e)
+--    in  doRecords' (cmp . getDate) lst
 
-doRecords' :: (Dated Record -> Bool) -> [Dated Record] -> LState ()
-doRecords' pred lst = forM_ (allToList pred lst) $ \r -> do
+doRecords :: [Condition] -> [Dated Record] -> LState ()
+doRecords pred lst = forM_ (allToList pred lst) $ \r -> do
     writeLog (show $ getDate r)
     doRecord r
 

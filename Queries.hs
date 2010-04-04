@@ -1,22 +1,23 @@
 module Queries
-  (buildQuery)
+  (buildCondition)
   where
 
 import Control.Monad
+import Data.Maybe
 
 import Types
 
-liftCmp :: (a -> b) -> (b -> b -> Bool) -> Maybe b -> (a -> Bool)
-liftCmp _ _ Nothing = const True
-liftCmp field cmp (Just x) = \a -> (field a) `cmp` x
+liftCmp :: (Show b) => (Dated Record -> b) -> (b -> b -> Bool) -> Maybe b -> (Bool -> Maybe Condition)
+liftCmp _ _ Nothing _ = Nothing
+liftCmp field cmp (Just x) b = Just $ Condition (\y a -> (field a) `cmp` y) x b
 
-buildQuery :: Query -> (Dated Record -> Bool)
-buildQuery (Q bd ed st) =
-  foldr (liftM2 (&&)) (const True) [liftCmp getDate (>=) bd,
-                                    liftCmp getDate (<=) ed,
-                                    liftCmp getStatus (==) st]
+buildCondition :: Query -> [Condition]
+buildCondition (Q bd ed st) = catMaybes [liftCmp getDate (>=) bd True,
+                                        liftCmp getDate (<=) ed True,
+                                        liftCmp getStatus (==) st False]
   where
     getStatus (At _ r) = 
       case r of
         PR tr -> status tr
         _     -> ' '
+
