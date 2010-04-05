@@ -97,8 +97,7 @@ ledgerSource :: MParser (AccountsTree, [Dated Record])
 ledgerSource = do
   now <- getCurrentDateTime'
   let y = year now
-  accsS <- pGroup
-  let accs = convertTree accsS
+  accs <- pGroup
   recs <- pRecords y >>- eof
   return (accs, recs)
 

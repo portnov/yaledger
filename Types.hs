@@ -1,4 +1,4 @@
-{-# LANGUAGE UnicodeSyntax, DeriveDataTypeable, FlexibleInstances, MultiParamTypeClasses, PatternGuards, TypeSynonymInstances #-}
+{-# LANGUAGE UnicodeSyntax, DeriveDataTypeable, FlexibleInstances, MultiParamTypeClasses, PatternGuards, TypeSynonymInstances, ExistentialQuantification #-}
 
 module Types where
 
@@ -6,9 +6,11 @@ import Control.Monad.State.Class
 import Data.Generics
 import Data.Char
 import Data.List
+import Data.Either (either)
 import qualified Data.Map as M
 import Text.ParserCombinators.Parsec (GenParser)
 import Text.Printf
+import Codec.Binary.UTF8.String
 
 import Unicode
 import Tree
@@ -129,6 +131,7 @@ type MParser a = GenParser Char ParserState a
 data LedgerState = LS {
                      now :: DateTime,
                      accounts :: AccountsTree,
+                     currentRecord :: Dated Record,
                      records :: [Dated Record],
                      rates :: Rates,
                      templates :: M.Map String Template,
@@ -136,20 +139,25 @@ data LedgerState = LS {
                      messages :: [String] }
 
 instance Show LedgerState where
-  show st@(LS now accs recs rates _ _ msgs) = unlines $ [show now, showAccs, showRates rates]
+  show st@(LS now accs _ recs rates _ _ msgs) = unlines $ [show now, showAccs, showRates rates]
                                               ++ ["Balances:\n" ++ showPairs (balances st)]
                                               ++ ["Log:\n" ++ unlines msgs]
 --                                               ++ map show recs
     where
       showAccs = unlines $ map show $ leafs accs
 
+setCurrentRecord :: Dated Record -> LState ()
+setCurrentRecord rec = do
+  st <- get
+  put $ st {currentRecord = rec}
+
 data LError = LError {
-                eRecord :: Maybe Record,
+                eRecord :: Dated Record,
                 eState :: LedgerState,
                 eReason :: String }
 
 instance Show LError where
-  show (LError rec st reason) = "Error: " ++ reason ++ " (at " ++ show rec ++ ")\n" -- ++ show st
+  show (LError rec st reason) = encodeString ("Error: " ++ reason ++ " \nAt record:\n" ++ show rec)
 
 newtype AState s a = AState { runState :: s -> Either LError (a, s) }
 type LState a = AState LedgerState a
@@ -160,7 +168,7 @@ instance Monad (AState LedgerState) where
                case runState m s of
                  Right (a,s') -> runState (k a) s'
                  Left err     -> Left err
-  fail str = AState $ \s -> Left (LError Nothing s str)
+  fail str = AState $ \s -> Left (LError (currentRecord s) s str)
 
 instance MonadState LedgerState (AState LedgerState) where
     get   = AState $ \s -> Right (s, s)
@@ -259,6 +267,37 @@ data Query =
     statusIs  :: Maybe Char }
   deriving (Show)
 
+data Condition =
+  forall a. Show a => Condition {
+    matchFn :: a -> Dated Record -> Bool,
+    matchParam :: a,
+    areRecordsSortedBy :: Bool }
+
+instance Show Condition where
+  show (Condition _ p b) = "<Condition: " ++ show p ++ " " ++ show b ++ ">"
+
+data ConditionType = OnStartDate
+                   | OnEndDate
+                   | OnStatus
+  deriving (Eq,Ord,Show)
+
+newtype Conditions = Conditions (M.Map ConditionType Condition)
+
+instance Show Conditions where
+  show (Conditions mm) = show (M.elems mm)
+
+addCondition :: Conditions -> (ConditionType, Condition) -> Conditions
+addCondition (Conditions mm) (k,v) = Conditions $ M.insert k v mm
+
+buildConditions :: [(ConditionType, Condition)] -> Conditions
+buildConditions = Conditions . M.fromList
+
+conditions :: Conditions -> [Condition]
+conditions (Conditions mm) = M.elems mm
+
+mkDateCondition :: DateTime -> (DateTime -> DateTime -> Bool) -> Condition
+mkDateCondition dt op = Condition (\x r -> getDate r `op` x) dt True
+
 data CmdLine =
   CmdLine {
     qFlags :: [QFlag],
@@ -273,6 +312,7 @@ data QFlag = StartDate DateTime
 
 data Mode = Balance
           | Register String
+          | Saldo String String String -- Account, start date, end date
   deriving (Show)
 
 data Option = QF QFlag

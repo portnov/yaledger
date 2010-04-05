@@ -15,22 +15,43 @@ import qualified Tree as T
 import Currencies
 import Accounts
 
+isNotPR :: Dated Record -> Bool
+isNotPR (At _ (PR _)) = False
+isNotPR _             = True
+
+filterRecords :: Conditions -> [Dated Record] -> [Dated Record]
+filterRecords cs recs = filterUnsorted unsorted (filterSorted sorted recs)
+  where
+    cs' = conditions cs
+    sorted = filter areRecordsSortedBy cs'
+    unsorted = filter (not . areRecordsSortedBy) cs'
+
+filterSorted :: [Condition] -> [Dated Record] -> [Dated Record]
+filterSorted cs recs = takeWhile pred' $ dropWhile (not . pred') recs
+  where
+    pred = foldl (liftM2 (&&)) (const True) [match param | Condition match param _ <- cs]
+    pred' :: Dated Record -> Bool
+    pred' r = (pred r) || (isNotPR r)
+
+filterUnsorted :: [Condition] -> [Dated Record] -> [Dated Record]
+filterUnsorted cs recs = filter pred' recs
+  where
+    pred = foldl (liftM2 (&&)) (const True) [match param | Condition match param _ <- cs]
+    pred' :: Dated Record -> Bool
+    pred' r = (pred r) || (isNotPR r)
+
 datedSeq :: Dated a -> DateInterval -> [Dated a]
 datedSeq (At dt x) int = [At d x | d <- datesFromEvery dt int]
 
 regularToList :: RegularTransaction -> [Dated Record]
 regularToList (RegularTransaction date int post) = datedSeq (At date $ PR post) int
 
-allToList :: (Dated Record -> Bool) -> [Dated Record] -> [Dated Record]
-allToList pred recs = filter pred' $ mergeOn getDate (ones : map toList regs)
+allToList :: Conditions -> [Dated Record] -> [Dated Record]
+allToList pred recs = filterRecords pred $ mergeOn getDate (ones : map toList regs)
   where
     isReg :: Dated Record -> Bool
     isReg (At _ (RegR _)) = True
     isReg _               = False
-
-    isNotPR :: Dated Record -> Bool
-    isNotPR (At _ (PR _)) = True
-    isNotPR _             = False
 
     regs :: [Dated Record]
     regs = filter isReg recs
@@ -41,9 +62,6 @@ allToList pred recs = filter pred' $ mergeOn getDate (ones : map toList regs)
     toList :: Dated Record -> [Dated Record]
     toList (At _ (RegR reg)) = regularToList reg
     toList x = [x]
-
-    pred' :: Dated Record -> Bool
-    pred' r = (pred r) -- || (isNotPR r)
 
 amountsList :: Transaction -> [Name] -> [Maybe Amount]
 amountsList (Transaction _ _ posts) accs = 
@@ -158,65 +176,62 @@ applyRules post = do
     r -> return $ nub $ concat r
 
 doRecord :: Dated Record -> LState ()
-doRecord (At dt (PR post)) = do
+doRecord rec = do
+  setCurrentRecord rec
+  doRecord' rec
+
+doRecord' :: Dated Record -> LState ()
+doRecord' (At dt (PR post)) = do
   modify (setDate dt)
   post' <- checkTransaction post
   posts <- applyRules post'
   forM posts doTransaction
   putRecord (At dt (PR post'))
-doRecord rr@(At dt (RR ss)) = do
+doRecord' rr@(At dt (RR ss)) = do
   modify (setDate dt)
   setRate ss
   putRecord rr
-doRecord (At dt (VR name amount)) = do
+doRecord' (At dt (VR name amount)) = do
   acc <- getAccount name
   rs <- gets rates
+  accs <- gets accounts
   let was = sumAccount acc
       delta = amountPlus rs amount $ negateAmount was
   if getValue delta > 0.0
     then do
            inc <- getIncFrom name
-           let post = At dt $ PR $ Transaction 'A' "Correct balances" [name :<+ (F delta), Auto $ accName inc]
+           let post = At dt $ PR $ Transaction 'A' "Correct balances" [name :<+ (F delta), Auto inc]
            doRecord post
     else if getValue delta == 0.0
            then return ()
            else do
                   dec <- getDecTo name
-                  let post = At dt $ PR $ Transaction 'A' "Correct balances" [name :<+ (F delta), Auto $ accName dec]
+                  let post = At dt $ PR $ Transaction 'A' "Correct balances" [name :<+ (F delta), Auto dec]
                   doRecord post
-doRecord (At _ (TR tpl)) = do
+doRecord' (At _ (TR tpl)) = do
   st <- get
   let ts = templates st
       m = M.insert (tName tpl) tpl ts
   put $ st {templates = m}
-doRecord (At dt (CTR name args)) = do
+doRecord' (At dt (CTR name args)) = do
   tpl <- getTemplate name
   let post = subst (tBody tpl) args
 --   writeLog (show args)
 --   writeLog (show post)
   doRecord $ At dt (PR post)
-doRecord (At _ (RuledP when rule post)) = do
+doRecord' (At _ (RuledP when rule post)) = do
   st <- get
   let rl = ruled st
   put $ st {ruled = rl ++ [(when,rule,post)]}
-doRecord (At _ (RuledC when rule name args)) = do
+doRecord' (At _ (RuledC when rule name args)) = do
   tpl <- getTemplate name
   let post = subst (tBody tpl) args
   st <- get
   let rl = ruled st
   put $ st {ruled = rl ++ [(when,rule,post)]}
 
-doRecords :: Maybe DateTime -> Maybe DateTime -> [Dated Record] -> LState ()
-doRecords dtStart dtEnd lst = 
-  let cmp = case (dtStart, dtEnd) of
-              (Nothing,Nothing) -> const True
-              (Just s, Nothing) -> \dt -> dt >= s
-              (Nothing, Just e) -> \dt -> dt <= e
-              (Just s, Just e)  -> \dt -> (dt >= s) && (dt <= e)
-   in  doRecords' (cmp . getDate) lst
-
-doRecords' :: (Dated Record -> Bool) -> [Dated Record] -> LState ()
-doRecords' pred lst = forM_ (allToList pred lst) $ \r -> do
+doRecords :: Conditions -> [Dated Record] -> LState ()
+doRecords pred lst = forM_ (allToList pred lst) $ \r -> do
     writeLog (show $ getDate r)
     doRecord r
 

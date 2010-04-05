@@ -66,6 +66,7 @@ parseCmdLine dt args =
       parseMode :: [String] -> Option
       parseMode [mode]      | mode `isPrefixOf` "balance"  = MF Balance
       parseMode [mode,path] | mode `isPrefixOf` "register" = MF $ Register path
+      parseMode [mode,path,st,en] | mode `isPrefixOf` "saldo" = MF $ Saldo path st en
       parseMode lst                                        = error $ "Unknown mode: " ++ show lst
 
       fix [] = [QF $ EndDate dt]

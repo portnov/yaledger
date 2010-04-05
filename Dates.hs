@@ -295,9 +295,10 @@ pDateOrSeries = do
 
 pSeries :: MParser (DateTime, DateInterval)
 pSeries = do
-  now <- getCurrentDateTime'
-  dt <- pAbsDate
-  string "/"
+  dt <- pDateOnly
+  spaces
+  string "every"
+  spaces
   n <- (readE "periods number") `fmap` (many1 digit)
   char ' '
   tp <- pDateInterval 

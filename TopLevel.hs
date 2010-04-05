@@ -13,6 +13,11 @@ import Accounts
 import Transactions
 import qualified Tree as T
 
+-- import Debug.Trace
+
+trace :: String -> a -> a
+trace x y = y
+
 tryParse parser st src str = 
   case runParser parser st src str of
     Right x -> x
@@ -25,10 +30,10 @@ readLedger dt path = do
       (accs, recs) = tryParse ledgerSource (emptyPState dt) path str
   return (accs, recs)
 
-runQuery :: DateTime -> (Dated Record -> Bool) -> AccountsTree -> [Dated Record] -> LedgerState 
+runQuery :: DateTime -> Conditions -> AccountsTree -> [Dated Record] -> LedgerState 
 runQuery dt pred accs recs = 
-  let st = LS dt accs [] M.empty M.empty [] []
-  in  case runState (doRecords' pred recs) st of
+  let st = LS dt accs undefined [] M.empty M.empty [] []
+  in  case runState (doRecords (trace ("C: "++show pred) pred) recs) st of
         Right ((), y) -> y
         Left e        -> error $ show e
 
@@ -57,3 +62,18 @@ printRegister st path = do
 
     nonEmpty :: (DateTime, [Maybe Amount]) -> Bool
     nonEmpty (_,lst) = any isJust lst
+
+accountFromTree :: AccountsTree -> String -> Account
+accountFromTree accs path = 
+  case T.lookupPath path accs of
+    []    -> error $ "Unknown account: " ++ path
+    [acc] -> acc
+    _     -> error $ "Ambigous account spec: " ++ path
+
+getSaldo :: LedgerState -> DateTime -> String -> String -> String -> Double
+getSaldo st now path startS endS =
+  let start = tryParse pDateOnly (emptyPState now) "<start date>" startS
+      end   = tryParse pDateOnly (emptyPState now) "<end date>" endS
+      acc   = accountFromTree (accounts st) path
+  in  saldo acc start end
+
