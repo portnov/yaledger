@@ -53,11 +53,11 @@ lookup path tree =
 lookupPath :: String -> Tree n a -> [a]
 lookupPath path tree = lookup (mkPath path) tree
 
-lookupNode :: String -> Tree n a -> [String]
+lookupNode :: String -> Tree n a -> [Tree n a]
 lookupNode path tree = 
   case search' tree (mkPath path) of
-    [Node _ _ lst] -> concatMap leafNames lst
-    _           -> []
+    [Node _ _ lst] -> lst
+    _              -> []
 
 changeLeaf :: Tree n a -> [String] -> a -> Tree n a
 changeLeaf tree path new =

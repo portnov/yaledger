@@ -225,6 +225,7 @@ pSetRate = do
   from <- anySymbol
   symbol "="
   to <- pAmount
+  optional newline
   return $ from := to
 
 pHold :: MParser (String, Amount)

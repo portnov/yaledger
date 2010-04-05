@@ -4,6 +4,7 @@ module TopLevel where
 import Text.ParserCombinators.Parsec (runParser)
 import qualified Data.Map as M
 import Data.Maybe (isJust)
+import Control.Monad.Identity
 
 import Types
 import Dates
@@ -51,7 +52,7 @@ printRegister st path = do
     putStrLn $ unlines $ map showRec $ filter nonEmpty $ map (\r -> (getDate r, amountsList' r accs)) (records st)
   where
     tree = balance st
-    accs = T.lookupNode path tree
+    accs = concatMap T.leafNames $ T.lookupNode path tree
 
     showRec :: (DateTime, [Maybe Amount]) -> String
     showRec (dt, lst) = showDate dt ++ " " ++ (unwords $ map showMaybe lst)
@@ -63,17 +64,15 @@ printRegister st path = do
     nonEmpty :: (DateTime, [Maybe Amount]) -> Bool
     nonEmpty (_,lst) = any isJust lst
 
-accountFromTree :: AccountsTree -> String -> Account
-accountFromTree accs path = 
-  case T.lookupPath path accs of
-    []    -> error $ "Unknown account: " ++ path
-    [acc] -> acc
-    _     -> error $ "Ambigous account spec: " ++ path
-
-getSaldo :: LedgerState -> DateTime -> String -> String -> String -> Double
-getSaldo st now path startS endS =
+getAccountSaldo :: LedgerState -> DateTime -> String -> String -> String -> Double
+getAccountSaldo st now path startS endS =
   let start = tryParse pDateOnly (emptyPState now) "<start date>" startS
       end   = tryParse pDateOnly (emptyPState now) "<end date>" endS
-      acc   = accountFromTree (accounts st) path
+      acc   = runIdentity $ accountFromTree (accounts st) path
   in  saldo acc start end
 
+-- getGroupSaldo :: LedgerState -> DateTime -> String -> String -> String -> Double
+-- getGroupSaldo st now path startS endS = 
+--   let start = tryParse pDateOnly (emptyPState now) "<start date>" startS
+--       end   = tryParse pDateOnly (emptyPState now) "<end date>" endS
+--       grp = runIdentity $ groupFromTree (accounts st) path

@@ -344,6 +344,11 @@ balances st = [(accName acc, sumAccount acc) | acc <- leafs $ accounts st]
 sumAccount :: Account -> Amount
 sumAccount acc = (sum $ map snd $ history acc) :# (accCurrency acc)
 
+sumAccount' :: DateTime -> DateTime -> Account -> Amount
+sumAccount' start end acc = (sum $ map snd $ filter good $ history acc) :# (accCurrency acc)
+  where
+    good (dt,_) = (dt >= start) && (dt <= end)
+
 readE :: (Read a) => String -> String -> a
 readE d s | [x] <- parse = x
           | otherwise    = error $ "readE: Cannot read " ++ d ++ ": «" ++ s ++ "»"

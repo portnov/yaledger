@@ -23,6 +23,18 @@ sumAccountsTree rs tree = T.partFold foldA plus foldS tree
     foldS :: [Amount] -> Amount
     foldS = sumAmounts rs
 
+sumAccountsTree' :: Rates -> DateTime -> DateTime -> AccountsTree -> T.Tree Amount Account
+sumAccountsTree' rs start end tree = T.partFold foldA plus foldS tree
+  where
+    foldA :: Currency -> [Account] -> Amount
+    foldA c accs = convertAmount rs c $ sumAmounts rs $ map (sumAccount' start end) accs
+
+    plus :: Amount -> Amount -> Amount
+    plus a1 a2 = amountPlus rs a1 a2
+
+    foldS :: [Amount] -> Amount
+    foldS = sumAmounts rs
+
 saldo :: Account -> DateTime -> DateTime -> Double
 saldo acc start end = sum $ map snd $ filter pred $ history acc
   where
@@ -37,13 +49,23 @@ calcBalances rs tree = convert (sumAccountsTree rs tree)
     pair acc = let s = sumAccount acc
                in  ABalance s (amountPlus rs s (negateAmount $ hold acc))
 
+accountFromTree :: (Monad m) => AccountsTree -> String -> m Account
+accountFromTree accs path = 
+  case T.lookupPath path accs of
+    []    -> fail $ "Unknown account: " ++ path
+    [acc] -> return acc
+    _     -> fail $ "Ambigous account spec: " ++ path
+
+groupFromTree :: (Monad m) => AccountsTree -> String -> m [AccountsTree]
+groupFromTree accs path = 
+  case T.lookupNode path accs of
+    []  -> fail $ "Unknown accounts group: " ++ path
+    lst -> return lst
+
 getAccount :: String -> LState Account
 getAccount name = do
   accs <- gets accounts
-  case T.lookupPath name accs of
-    [] -> fail $ "Unknown account: " ++ name
-    [acc] -> return acc
-    _  -> fail $ "Ambigous account spec: "++ name
+  accountFromTree accs name
 
 getIncFrom :: String -> LState String
 getIncFrom name = do

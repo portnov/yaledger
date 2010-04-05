@@ -18,6 +18,6 @@ main = do
   case mode cmd of
     Balance -> printBalance st
     Register path -> printRegister st path
-    Saldo path start end -> print $ getSaldo st now path start end
+    Saldo path start end -> print $ getAccountSaldo st now path start end
 
 
