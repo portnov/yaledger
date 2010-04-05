@@ -7,14 +7,15 @@ import Data.Maybe
 
 import Types
 
-liftCmp :: (Show b) => (Dated Record -> b) -> (b -> b -> Bool) -> Maybe b -> (Bool -> Maybe Condition)
-liftCmp _ _ Nothing _ = Nothing
-liftCmp field cmp (Just x) b = Just $ Condition (\y a -> (field a) `cmp` y) x b
+liftCmp :: (Show b) => ConditionType -> (Dated Record -> b) -> (b -> b -> Bool) -> Maybe b -> (Bool -> Maybe (ConditionType, Condition))
+liftCmp _ _ _ Nothing _ = Nothing
+liftCmp t field cmp (Just x) b = Just $ (t, Condition (\y a -> (field a) `cmp` y) x b)
 
-buildCondition :: Query -> [Condition]
-buildCondition (Q bd ed st) = catMaybes [liftCmp getDate (>=) bd True,
-                                        liftCmp getDate (<=) ed True,
-                                        liftCmp getStatus (==) st False]
+buildCondition :: Query -> Conditions
+buildCondition (Q bd ed st) =
+  buildConditions $ catMaybes [liftCmp OnStartDate getDate (>=) bd True,
+                               liftCmp OnEndDate   getDate (<=) ed True,
+                               liftCmp OnStatus    getStatus (==) st False]
   where
     getStatus (At _ r) = 
       case r of

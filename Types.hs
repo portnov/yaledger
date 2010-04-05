@@ -274,6 +274,25 @@ data Condition =
 instance Show Condition where
   show (Condition _ p b) = "<Condition: " ++ show p ++ " " ++ show b ++ ">"
 
+data ConditionType = OnStartDate
+                   | OnEndDate
+                   | OnStatus
+  deriving (Eq,Ord,Show)
+
+newtype Conditions = Conditions (M.Map ConditionType Condition)
+
+instance Show Conditions where
+  show (Conditions mm) = show (M.elems mm)
+
+addCondition :: Conditions -> (ConditionType, Condition) -> Conditions
+addCondition (Conditions mm) (k,v) = Conditions $ M.insert k v mm
+
+buildConditions :: [(ConditionType, Condition)] -> Conditions
+buildConditions = Conditions . M.fromList
+
+conditions :: Conditions -> [Condition]
+conditions (Conditions mm) = M.elems mm
+
 mkDateCondition :: DateTime -> (DateTime -> DateTime -> Bool) -> Condition
 mkDateCondition dt op = Condition (\x r -> getDate r `op` x) dt True
 

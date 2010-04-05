@@ -23,6 +23,11 @@ sumAccountsTree rs tree = T.partFold foldA plus foldS tree
     foldS :: [Amount] -> Amount
     foldS = sumAmounts rs
 
+saldo :: Account -> DateTime -> DateTime -> Double
+saldo acc start end = sum $ map snd $ filter pred $ history acc
+  where
+    pred (dt, _) = (dt >= start) && (dt <= end)
+
 calcBalances :: Rates -> AccountsTree -> T.Tree Amount Amount
 calcBalances rs tree = convert (sumAccountsTree rs tree)
   where

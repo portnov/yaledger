@@ -13,6 +13,11 @@ import Accounts
 import Transactions
 import qualified Tree as T
 
+-- import Debug.Trace
+
+trace :: String -> a -> a
+trace x y = y
+
 tryParse parser st src str = 
   case runParser parser st src str of
     Right x -> x
@@ -25,10 +30,10 @@ readLedger dt path = do
       (accs, recs) = tryParse (ledgerSource y) emptyPState path str
   return (accs, recs)
 
-runQuery :: DateTime -> [Condition] -> AccountsTree -> [Dated Record] -> LedgerState 
+runQuery :: DateTime -> Conditions -> AccountsTree -> [Dated Record] -> LedgerState 
 runQuery dt pred accs recs = 
   let st = LS dt accs undefined [] M.empty M.empty [] []
-  in  case runState (doRecords pred recs) st of
+  in  case runState (doRecords (trace ("C: "++show pred) pred) recs) st of
         Right ((), y) -> y
         Left e        -> error $ show e
 
@@ -65,16 +70,11 @@ accountFromTree accs path =
     [acc] -> acc
     _     -> error $ "Ambigous account spec: " ++ path
 
-saldo :: DateTime -> [Condition] -> AccountsTree -> [Dated Record] -> String -> String -> String -> Amount
-saldo now conds accs recs path start end = 
-    let y = year now
-        startD = tryParse (pDateOnly y) emptyPState "<start date>" start
-        endD   = tryParse (pDateOnly y) emptyPState "<end date>" end
-        startSt = runQuery now ((mkDateCondition startD (>=)):conds) accs recs
-        endSt   = runQuery now ((mkDateCondition endD   (<=)):conds) accs recs
-        accStart = accountFromTree (accounts startSt) path
-        accEnd   = accountFromTree (accounts endSt)   path
-        startAmount = sumAccount accStart
-        endAmount = sumAccount accEnd
-    in  amountPlus (rates endSt) startAmount (negateAmount endAmount)
+getSaldo :: LedgerState -> DateTime -> String -> String -> String -> Double
+getSaldo st now path startS endS =
+  let y = year now
+      start = tryParse (pDateOnly y) emptyPState "<start date>" startS
+      end   = tryParse (pDateOnly y) emptyPState "<end date>" endS
+      acc   = accountFromTree (accounts st) path
+  in  saldo acc start end
 
