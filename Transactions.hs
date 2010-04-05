@@ -15,6 +15,8 @@ import qualified Tree as T
 import Currencies
 import Accounts
 
+import Debug.Trace
+
 isNotPR :: Dated Record -> Bool
 isNotPR (At _ (PR _)) = False
 isNotPR _             = True
@@ -91,6 +93,18 @@ putAmount name (x :# c) = do
   acc <- getAccount name
   let y = convert rs x c (accCurrency acc)
       acc' = acc {history = (history acc) ++ [(dt,y)]}
+
+  let hld = hold acc
+      checkHold = (getValue hld /= 0.0)
+      y = convert rs x c (accCurrency acc)
+
+  when checkHold $ do
+      let was = sumAccount acc
+          will = amountPlus rs was (x :# c)
+      b <- amountLT will hld
+      when b $ fail $ "Hold violation for " ++ accName acc ++ ": hold " ++ show hld ++ ", will " ++ show will
+
+  let acc' = acc {history = (history acc) ++ [(dt,y)]}
       m = T.changeLeaf accs (T.mkPath name) acc'
   put $ st {accounts = m}
 
@@ -229,6 +243,13 @@ doRecord' (At _ (RuledC when rule name args)) = do
   st <- get
   let rl = ruled st
   put $ st {ruled = rl ++ [(when,rule,post)]}
+doRecord' (At _ (Hold name hld)) = do
+  acc <- getAccount name
+  st <- get
+  let accs = accounts st
+      acc' = acc {hold = hld}
+      m = T.changeLeaf accs (T.mkPath name) acc'
+  put $ st {accounts = m}
 
 doRecords :: Conditions -> [Dated Record] -> LState ()
 doRecords pred lst = forM_ (allToList pred lst) $ \r -> do

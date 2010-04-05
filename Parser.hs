@@ -83,7 +83,7 @@ convertTree :: AccountsTree -> AccountsTree
 convertTree tree = lookupAll tree tree
   where
     lookupAll t (T.Node name c children) = T.Node name c $ map (lookupAll t) children
-    lookupAll t (T.Leaf name (Account name' c from to hist)) = T.Leaf name $ Account name' c (lookup from t) (lookup to t) hist
+    lookupAll t (T.Leaf name (Account name' c from to hld hist)) = T.Leaf name $ Account name' c (lookup from t) (lookup to t) hld hist
 
     lookup NoLink _ = NoLink
     lookup (LinkTo to) _ = LinkTo to
@@ -109,7 +109,8 @@ pAccount = do
     c <- optionalCurrency 
     i <- maybeLink incFrom
     o <- maybeLink outTo
-    return $ T.Leaf name $ Account name c i o []
+    h <- option (0:#"") pHold
+    return $ T.Leaf name $ Account name c i o h []
   where
     incFrom = do
       symbol "getFrom"
@@ -119,6 +120,9 @@ pAccount = do
       symbol "putTo"
       x <- anySymbol
       return x
+    pHold = do
+      symbol "hold"
+      pAmount
 
 pGroup :: MParser AccountsTree
 pGroup = do
@@ -173,6 +177,7 @@ pRecord y = choice $ map try $ [
             TR `fmap` pTemplate,
             mkVR `fmap` pVerify,
             mkCTR `fmap` pCallTemplate,
+            mkHold `fmap` pHold,
             mkRuledP `fmap` pRuledP,
             mkRuledC `fmap` pRuledC]
   where
@@ -180,6 +185,7 @@ pRecord y = choice $ map try $ [
     mkRuledP (rw,rule,tr) = RuledP rw rule tr
     mkRuledC (rw,rule,name,args) = RuledC rw rule name args
     mkVR (name,a) = VR name a
+    mkHold (name,a) = Hold name a
 
 pRecords :: Int -> MParser [Dated Record]
 pRecords y = many1 (dated $ pRecord y)
@@ -220,6 +226,14 @@ pSetRate = do
   symbol "="
   to <- pAmount
   return $ from := to
+
+pHold :: MParser (String, Amount)
+pHold = do
+  symbol "@hold"
+  name <- anySymbol
+  h <- pAmount
+  optional newline
+  return (name, h)
 
 pVerify :: MParser (String,Amount)
 pVerify = do

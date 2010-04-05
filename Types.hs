@@ -92,11 +92,12 @@ data Account = Account {
                 accCurrency :: Currency,
                 incFrom :: Link Account,
                 decTo :: Link Account,
+                hold :: Amount,
                 history :: [(DateTime,Double)] }
   deriving (Eq,Data,Typeable)
 
 instance Show Account where
-  show (Account name curr from to hist) = name ++ showFrom from ++ showTo to ++ ":" ++ curr ++ "\n" ++ strHist
+  show (Account name curr from to _ hist) = name ++ showFrom from ++ showTo to ++ ":" ++ curr ++ "\n" ++ strHist
     where
       strHist = unlines $ map (\(dt,x) -> show dt ++ ":\t" ++ show x) hist
       
@@ -169,6 +170,7 @@ instance Monad (AState LedgerState) where
                  Right (a,s') -> runState (k a) s'
                  Left err     -> Left err
   fail str = AState $ \s -> Left (LError (currentRecord s) s str)
+      
 
 instance MonadState LedgerState (AState LedgerState) where
     get   = AState $ \s -> Right (s, s)
@@ -230,6 +232,7 @@ data Record = PR Transaction
             | RegR RegularTransaction 
             | TR Template
             | CTR Name [Amount]
+            | Hold Name Amount
             | RuledP RuleWhen Rule Transaction
             | RuledC RuleWhen Rule Name [Amount]
   deriving (Data,Typeable)
@@ -241,6 +244,7 @@ instance Show Record where
   show (RegR rp) = show rp
   show (TR tp) = show tp
   show (CTR name args) = name ++ "(" ++ (intercalate ", " $ map show args) ++ ")"
+  show (Hold name a) = "Hold " ++  show a ++ " on " ++ name
   show (RuledP when rule post) = show when ++ " " ++ show rule ++ " -->\n" ++ show post
   show (RuledC when rule name args) = show when ++ " " ++ show rule ++ " --> " ++ name ++ "(" ++ (intercalate ", " $ map show args) ++ ")"
 
@@ -259,6 +263,15 @@ data Rule = DescrMatch String
 data RuleWhen = Before | After
   deriving (Show,Read,Data,Typeable)
 
+data ABalance = ABalance {
+                 fullSum :: Amount,
+                 available :: Amount }
+
+instance Show ABalance where
+  show (ABalance s a) = 
+    if s == a
+      then show s
+      else show s ++ " (available " ++ show a ++ ")"
 
 data Query =
   Q {
