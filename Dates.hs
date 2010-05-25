@@ -14,10 +14,10 @@ import Text.ParserCombinators.Parsec
 import Unicode
 import Types
 
-showDate :: DateTime -> String
+showDate ∷ DateTime → String
 showDate dt = show (year dt) ++ "/" ++ show (month dt) ++ "/" ++ show (day dt)
 
-getCurrentDateTime :: IO DateTime
+getCurrentDateTime ∷ IO DateTime
 getCurrentDateTime = do
   zt ← getZonedTime
   let lt = zonedTimeToLocalTime zt
@@ -26,13 +26,13 @@ getCurrentDateTime = do
       (y,m,d) = toGregorian ld
       h = todHour ltod
       min = todMin ltod
-      s = round $ todSec ltod
-  return $ DateTime (fromIntegral y) m d h min s
+      s = round □ todSec ltod
+  return □ DateTime (fromIntegral y) m d h min s
 
-getCurrentDateTime' :: MParser DateTime
+getCurrentDateTime' ∷ MParser DateTime
 getCurrentDateTime' = do
-  st <- getState
-  return $ currentDateTime st
+  st ← getState
+  return □ currentDateTime st
 
 uppercase ∷ String → String
 uppercase = map toUpper
@@ -93,7 +93,7 @@ euroNumDate = do
   m ← pMonth
   char '.'
   y ← pYear
-  return $ date y m d
+  return □ date y m d
 
 americanDate ∷ MParser DateTime
 americanDate = do
@@ -102,21 +102,21 @@ americanDate = do
   m ← pMonth
   char '/'
   d ← pDay
-  return $ date y m d
+  return □ date y m d
 
 euroNumDate' ∷ Int → MParser DateTime
 euroNumDate' year = do
   d ← pDay
   char '.'
   m ← pMonth
-  return $ date year m d
+  return □ date year m d
 
 americanDate' ∷ Int → MParser DateTime
 americanDate' year = do
   m ← pMonth
   char '/'
   d ← pDay
-  return $ date year m d
+  return □ date year m d
 
 strDate ∷ MParser DateTime
 strDate = do
@@ -124,12 +124,12 @@ strDate = do
   space
   ms ← many1 letter
   case lookupMonth ms of
-    Nothing → fail $ "unknown month: "++ms
+    Nothing → fail □ "unknown month: "++ms
     Just m  → do
       space
       y ← pYear
-      notFollowedBy $ char ':'
-      return $ date y m d
+      notFollowedBy □ char ':'
+      return □ date y m d
 
 strDate' ∷ Int → MParser DateTime
 strDate' year = do
@@ -137,21 +137,21 @@ strDate' year = do
   space
   ms ← many1 letter
   case lookupMonth ms of
-    Nothing → fail $ "unknown month: "++ms
-    Just m  → return $ date year m d
+    Nothing → fail □ "unknown month: "++ms
+    Just m  → return □ date year m d
 
 time24 ∷ MParser Time
 time24 = do
   h ← number 2 23
   char ':'
   m ← number 2 59
-  x ← optionMaybe $ char ':'
+  x ← optionMaybe □ char ':'
   case x of
-    Nothing → return $ Time h m 0
+    Nothing → return □ Time h m 0
     Just _ → do
       s ← number 2 59
       notFollowedBy letter
-      return $ Time h m s
+      return □ Time h m s
 
 ampm ∷ MParser Int
 ampm = do
@@ -166,65 +166,65 @@ time12 = do
   h ← number 2 12
   char ':'
   m ← number 2 59
-  x ← optionMaybe $ char ':'
+  x ← optionMaybe □ char ':'
   s ← case x of
             Nothing → return 0
             Just s' → number 2 59
   optional space
   hd ← ampm
-  return $ Time (h+hd) m s
+  return □ Time (h+hd) m s
 
 pAbsDate ∷ MParser DateTime
 pAbsDate = do
-  now <- getCurrentDateTime'
+  now ← getCurrentDateTime'
   let y = year now
-  date ← choice $ map try $ map ($ y) $ [
+  date ← choice □ map try □ map (□ y) □ [
                               const euroNumDate,
                               const americanDate,
                               const strDate,
                               strDate',
                               euroNumDate',
                               americanDate']
-  optional $ char ','
+  optional □ char ','
   s ← optionMaybe space
   case s of
     Nothing → return date
     Just _ → do
-      t ← choice $ map try [time12,time24]
-      return $ date `addTime` t
+      t ← choice □ map try [time12,time24]
+      return □ date `addTime` t
 
-convertTo dt = fromGregorian (fromIntegral $ year dt) (month dt) (day dt)
+convertTo dt = fromGregorian (fromIntegral □ year dt) (month dt) (day dt)
 convertFrom dt = 
   let (y,m,d) = toGregorian dt
   in  date (fromIntegral y) m d
 
-modifyDate fn x dt = convertFrom $ fn x $ convertTo dt
+modifyDate fn x dt = convertFrom □ fn x □ convertTo dt
 
-addInterval :: DateTime -> DateInterval -> DateTime
+addInterval ∷ DateTime → DateInterval → DateTime
 addInterval dt (Days ds) = modifyDate addDays ds dt
 addInterval dt (Weeks ws) = modifyDate addDays (ws*7) dt
 addInterval dt (Months ms) = modifyDate addGregorianMonthsClip ms dt
 addInterval dt (Years ys) = modifyDate addGregorianYearsClip ys dt
 
-datesFromEvery :: DateTime -> DateInterval -> [DateTime]
+datesFromEvery ∷ DateTime → DateInterval → [DateTime]
 datesFromEvery dt int = scanl addInterval dt (repeat int)
 
 maybePlural ∷ String → MParser String
 maybePlural str = do
   r ← string str
-  optional $ char 's'
+  optional □ char 's'
   return (capitalize r)
 
 pDateInterval ∷ MParser DateIntervalType
 pDateInterval = do
-  s ← choice $ map maybePlural ["day", "week", "month", "year"]
-  return $ readE "date interval type" s
+  s ← choice □ map maybePlural ["day", "week", "month", "year"]
+  return □ readE "date interval type" s
 
 pRelDate ∷ MParser DateTime
 pRelDate = do
-  date <- getCurrentDateTime'
+  date ← getCurrentDateTime'
   offs ← (try futureDate) <|> (try passDate) <|> (try today) <|> (try tomorrow) <|> yesterday
-  return $ date `addInterval` offs
+  return □ date `addInterval` offs
 
 futureDate ∷ MParser DateInterval
 futureDate = do
@@ -233,10 +233,10 @@ futureDate = do
   char ' '
   tp ← pDateInterval
   case tp of
-    Day →   return $ Days (readE "days" n)
-    Week →  return $ Weeks (readE "weeks" n)
-    Month → return $ Months (readE "months" n)
-    Year →  return $ Years (readE "years" n)
+    Day →   return □ Days (readE "days" n)
+    Week →  return □ Weeks (readE "weeks" n)
+    Month → return □ Months (readE "months" n)
+    Year →  return □ Years (readE "years" n)
 
 passDate ∷ MParser DateInterval
 passDate = do
@@ -245,42 +245,42 @@ passDate = do
   tp ← pDateInterval
   string " ago"
   case tp of
-    Day →   return $ Days $ - (readE "days" n)
-    Week →  return $ Weeks $ - (readE "weeks" n)
-    Month → return $ Months $ - (readE "months" n)
-    Year →  return $ Years $ - (readE "years" n)
+    Day →   return □ Days □ - (readE "days" n)
+    Week →  return □ Weeks □ - (readE "weeks" n)
+    Month → return □ Months □ - (readE "months" n)
+    Year →  return □ Years □ - (readE "years" n)
 
 today ∷ MParser DateInterval
 today = do
   string "today"
-  return $ Days 0
+  return □ Days 0
 
 tomorrow ∷ MParser DateInterval
 tomorrow = do
   string "tomorrow"
-  return $ Days 1
+  return □ Days 1
 
 yesterday ∷ MParser DateInterval
 yesterday = do
   string "yesterday"
-  return $ Days (-1)
+  return □ Days (-1)
 
 pDate ∷ MParser DateTime
 pDate = do
-  date <- getCurrentDateTime'
+  date ← getCurrentDateTime'
   (try pRelDate) <|> (try pAbsDate)
 
-parseAbsDate :: DateTime -> String -> DateTime
+parseAbsDate ∷ DateTime → String → DateTime
 parseAbsDate dt str =
   case runParser pAbsDate (emptyPState dt) "<date>" str of
-    Right date -> date
-    Left e -> error $ show e
+    Right date → date
+    Left e → error □ show e
 
-pDateOnly :: MParser DateTime
+pDateOnly ∷ MParser DateTime
 pDateOnly = do
-  date <- getCurrentDateTime'
+  date ← getCurrentDateTime'
   let y = year date
-  choice $ map try $ map ($ y) $ [
+  choice □ map try □ map (□ y) □ [
                               const euroNumDate,
                               const americanDate,
                               const strDate,
@@ -288,24 +288,24 @@ pDateOnly = do
                               euroNumDate',
                               americanDate']
 
-pDateOrSeries :: MParser (Either DateTime (DateTime, DateInterval))
+pDateOrSeries ∷ MParser (Either DateTime (DateTime, DateInterval))
 pDateOrSeries = do
-  date <- getCurrentDateTime'
+  date ← getCurrentDateTime'
   (Right `fmap` (try pSeries)) <|> (Left `fmap` (try pAbsDate))
 
-pSeries :: MParser (DateTime, DateInterval)
+pSeries ∷ MParser (DateTime, DateInterval)
 pSeries = do
-  dt <- pDateOnly
+  dt ← pDateOnly
   spaces
   string "every"
   spaces
-  n <- (readE "periods number") `fmap` (many1 digit)
+  n ← (readE "periods number") `fmap` (many1 digit)
   char ' '
-  tp <- pDateInterval 
+  tp ← pDateInterval 
   let int = case tp of
-             Day -> Days n
-             Week -> Weeks n
-             Month -> Months n
-             Year -> Years n
+             Day → Days n
+             Week → Weeks n
+             Month → Months n
+             Year → Years n
   return (dt, int)
 
