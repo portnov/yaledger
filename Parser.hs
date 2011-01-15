@@ -38,6 +38,7 @@ anySymbol = do
 
 braces = Tok.braces lexer
 
+separator :: MParser String
 separator = many1 □ oneOf " \t\r\n"
   
 
