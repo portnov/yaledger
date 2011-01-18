@@ -12,12 +12,15 @@ import Unicode
 import Dates
 import qualified Tree as T
 
+-- | One or more spaces
 spaces ∷ MParser String
 spaces = many1 □ oneOf " \t"
 
+-- | Zero or more spaces
 spaces0 ∷ MParser String
 spaces0 = many □ oneOf " \t"
 
+-- | Any word
 word ∷ MParser String
 word = many1 □ noneOf " \t\n\r;{}()"
 
@@ -53,6 +56,7 @@ p1 >>- p2 = do
   p2
   return x
 
+-- | Get currency which is currently set as default
 getDefCurrency ∷ MParser Currency
 getDefCurrency = do
   st ← getState
@@ -61,12 +65,14 @@ getDefCurrency = do
     [] -> fail "Currency not specified and no default currency"
     (c:_) -> return c
 
+-- | Set currency as default
 setDefCurrency ∷ Currency -> MParser ()
 setDefCurrency c = do
   st ← getState
   let lst = defaultCurrencies st
   setState □ st { defaultCurrencies = c: defaultCurrencies st }
 
+-- | Pop previous default currency
 popDefCurrency ∷ MParser ()
 popDefCurrency = do
   st ← getState
@@ -75,12 +81,14 @@ popDefCurrency = do
     [] -> error "Internal error: could not `pop` default currency"
     (_:cs) -> setState □ st { defaultCurrencies = cs }
 
+-- | Currency symbol or nothing
 optionalCurrency = do
   c' ← optionMaybe anySymbol
   case c' of
     Nothing -> getDefCurrency 
     Just c -> return c
 
+-- | Fix all links in tree
 convertTree ∷ AccountsTree -> AccountsTree
 convertTree tree = lookupAll tree tree
   where
@@ -95,6 +103,7 @@ convertTree tree = lookupAll tree tree
         []   -> error □ "Unknown account: " ++ n
         _    -> error □ "Ambigous account spec: " ++ n
 
+-- | Ledger source
 ledgerSource ∷ MParser (AccountsTree, [Dated Record])
 ledgerSource = do
   now ← getCurrentDateTime'
@@ -149,6 +158,7 @@ pAmount = (try two) <|> one
       n ← pNumber
       return (n :# [c])
 
+-- | Amount parameter. Returns (param number, default amount)
 pParam ∷ MParser (Int,Amount)
 pParam = do
   char '#'
@@ -157,6 +167,7 @@ pParam = do
   a ← pAmount
   return (n-1, a)
 
+-- | Amount or parameter.
 pAmountParam ∷ MParser AmountParam
 pAmountParam = (try onlyParam) <|>  (try paramPercent) <|> onlyAmount
   where
@@ -171,6 +182,7 @@ pAmountParam = (try onlyParam) <|>  (try paramPercent) <|> onlyAmount
       char ')'
       return □ P p n a
 
+-- | One record
 pRecord ∷ Int -> MParser Record
 pRecord y = choice □ map try □ [
             PR `fmap` pTransaction,
