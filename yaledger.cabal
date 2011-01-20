@@ -50,7 +50,6 @@ Executable yaledger
                        Lists,
                        Parser,
                        Queries,
-                       Tests,
                        TopLevel,
                        Transactions,
                        Tree,
