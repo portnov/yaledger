@@ -36,11 +36,14 @@ sumAccountsTree' rs start end tree = T.partFold foldA plus foldS tree
     foldS ∷ [Amount] → Amount
     foldS = sumAmounts rs
 
+-- | Calculate saldo for an account from one date to another.
+-- Returns amount without currency.
 saldo ∷ Account → DateTime → DateTime → Double
 saldo acc start end = sum □ map snd □ filter pred □ history acc
   where
     pred (dt, _) = (dt ≥ start) ∧ (dt ≤ end)
 
+-- | Calculate all balances for accounts tree
 calcBalances ∷ Rates → AccountsTree → T.Tree Amount ABalance
 calcBalances rs tree = convert (sumAccountsTree rs tree)
   where
@@ -50,6 +53,7 @@ calcBalances rs tree = convert (sumAccountsTree rs tree)
     pair acc = let s = sumAccount acc
                in  ABalance s (amountPlus rs s (negateAmount □ hold acc))
 
+-- | Get one account from accounts tree by name, or fail.
 accountFromTree ∷ (Monad m) ⇒ AccountsTree → String → m Account
 accountFromTree accs path = 
   case T.lookupPath path accs of
@@ -57,17 +61,20 @@ accountFromTree accs path =
     [acc] → return acc
     _     → fail □ "Ambigous account spec: " ⧺ path
 
+-- | Get one account group from tree by name, or fail.
 groupFromTree ∷ (Monad m) ⇒ AccountsTree → String → m [AccountsTree]
 groupFromTree accs path = 
   case T.lookupNode path accs of
     []  → fail □ "Unknown accounts group: " ⧺ path
     lst → return lst
 
+-- | Get account by name.
 getAccount ∷ String → LState Account
 getAccount name = do
   accs <- gets accounts
   accountFromTree accs name
 
+-- | Get «incFrom» for account with given name
 getIncFrom ∷ String → LState String
 getIncFrom name = do
   acc <- getAccount name
@@ -76,6 +83,7 @@ getIncFrom name = do
     LinkTo acc' → return □ accName acc'
     ByName name → return name
 
+-- | get «decTo» for account with given name
 getDecTo ∷ String → LState String
 getDecTo name = do
   acc <- getAccount name

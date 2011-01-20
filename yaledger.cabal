@@ -1,0 +1,59 @@
+Name:                yaledger
+Version:             0.1
+
+Synopsis:            yaledger is Yet Another Ledger
+
+Description:         yaledger is Yet Another Ledger. It’s ideas got
+                     from «ledger» and «hledger» programs, but it
+                     have some different features: explicit accounts
+                     (and accounts groups) declaration, different
+                     currencies for different accounts, transaction
+                     templates, regular transactions, rule-based
+                     automatical transactions and «striking balances».
+
+Homepage:            http://gitorious.org/yaledger
+
+License:             LGPL-3
+
+License-file:        LICENSE
+
+-- The package author(s).
+Author:              IlyaPortnov
+
+-- An email address to which users can send suggestions, bug reports,
+-- and patches.
+Maintainer:          portnov84@rambler.ru
+
+Category:            Finance
+
+Build-type:          Simple
+
+Extra-source-files:  README.ru
+
+-- Constraint on the version of Cabal needed to build this package.
+Cabal-version:       >=1.6
+
+
+Executable yaledger
+  Main-is:             yaledger.hs
+  
+  -- Packages needed in order to build this package.
+  Build-depends:       base >= 3 && <= 5, parsec, MissingH, syb,
+                       utf8-string >= 0.3.6, containers, mtl < 2,
+                       time, filepath, regex-pcre
+  
+  -- Modules not exported by this package.
+  Other-modules:       Accounts,
+                       CmdLine,
+                       Currencies,
+                       Dates,
+                       Lists,
+                       Parser,
+                       Queries,
+                       Tests,
+                       TopLevel,
+                       Transactions,
+                       Tree,
+                       Types,
+                       Unicode
+  

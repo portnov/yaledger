@@ -135,6 +135,7 @@ pAccount = do
       symbol "hold"
       pAmount
 
+-- | Parse accounts group
 pGroup ∷ MParser AccountsTree
 pGroup = do
     spaces0
