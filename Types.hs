@@ -69,12 +69,14 @@ data Time =
 
 type Currency = String
 
+-- | Currencies rates
 type Rates = M.Map (Currency,Currency) Double
 
 showRates rates = unlines $ map showPair $ M.assocs rates
   where
     showPair ((c1,c2), x) = c1 ++ " → " ++ c2 ++ ":\t" ++ show x
 
+-- | Some amount of money in specified currency
 data Amount = Double :# Currency
   deriving (Eq,Data,Typeable)
 infixr 7 :#
@@ -82,18 +84,21 @@ infixr 7 :#
 instance Show Amount where
   show (x :# c) = printf "%.2f" x ++ c
 
+-- | A link from one account to another
 data Link a = NoLink
             | LinkTo a
             | ByName Name
   deriving (Eq,Show,Data,Typeable)
 
+-- | One account
 data Account = Account {
-                accName :: Name,
-                accCurrency :: Currency,
-                incFrom :: Link Account,
-                decTo :: Link Account,
-                hold :: Amount,
-                history :: [(DateTime,Double)] }
+                accName :: Name,            -- ^ Account name
+                accCurrency :: Currency,    -- ^ Account currency
+                incFrom :: Link Account,    -- ^ Where to get money from when striking balance
+                decTo :: Link Account,      -- ^ Where to put money to when striking balance
+                hold :: Amount,             -- ^ Holded amount
+                history :: [(DateTime,Double)] -- ^ History of account
+              }
   deriving (Eq,Data,Typeable)
 
 instance Show Account where
@@ -109,6 +114,7 @@ instance Show Account where
       showTo (LinkTo acc) = " -> " ++ accName acc
       showTo (ByName n) = " -> [" ++ n ++ "]"
 
+-- | Tree of accounts
 type AccountsTree = Tree Currency Account
 
 instance Show AccountsTree where
@@ -118,26 +124,31 @@ instance Show AccountsTree where
 mkAccMap :: [Account] -> M.Map String Account
 mkAccMap lst = M.fromList [(accName a, a) | a <- lst]
 
+-- | State of the parser
 data ParserState = 
   ParserState {
-    defaultCurrencies :: [Currency],
-    currentDateTime :: DateTime
+    defaultCurrencies :: [Currency], -- ^ Stack of default currencies
+    currentDateTime :: DateTime      -- ^ Current date / time
   }
 
+-- | Empty (start) parser state
 emptyPState :: DateTime -> ParserState
 emptyPState = ParserState []
 
+-- | Used parser monad
 type MParser a = GenParser Char ParserState a
 
+-- | State of calculation
 data LedgerState = LS {
-                     now :: DateTime,
-                     accounts :: AccountsTree,
-                     currentRecord :: Dated Record,
-                     records :: [Dated Record],
-                     rates :: Rates,
-                     templates :: M.Map String Template,
-                     ruled :: [(RuleWhen, Rule, Transaction)],
-                     messages :: [String] }
+                     now :: DateTime,                          -- ^ Current date / time
+                     accounts :: AccountsTree,                 -- ^ Accounts tree
+                     currentRecord :: Dated Record,            -- ^ Currently calculated record
+                     records :: [Dated Record],                -- ^ All records
+                     rates :: Rates,                           -- ^ Current rates
+                     templates :: M.Map String Template,       -- ^ Record templates
+                     ruled :: [(RuleWhen, Rule, Transaction)], -- ^ Rules for transactions
+                     messages :: [String]                      -- ^ Log messages
+                  }
 
 instance Show LedgerState where
   show st@(LS now accs _ recs rates _ _ msgs) = unlines $ [show now, showAccs, showRates rates]
@@ -147,11 +158,13 @@ instance Show LedgerState where
     where
       showAccs = unlines $ map show $ leafs accs
 
+-- | Set record as current
 setCurrentRecord :: Dated Record -> LState ()
 setCurrentRecord rec = do
   st <- get
   put $ st {currentRecord = rec}
 
+-- | Calculation error
 data LError = LError {
                 eRecord :: Dated Record,
                 eState :: LedgerState,
@@ -160,7 +173,10 @@ data LError = LError {
 instance Show LError where
   show (LError rec st reason) = encodeString ("Error: " ++ reason ++ " \nAt record:\n" ++ show rec)
 
+-- | Generic state/error monad type
 newtype AState s a = AState { runState :: s -> Either LError (a, s) }
+
+-- | Concrete monad used for calculations
 type LState a = AState LedgerState a
 
 instance Monad (AState LedgerState) where
@@ -184,17 +200,20 @@ data Dated a = At {
 instance (Show a) => Show (Dated a) where
   show (At dt a) = "@" ++ show dt ++ "\n" ++ show a
 
+-- | A transaction
 data Transaction = Transaction {
-                status :: Char,
-                description :: String,
-                parts :: [Posting] }
+                status :: Char,        -- ^ User-specified transaction status
+                description :: String, -- ^ Transaction description
+                parts :: [Posting]     -- ^ Parts of transaction
+              }
   deriving (Eq,Data,Typeable)
 
 instance Show Transaction where
   show (Transaction s d ps) = unlines $ (s:' ':d):map show ps
 
+-- | Concrete amount or template parameter
 data AmountParam = F Amount
-                 | P Double Int Amount
+                 | P Double Int Amount -- ^ Parameter number and default value
   deriving (Eq, Data,Typeable)
 
 instance Show AmountParam where
@@ -205,6 +224,7 @@ defAmount :: AmountParam -> Amount
 defAmount (F amount) = amount
 defAmount (P _ _ def) = def
 
+-- | One posting (sub-entry)
 data Posting = Name :<+ AmountParam
              | Auto Name
   deriving (Eq, Data,Typeable)
@@ -214,18 +234,22 @@ instance Show Posting where
   show (s :<+ am) = s ++ " :<+ " ++ show am
   show (Auto acc) = acc ++ " :<+ ???"
 
+-- | Scheduled regular transaction
 data RegularTransaction = RegularTransaction DateTime DateInterval Transaction
   deriving (Show,Data,Typeable)
 
+-- | Transaction template
 data Template = Template {
-                  tName :: Name,
-                  tNParams :: Int,
-                  tBody :: Transaction }
+                  tName :: Name,         -- ^ Template name
+                  tNParams :: Int,       -- ^ Number of template's parameters
+                  tBody :: Transaction   -- ^ Templated transaction itself
+                }
   deriving (Data,Typeable)
 
 instance Show Template where
   show (Template name n post) = name ++ "/" ++ show n ++ ":\n" ++ show post
 
+-- | Generic ledger record
 data Record = PR Transaction
             | RR SetRate
             | VR Name Amount
@@ -248,6 +272,7 @@ instance Show Record where
   show (RuledP when rule post) = show when ++ " " ++ show rule ++ " -->\n" ++ show post
   show (RuledC when rule name args) = show when ++ " " ++ show rule ++ " --> " ++ name ++ "(" ++ (intercalate ", " $ map show args) ++ ")"
 
+-- | «Set rate» record
 data SetRate = Currency := Amount
   deriving (Data,Typeable)
 infixl 6 :=
@@ -255,14 +280,16 @@ infixl 6 :=
 instance Show SetRate where
   show (c := am) = c ++ " := " ++ show am
 
-data Rule = DescrMatch String
-          | String :> Amount
-          | String :< Amount
+data Rule = DescrMatch String -- ^ Match description
+          | String :> Amount  -- ^ Match when amount put to given account is greater then given amount
+          | String :< Amount  -- ^ same, but «less then»
   deriving (Show,Data,Typeable)
 
+-- | Execute automatic transaction before or after transaction which triggered rule
 data RuleWhen = Before | After
   deriving (Show,Read,Data,Typeable)
 
+-- | Balance
 data ABalance = ABalance {
                  fullSum :: Amount,
                  available :: Amount }
