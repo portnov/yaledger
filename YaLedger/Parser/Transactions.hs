@@ -29,11 +29,11 @@ emptyPState plan = do
              accountPlan = plan,
              currentDate = now }
 
-pTransactions :: Parser [Ext Transaction]
-pTransactions = pTransaction `sepEndBy1` (newline >> newline)
+pRecords :: Parser [Ext Record]
+pRecords = pRecord `sepEndBy1` (newline >> newline)
 
-pTransaction :: Parser (Ext Transaction)
-pTransaction = do
+ext :: Parser a -> Parser (Ext a)
+ext p = do
   char '@'
   space
   st <- getState
@@ -41,15 +41,26 @@ pTransaction = do
   descr <- optionMaybe $ many1 $ noneOf "\n\r"
   newline
   attrs <- option [] $ braces $ pAttributes
-  tran <- pTran
   let attrs' = case descr of
                  Nothing -> attrs
                  Just s -> ("description", s): attrs
-  return $ Ext date attrs' tran
+  content <- p
+  return $ Ext date attrs' content
 
-pTran :: Parser Transaction
-pTran = do
-  es <- many1 $ try (try (Left <$> pCreditEntry) <|> (Right <$> pDebitEntry))
+pRecord :: Parser (Ext Record)
+pRecord = try (ext pTemplate)
+          <|> ext (Transaction <$> pTran number)
+
+pTemplate :: Parser Record
+pTemplate = do
+  symbol "template"
+  name <- identifier
+  tran <- pTran param
+  return $ Template name tran
+
+pTran :: Parser v -> Parser (Transaction v)
+pTran p = do
+  es <- many1 $ try (try (Left <$> pCreditEntry p) <|> (Right <$> pDebitEntry p))
   corr <- optionMaybe $ try $ do
             newline
             spaces
@@ -71,8 +82,8 @@ getAccount path = do
                         path
                         (length as)
 
-pCreditEntry :: Parser (Entry Credit)
-pCreditEntry = do
+pCreditEntry :: Parser v -> Parser (Entry v Credit)
+pCreditEntry p = do
   spaces
   symbol "cr"
   accPath <- identifier
@@ -82,11 +93,11 @@ pCreditEntry = do
                WCredit _ acc -> return $ Right acc
                _ -> fail $ printf "Invalid account type: %s: debit instead of credit." accPath
   spaces
-  amount <- pAmount
+  amount <- pAmount p
   return $ CEntry account amount
 
-pDebitEntry :: Parser (Entry Debit)
-pDebitEntry = do
+pDebitEntry :: Parser v -> Parser (Entry v Debit)
+pDebitEntry p = do
   spaces
   symbol "dr"
   accPath <- identifier
@@ -96,12 +107,31 @@ pDebitEntry = do
                WDebit _ acc -> return $ Right acc
                _ -> fail $ printf "Invalid account type: %s: credit instead of debit." accPath
   spaces
-  amount <- pAmount
+  amount <- pAmount p
   return $ DEntry account amount
 
-pAmount :: Parser Amount
-pAmount = do
-  ns <- float
+pAmount :: Parser v -> Parser (Amount v)
+pAmount p = do
+  n <- p
   c <- many $ noneOf " \r\n\t"
-  return $ realFracToDecimal 10 ns :# c
+  return $ n :# c
+
+number :: Parser Decimal
+number = do
+  x <- float
+  return $ realFracToDecimal 10 x
+
+param :: Parser Param
+param = do
+  char '#'
+  ns <- many1 digit
+  let n = read ns
+  a <- optionMaybe $ try $ reservedOp "*"
+  c <- case a of
+         Nothing -> return 1.0
+         Just _ -> float
+  d <- option 0 $ try $ parens $ do
+           symbol "default"
+           number
+  return $ Param n c d
 

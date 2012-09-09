@@ -20,7 +20,7 @@ test = do
   let fileName = "test.yaledger"
   str <- readFile fileName
   st <- T.emptyPState plan
-  trans <- case runParser T.pTransactions st fileName str of
+  trans <- case runParser T.pRecords st fileName str of
              Right res -> return res
              Left err -> fail $ show err
   forM trans print
