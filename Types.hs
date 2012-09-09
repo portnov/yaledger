@@ -63,7 +63,7 @@ instance HasID a => HasID (Ext a) where
 instance Named a => Named (Ext a) where
   getName x = getName (getContent x)
 
-data TransactionData =
+data Transaction =
     TPosting (Posting Unchecked)
   | TReconcilate Path Amount
   | TInitlalize Path Amount
@@ -90,6 +90,10 @@ type Currency = String
 type Rates = M.Map (Currency, Currency) Double
 
 type FreeOr t f = Either (f Free) (f t)
+
+instance (HasID (f Free), HasID (f t)) => HasID (FreeOr t f) where
+  getID (Left x)  = getID x
+  getID (Right x) = getID x
 
 data Entry t where
   DEntry :: {

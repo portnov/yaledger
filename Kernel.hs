@@ -162,3 +162,10 @@ updateAccount i branch@(Branch _ _ ag children) fn
     return $ branch {branchChildren = children'}
   | otherwise = return branch
 
+updatePlan :: (AccountPlan -> Ledger l AccountPlan) -> Ledger l ()
+updatePlan fn = do
+  st <- get
+  let plan = lsAccountPlan st
+  plan' <- fn plan
+  put $ st {lsAccountPlan = plan'}
+
