@@ -130,6 +130,7 @@ param = do
   c <- case a of
          Nothing -> return 1.0
          Just _ -> float
+  spaces
   d <- option 0 $ try $ parens $ do
            symbol "default"
            number
