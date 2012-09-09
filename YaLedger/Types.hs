@@ -1,6 +1,6 @@
 {-# LANGUAGE EmptyDataDecls, GADTs, FlexibleContexts, FlexibleInstances, UndecidableInstances, TypeSynonymInstances, DeriveDataTypeable, RecordWildCards, ScopedTypeVariables #-}
 
-module Types where
+module YaLedger.Types where
 
 import Control.Monad.Exception
 import Control.Monad.Exception.Base
@@ -13,7 +13,7 @@ import qualified Data.Map as M
 import Text.Regex.PCRE
 import Text.Printf
 
-import Tree
+import YaLedger.Tree
 
 data Checked
 data Unchecked
@@ -47,6 +47,17 @@ class CanCredit t where
 class CanDebit t where
   debit :: Account t -> Ext (Entry Debit) -> Account t
 
+data Value =
+    Fixed Decimal
+  | Auto
+  | Param Int Double
+  deriving (Eq)
+
+instance Show Value where
+  show (Fixed x) = show x
+  show Auto = "auto"
+  show (Param n x) = "#" ++ show n ++ " * " ++ show x
+
 data Ext a =
   Ext {
     getDate :: DateTime,
@@ -67,6 +78,7 @@ data Transaction =
     TPosting (Posting Unchecked)
   | TReconcilate Path Amount
   | TInitlalize Path Amount
+  deriving (Show)
 
 data Posting c where
     CPosting :: {
@@ -76,8 +88,21 @@ data Posting c where
 
     UPosting :: {
       uPostingDebitEntries :: [Entry Debit],
-      uPostingCreditEntries :: [Entry Credit]
+      uPostingCreditEntries :: [Entry Credit],
+      uPostingCorrespondence :: Maybe AnyAccount
     } -> Posting Unchecked
+
+instance Show (Posting t) where
+  show (CPosting dt cr) = "Debit:\n" ++ go dt ++ "\nCredit:\n" ++ go cr
+    where
+      go lst = unlines $ map ("  " ++) $ map show lst
+  show (UPosting dt cr acc) = "Debit:\n" ++ go dt ++ "\nCredit:\n" ++ go cr
+                              ++ "(correspondence: " ++ showName acc ++ ")"
+    where
+      go lst = unlines $ map ("  " ++) $ map show lst
+
+      showName Nothing = "to be found automatically"
+      showName (Just x) = getName x
 
 data Amount = Decimal :# Currency
   deriving (Eq)

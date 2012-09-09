@@ -1,18 +1,18 @@
 {-# LANGUAGE GADTs, RecordWildCards, ScopedTypeVariables, FlexibleContexts, FlexibleInstances #-}
 {-# OPTIONS_GHC -F -pgmF MonadLoc #-}
 
-module Processor where
+module YaLedger.Processor where
 
 import Control.Monad.State
 import Control.Monad.Exception
 import Control.Monad.Loc
 import Data.Dates
 
-import Types
-import Monad
-import Exceptions
-import Correspondence
-import Kernel
+import YaLedger.Types
+import YaLedger.Monad
+import YaLedger.Exceptions
+import YaLedger.Correspondence
+import YaLedger.Kernel
 
 putCreditEntry :: (Throws InvalidAccountType l)
                => Ext (Entry Credit)

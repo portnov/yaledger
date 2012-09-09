@@ -1,5 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, GeneralizedNewtypeDeriving, FlexibleContexts, FlexibleInstances #-}
-module Monad where
+module YaLedger.Monad where
 
 import Control.Monad.State
 import Control.Monad.Trans
@@ -7,7 +7,7 @@ import Control.Monad.Exception
 import Data.Dates
 import qualified Data.Map as M
 
-import Types
+import YaLedger.Types
 
 newtype LedgerMonad a = LedgerMonad (State LedgerState a)
   deriving (Monad, MonadState LedgerState)

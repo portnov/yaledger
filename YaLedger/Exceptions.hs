@@ -1,14 +1,14 @@
 {-# LANGUAGE GADTs, RecordWildCards, ScopedTypeVariables, FlexibleContexts, FlexibleInstances, DeriveDataTypeable #-}
 {-# OPTIONS_GHC -F -pgmF MonadLoc #-}
 
-module Exceptions where
+module YaLedger.Exceptions where
 
 import Control.Monad.Exception
 import Control.Monad.Exception.Base
 import Control.Monad.Loc
 
-import Types
-import Correspondence
+import YaLedger.Types
+import YaLedger.Correspondence
 
 data NoSuchRate = NoSuchRate Currency Currency
   deriving (Typeable)

@@ -1,9 +1,9 @@
 {-# LANGUAGE RecordWildCards #-}
 
-module Correspondence where
+module YaLedger.Correspondence where
 
-import Types
-import Tree
+import YaLedger.Types
+import YaLedger.Tree
 
 data CQuery = CQuery {
   cqType :: EntryType,

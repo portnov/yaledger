@@ -1,8 +1,9 @@
 {-# LANGUAGE GADTs, RecordWildCards, ScopedTypeVariables, FlexibleContexts, FlexibleInstances #-}
 {-# OPTIONS_GHC -F -pgmF MonadLoc #-}
 
-module Kernel where
+module YaLedger.Kernel where
 
+import Control.Monad
 import Control.Monad.State
 import Control.Monad.Exception
 import Control.Monad.Exception.Base
@@ -14,11 +15,11 @@ import Data.Decimal
 import qualified Data.Map as M
 import Text.Regex.PCRE
 
-import Types
-import Tree
-import Monad
-import Exceptions
-import Correspondence
+import YaLedger.Types
+import YaLedger.Tree
+import YaLedger.Monad
+import YaLedger.Exceptions
+import YaLedger.Correspondence
 
 instance CanDebit Debit where
   debit acc@(DAccount {..}) e =
@@ -116,7 +117,7 @@ checkPosting :: (Throws NoSuchRate l,
              => Attributes
              -> Posting Unchecked
              -> Ledger l (Posting Checked)
-checkPosting attrs (UPosting dt cr) = do
+checkPosting attrs (UPosting dt cr mbCorr) = do
   rs <- gets lsRates
   plan <- gets lsAccountPlan
   defcur <- gets lsDefaultCurrency
@@ -135,7 +136,7 @@ checkPosting attrs (UPosting dt cr) = do
                      cqCurrency = currencies,
                      cqAttributes = attrs }
          let mbAccount = runCQuery qry plan
-         case mbAccount of
+         case mbCorr `mplus` mbAccount of
            Nothing -> throw (NoCorrespondingAccountFound qry)
            Just acc -> if diff > 0
                          then do

@@ -1,27 +1,13 @@
 
-module Parser where
+module YaLedger.Parser.Plan where
 
 import Control.Applicative
 import Data.Maybe
 import Text.Parsec
-import qualified Text.Parsec.Token as P
-import Text.Parsec.Language (haskellDef)
 
-import Types
-import Tree
-
--- The lexer
-lexer       = P.makeTokenParser haskellDef    
-    
-parens      = P.parens lexer
-braces      = P.braces lexer
-identifier  = P.identifier lexer
-symbol      = P.symbol lexer
-reserved    = P.reserved lexer
-reservedOp  = P.reservedOp lexer
-comma       = P.comma lexer
-semicolon   = P.semi lexer
-stringLit   = P.stringLiteral lexer
+import YaLedger.Types
+import YaLedger.Tree
+import YaLedger.Parser.Common
 
 data PState = PState {
     lastID :: Integer,
@@ -75,15 +61,6 @@ pAccount = do
   let mbCurrency = lookup "currency" attrs
       currency = fromMaybe (groupCurrency st) mbCurrency
   return $ account tp name aid currency attrs
-
-pAttributes :: Parser Attributes
-pAttributes = try attribute `sepEndBy` semicolon
-  where
-    attribute = do
-      name <- identifier
-      reservedOp "="
-      value <- stringLit
-      return (name, value)
 
 pAccountGroup :: Parser AccountPlan 
 pAccountGroup = do

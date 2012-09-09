@@ -1,4 +1,4 @@
-module Tree where
+module YaLedger.Tree where
 
 import Control.Applicative
 import Control.Monad
