@@ -4,6 +4,7 @@ module YaLedger.Monad where
 import Control.Monad.State
 import Control.Monad.Trans
 import Control.Monad.Exception
+import Control.Monad.Exception.Base
 import Data.Dates
 import qualified Data.Map as M
 
@@ -35,3 +36,9 @@ emptyLedgerState plan amap = do
              lsAccountPlan = plan,
              lsAccountMap = amap,
              lsRates = M.empty }
+
+runLedger :: AccountPlan -> AccountMap -> LedgerMonad a -> IO a
+runLedger plan amap action = do
+  let LedgerMonad emt = action
+  st <- emptyLedgerState plan amap
+  return $ evalState emt st
