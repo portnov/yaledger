@@ -18,6 +18,7 @@ data LedgerState = LedgerState {
   lsStartDate :: DateTime,
   lsDefaultCurrency :: Currency,
   lsAccountPlan :: AccountPlan,
+  lsAccountMap :: AccountMap,
   lsRates :: Rates }
   deriving (Eq, Show)
 
@@ -25,11 +26,12 @@ instance MonadState LedgerState (EMT l LedgerMonad) where
   get = lift get
   put s = lift (put s)
 
-emptyLedgerState :: AccountPlan -> IO LedgerState
-emptyLedgerState plan = do
+emptyLedgerState :: AccountPlan -> AccountMap -> IO LedgerState
+emptyLedgerState plan amap = do
   now <- getCurrentDateTime
   return $ LedgerState {
              lsStartDate = now,
              lsDefaultCurrency = "",
              lsAccountPlan = plan,
+             lsAccountMap = amap,
              lsRates = M.empty }

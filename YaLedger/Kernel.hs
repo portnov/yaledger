@@ -123,9 +123,11 @@ checkPosting :: (Throws NoSuchRate l,
 checkPosting attrs (UPosting dt cr mbCorr) = do
   rs <- gets lsRates
   plan <- gets lsAccountPlan
+  amap <- gets lsAccountMap
   defcur <- gets lsDefaultCurrency
   let currencies = uniq $ map getCurrency cr ++ map getCurrency dt ++ [defcur]
       firstCurrency = head currencies
+      accounts = map (getID . creditEntryAccount) cr ++ map (getID . debitEntryAccount) dt
   dtSum :# _ <- sumEntries firstCurrency dt
   crSum :# _ <- sumEntries firstCurrency cr
   if dtSum == crSum
@@ -139,7 +141,8 @@ checkPosting attrs (UPosting dt cr mbCorr) = do
                      cqCurrency = currencies,
                      cqAttributes = attrs }
          let mbAccount = runCQuery qry plan
-         case mbCorr `mplus` mbAccount of
+             mbByMap = lookupAMap plan amap accounts
+         case mbCorr `mplus` mbByMap `mplus` mbAccount of
            Nothing -> throw (NoCorrespondingAccountFound qry)
            Just acc -> if diff > 0
                          then do

@@ -310,6 +310,7 @@ instance Show AccountGroupType where
 
 data AccountGroupData = AccountGroupData {
     agName :: String,
+    agID :: Integer,
     agRange :: (Integer, Integer),
     agCurrency :: Currency,
     agType :: AccountGroupType,
@@ -318,7 +319,8 @@ data AccountGroupData = AccountGroupData {
 
 instance Show AccountGroupData where
   show ag =
-    printf "%s: %s (%s) (%d--%d] %s"
+    printf "#%d: %s: %s (%s) (%d--%d] %s"
+      (agID ag)
       (show $ agType ag)
       (agName ag)
       (agCurrency ag)
@@ -327,4 +329,14 @@ instance Show AccountGroupData where
       (showA $ agAttributes ag)
 
 type AccountPlan = Tree AccountGroupData AnyAccount
+
+type AccountMap = [AMEntry]
+
+data AMEntry = AMPointer :=> AnyAccount
+  deriving (Eq, Show)
+
+data AMPointer =
+    AMAccount Integer
+  | AMGroup Integer
+  deriving (Eq, Show)
 

@@ -10,14 +10,16 @@ import YaLedger.Tree
 import YaLedger.Parser.Common
 
 data PState = PState {
-    lastID :: Integer,
+    lastAID :: Integer,
+    lastGID :: Integer,
     groupCurrency :: Currency,
     groupType :: AccountGroupType }
   deriving (Eq, Show)
 
 emptyPState :: PState
 emptyPState = PState {
-  lastID = 0,
+  lastAID = 0,
+  lastGID = 0,
   groupCurrency = "",
   groupType = AGFree }
 
@@ -28,11 +30,19 @@ account AGDebit  name aid c attrs = WDebit  attrs $ DAccount name aid c []
 account AGCredit name aid c attrs = WCredit attrs $ CAccount name aid c []
 account AGFree   name aid c attrs = WFree   attrs $ FAccount name aid c [] []
 
-newID :: Parser Integer
-newID = do
+newAID :: Parser Integer
+newAID = do
   st <- getState
-  let r = lastID st + 1
-      st' = st {lastID = r}
+  let r = lastAID st + 1
+      st' = st {lastAID = r}
+  putState st'
+  return r
+
+newGID :: Parser Integer
+newGID = do
+  st <- getState
+  let r = lastGID st + 1
+      st' = st {lastGID = r}
   putState st'
   return r
 
@@ -57,7 +67,7 @@ pAccount = do
   name <- identifier
   tp <- pAGType (groupType st)
   attrs <- option [] $ braces $ pAttributes
-  aid <- newID
+  aid <- newAID
   let mbCurrency = lookup "currency" attrs
       currency = fromMaybe (groupCurrency st) mbCurrency
   return $ account tp name aid currency attrs
@@ -68,16 +78,19 @@ pAccountGroup = do
   symbol "group"
   name <- identifier
   tp <- pAGType (groupType st)
+  gid <- newGID
   reserved "{"
   attrs <- option [] pAttributes
   let currency = fromMaybe (groupCurrency st) $ lookup "currency" attrs
       agData r = AccountGroupData {
                    agName = name,
+                   agID = gid,
                    agRange = r,
                    agCurrency = currency,
                    agType = tp,
                    agAttributes = attrs }
   let st' = st {
+              lastGID = gid,
               groupCurrency = currency,
               groupType = tp }
   putState st'
@@ -85,8 +98,8 @@ pAccountGroup = do
   groups <- pAccountGroup `sepEndBy` semicolon
   reserved "}"
   st1 <- getState
-  let range = (lastID st, lastID st1)
-  putState $ st {lastID = lastID st1}
+  let range = (lastAID st, lastAID st1)
+  putState $ st {lastAID = lastAID st1, lastGID = lastGID st1}
   return $ branch name (agData range) (map mkLeaf accs ++ groups)
 
 mkLeaf :: AnyAccount -> AccountPlan

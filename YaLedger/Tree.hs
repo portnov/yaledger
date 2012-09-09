@@ -106,9 +106,9 @@ lookupTree path tree =
 lookupPath :: String -> Tree n a -> [a]
 lookupPath path tree = lookupTree (mkPath path) tree
 
-lookupNode :: String -> Tree n a -> [Tree n a]
+lookupNode :: Path -> Tree n a -> [Tree n a]
 lookupNode path tree = 
-  case search' tree (mkPath path) of
+  case search' tree path of
     [Branch {branchChildren = lst}] -> lst
     _ -> []
 

@@ -30,7 +30,10 @@ emptyPState plan = do
              currentDate = now }
 
 pRecords :: Parser [Ext Record]
-pRecords = pRecord `sepEndBy1` (newline >> newline)
+pRecords = do
+  rs <- pRecord `sepEndBy1` (many newline <?> "N2")
+  eof
+  return rs
 
 ext :: Parser a -> Parser (Ext a)
 ext p = do
@@ -60,34 +63,27 @@ pTemplate = do
 
 pTran :: Parser v -> Parser (Transaction v)
 pTran p = do
-  es <- many1 $ try (try (Left <$> pCreditEntry p) <|> (Right <$> pDebitEntry p))
+  es <- try (try (Left <$> pCreditEntry p) <|> (try (Right <$> pDebitEntry p))) `sepEndBy1` (newline <?> "N1")
   corr <- optionMaybe $ try $ do
-            newline
             spaces
-            identifier
+            symbol "corr"
+            spaces <?> "S1"
+            x <- identifier <?> "I1"
+            optional newline
+            return x
   let cr = lefts es
       dt = rights es
   account <- case corr of
                Nothing -> return Nothing
-               Just path -> Just <$> getAccount path
+               Just path -> Just <$> getAccount accountPlan (mkPath path)
   return $ TPosting $ UPosting dt cr account
-
-getAccount :: String -> Parser AnyAccount
-getAccount path = do
-  st <- getState
-  case lookupPath path (accountPlan st) of
-    [] -> fail $ "No such account: " ++ path
-    [a] -> return a
-    as -> fail $ printf "Ambigous account specification: %s (%d matching accounts)."
-                        path
-                        (length as)
 
 pCreditEntry :: Parser v -> Parser (Entry v Credit)
 pCreditEntry p = do
   spaces
   symbol "cr"
   accPath <- identifier
-  acc <- getAccount accPath
+  acc <- getAccount accountPlan (mkPath accPath)
   account <- case acc of
                WFree   _ acc -> return $ Left acc
                WCredit _ acc -> return $ Right acc
@@ -101,7 +97,7 @@ pDebitEntry p = do
   spaces
   symbol "dr"
   accPath <- identifier
-  acc <- getAccount accPath
+  acc <- getAccount accountPlan (mkPath accPath)
   account <- case acc of
                WFree   _ acc -> return $ Left acc
                WDebit _ acc -> return $ Right acc

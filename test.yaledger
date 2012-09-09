@@ -5,7 +5,11 @@ template test
 @ 2012/09/09
 {category = "test"}
   cr X1 100.0$
+  corr Y1 
 
 @ 2012/09/09 Correspondence test.
   dr Y1 50.0$
-  X1
+
+@ 2012/09/09 ---
+  cr X1 3.0$
+

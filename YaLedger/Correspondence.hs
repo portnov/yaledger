@@ -2,6 +2,9 @@
 
 module YaLedger.Correspondence where
 
+import Control.Monad
+import Data.Maybe
+
 import YaLedger.Types
 import YaLedger.Tree
 
@@ -54,4 +57,39 @@ accountByID i (Branch _ _ ag children)
 accountByID i (Leaf _ _ acc)
   | getID acc == i = Just acc
   | otherwise      = Nothing
+
+-- | List of groups IDs of all account's parent groups
+groupIDs :: Integer         -- ^ Account ID
+         -> AccountPlan
+         -> Maybe [Integer] -- ^ Groups IDs
+groupIDs i tree = go [] i tree
+  where
+    go :: [Integer] -> Integer -> AccountPlan -> Maybe [Integer]
+    go xs i (Branch _ _ ag children)
+      | i `inRange` agRange ag = do
+        let accs = [acc | Leaf _ _ acc <- children]
+        case filter (\a -> getID a == i) accs of
+          [x] -> return (agID ag: xs)
+          _   -> let grps = [map (go (agID ag: agID ag': xs) i) grp | Branch _ _ ag' grp <- children]
+                 in  msum $ concat grps
+      | otherwise = Nothing
+    go xs i (Leaf _ _ acc)
+      | getID acc == i = Just xs
+      | otherwise      = Nothing
+
+-- | Lookup for corresponding account by account map
+lookupAMap :: AccountPlan
+           -> AccountMap
+           -> [Integer]       -- ^ Account IDs
+           -> Maybe AnyAccount
+lookupAMap plan list is = msum [first (good i) list | i <- is]
+  where
+    good i (AMAccount j :=> r)
+      | i == j    = Just r
+      | otherwise = Nothing
+    good i (AMGroup g :=> r) =
+      let gids = fromMaybe [] $ groupIDs i plan
+      in  if g `elem` gids
+            then Just r
+            else Nothing
 
