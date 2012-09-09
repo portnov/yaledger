@@ -1,0 +1,20 @@
+group Root {
+  currency = "$";
+  account roubles {currency = "р"};
+  group X (credit) {
+    currency = "€";
+    account X1;
+    account X2;
+  };
+  group Y (debit) {
+    account Y1;
+    account Y2
+  };
+  group Z {
+    account Z1;
+    account Z2 (credit);
+    account Z3 (debit) {currency = "р"};
+  };
+};
+
+
