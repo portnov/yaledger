@@ -5,6 +5,7 @@ import Control.Monad.State
 import Control.Monad.Trans
 import Control.Monad.Exception
 import Data.Dates
+import qualified Data.Map as M
 
 import Types
 
@@ -24,3 +25,11 @@ instance MonadState LedgerState (EMT l LedgerMonad) where
   get = lift get
   put s = lift (put s)
 
+emptyLedgerState :: AccountPlan -> IO LedgerState
+emptyLedgerState plan = do
+  now <- getCurrentDateTime
+  return $ LedgerState {
+             lsStartDate = now,
+             lsDefaultCurrency = "",
+             lsAccountPlan = plan,
+             lsRates = M.empty }

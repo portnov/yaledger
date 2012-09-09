@@ -15,6 +15,7 @@ import qualified Data.Map as M
 import Text.Regex.PCRE
 
 import Types
+import Tree
 import Monad
 import Exceptions
 import Correspondence
@@ -145,4 +146,19 @@ checkPosting attrs (UPosting dt cr) = do
                               account <- accountAsDebit acc
                               let e = DEntry account (diff :# firstCurrency)
                               return $ CPosting (e:dt) cr
+
+updateAccount :: Integer
+              -> AccountPlan
+              -> (AnyAccount -> Ledger l AnyAccount)
+              -> Ledger l AccountPlan
+updateAccount i leaf@(Leaf _ _ acc) fn
+  | getID acc == i = do
+                     acc' <- fn acc
+                     return $ leaf {leafData = acc'}
+  | otherwise      = return leaf
+updateAccount i branch@(Branch _ _ ag children) fn
+  | i `inRange` agRange ag = do
+    children' <- mapM (\c -> updateAccount i c fn) children
+    return $ branch {branchChildren = children'}
+  | otherwise = return branch
 

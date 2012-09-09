@@ -37,20 +37,21 @@ runCQuery qry@(CQuery {..}) (Leaf {..}) =
              else Nothing
       else Nothing
 
+inRange :: Integer -> (Integer, Integer) -> Bool
+inRange i (m, n) = (m < i) && (i <= n)
+
 accountByID :: Integer -> AccountPlan -> Maybe AnyAccount
-accountByID i (Branch _ _ ag children) = do
-  let (m,n) = agRange ag
-  if (m < i) && (i <= n)
-    then do
+accountByID i (Branch _ _ ag children)
+  | i `inRange` agRange ag = do
       let accs = [acc | Leaf _ _ acc <- children]
       case filter (\a -> getID a == i) accs of
         [x] -> return x
         _   -> do
                let grps = [grp | Branch _ _ _ grp <- children]
                first (accountByID i) (concat grps)
-    else Nothing
-accountByID i (Leaf _ _ acc) =
-  if getID acc == i
-    then Just acc
-    else Nothing
+  | otherwise = Nothing
+
+accountByID i (Leaf _ _ acc)
+  | getID acc == i = Just acc
+  | otherwise      = Nothing
 
