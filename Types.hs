@@ -11,6 +11,7 @@ import Data.Dates
 import Data.Decimal
 import qualified Data.Map as M
 import Text.Regex.PCRE
+import Text.Printf
 
 import Tree
 
@@ -28,6 +29,24 @@ showA attrs = "{" ++ intercalate ", " (map one attrs) ++ "}"
   where
     one (name, value) = name ++ " = \"" ++ value ++ "\""
 
+class HasAmount a where
+  getAmount :: a -> Amount
+
+class Named a where
+  getName :: a -> String
+
+class HasID a where
+  getID :: a -> Integer
+
+class HasCurrency a where
+  getCurrency :: a -> Currency
+
+class CanCredit t where
+  credit :: Account t -> Ext (Entry Credit) -> Account t
+
+class CanDebit t where
+  debit :: Account t -> Ext (Entry Debit) -> Account t
+
 data Ext a =
   Ext {
     getDate :: DateTime,
@@ -37,6 +56,12 @@ data Ext a =
 
 instance Eq a => Ord (Ext a) where
   compare x y = compare (getDate x) (getDate y)
+
+instance HasID a => HasID (Ext a) where
+  getID x = getID (getContent x)
+
+instance Named a => Named (Ext a) where
+  getName x = getName (getContent x)
 
 data TransactionData =
     TPosting (Posting Unchecked)
@@ -96,9 +121,6 @@ instance Show EntryType where
   show EDebit  = "debit"
   show ECredit = "credit"
 
-class HasAmount a where
-  getAmount :: a -> Amount
-
 instance HasAmount (Entry t) where
   getAmount (DEntry _ x) = x
   getAmount (CEntry _ x) = x
@@ -106,40 +128,41 @@ instance HasAmount (Entry t) where
 instance HasAmount a => HasAmount (Ext a) where
   getAmount x = getAmount (getContent x)
 
-class HasCurrency a where
-  getCurrency :: a -> Currency
-
 data Account t where
   CAccount :: {
     creditAccountName :: String,
+    creditAccountID :: Integer,
     creditAccountCurrency :: Currency,
     creditAccountEntries :: [Ext (Entry Credit)]
   } -> Account Credit
 
   DAccount :: {
     debitAccountName :: String,
+    debitAccountID :: Integer,
     debitAccountCurrency :: Currency,
     debitAccountEntries :: [Ext (Entry Debit)]
   } -> Account Debit
 
   FAccount :: {
     freeAccountName :: String,
+    freeAccountID :: Integer,
     freeAccountCurrency :: Currency,
     freeAccountCreditEntries :: [Ext (Entry Credit)],
     freeAccountDebitEntries :: [Ext (Entry Debit)]
   } -> Account Free
 
+instance HasID (Account t) where
+  getID (CAccount {..}) = creditAccountID
+  getID (DAccount {..}) = debitAccountID
+  getID (FAccount {..}) = freeAccountID
+
 instance Eq (Account t) where
-  a1 == a2 = (getName a1 == getName a2) &&
-             (getCurrency a1 == getCurrency a2)
+  a1 == a2 = getID a1 == getID a2
 
 instance HasCurrency (Account t) where
   getCurrency (CAccount {..}) = creditAccountCurrency
   getCurrency (DAccount {..}) = debitAccountCurrency
   getCurrency (FAccount {..}) = freeAccountCurrency
-
-class Named a where
-  getName :: a -> String
 
 instance Named (Account t) where
   getName (CAccount {..}) = creditAccountName
@@ -151,13 +174,11 @@ instance (Named (f Free), Named (f t)) => Named (FreeOr t f) where
   getName (Right x) = getName x
 
 instance Show (Account t) where
-  show x = getName x ++ " (" ++ getCurrency x ++ ")"
-
-class CanCredit t where
-  credit :: Account t -> Ext (Entry Credit) -> Account t
-
-class CanDebit t where
-  debit :: Account t -> Ext (Entry Debit) -> Account t
+  show x =
+    printf "#%d: %s (%s)"
+      (getID x)
+      (getName x)
+      (getCurrency x)
 
 data AnyAccount =
     WFree   Attributes (Account Free)
@@ -179,6 +200,11 @@ instance HasCurrency AnyAccount where
   getCurrency (WCredit _ a) = getCurrency a
   getCurrency (WDebit _ a)  = getCurrency a
   getCurrency (WFree _ a)   = getCurrency a
+
+instance HasID AnyAccount where
+  getID (WCredit _ a) = getID a
+  getID (WDebit  _ a) = getID a
+  getID (WFree   _ a) = getID a
 
 accountType :: AnyAccount -> AccountGroupType
 accountType (WCredit _ _) = AGCredit
@@ -209,14 +235,21 @@ instance Show AccountGroupType where
 
 data AccountGroupData = AccountGroupData {
     agName :: String,
+    agRange :: (Integer, Integer),
     agCurrency :: Currency,
     agType :: AccountGroupType,
     agAttributes :: Attributes }
   deriving (Eq)
 
 instance Show AccountGroupData where
-  show ag = show (agType ag) ++ ": " ++ show (agName ag) ++
-            " (" ++ agCurrency ag ++ ") " ++ showA (agAttributes ag)
+  show ag =
+    printf "%s: %s (%s) (%d--%d] %s"
+      (show $ agType ag)
+      (agName ag)
+      (agCurrency ag)
+      (fst $ agRange ag)
+      (snd $ agRange ag)
+      (showA $ agAttributes ag)
 
 type AccountPlan = Tree AccountGroupData AnyAccount
 
