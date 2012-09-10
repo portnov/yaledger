@@ -23,19 +23,19 @@ import YaLedger.Correspondence
 
 instance CanDebit Debit where
   debit acc@(DAccount {..}) e =
-      acc {debitAccountEntries = e: debitAccountEntries}
+      acc {debitAccountPostings = e: debitAccountPostings}
 
 instance CanDebit Free where
   debit acc@(FAccount {..}) e =
-      acc {freeAccountDebitEntries = e: freeAccountDebitEntries}
+      acc {freeAccountDebitPostings = e: freeAccountDebitPostings}
 
 instance CanCredit Credit where
   credit acc@(CAccount {..}) e =
-      acc {creditAccountEntries = e: creditAccountEntries}
+      acc {creditAccountPostings = e: creditAccountPostings}
 
 instance CanCredit Free where
   credit acc@(FAccount {..}) e =
-      acc {freeAccountCreditEntries = e: freeAccountCreditEntries}
+      acc {freeAccountCreditPostings = e: freeAccountCreditPostings}
 
 convert :: (AmountKind v, Throws NoSuchRate l)
         => Currency -> Amount v -> Ledger l (Amount v)
@@ -66,31 +66,31 @@ checkQuery (Query {..}) (Ext {..}) =
 
   in  p && q && r
 
-creditEntries :: AnyAccount -> [Ext (Entry Decimal Credit)]
-creditEntries (WCredit _ (CAccount {..})) = creditAccountEntries
-creditEntries (WDebit  _ (DAccount {..})) = []
-creditEntries (WFree   _ (FAccount {..})) = freeAccountCreditEntries
+creditPostings :: AnyAccount -> [Ext (Posting Decimal Credit)]
+creditPostings (WCredit _ (CAccount {..})) = creditAccountPostings
+creditPostings (WDebit  _ (DAccount {..})) = []
+creditPostings (WFree   _ (FAccount {..})) = freeAccountCreditPostings
 
-debitEntries :: AnyAccount -> [Ext (Entry Decimal Debit)]
-debitEntries (WCredit _ (CAccount {..})) = []
-debitEntries (WDebit  _ (DAccount {..})) = debitAccountEntries
-debitEntries (WFree   _ (FAccount {..})) = freeAccountDebitEntries
+debitPostings :: AnyAccount -> [Ext (Posting Decimal Debit)]
+debitPostings (WCredit _ (CAccount {..})) = []
+debitPostings (WDebit  _ (DAccount {..})) = debitAccountPostings
+debitPostings (WFree   _ (FAccount {..})) = freeAccountDebitPostings
 
 saldo :: (Throws NoSuchRate l)
       => Query -> AnyAccount -> Ledger l (Amount Decimal)
 saldo query account = do
   rs <- gets lsRates
   let c = getCurrency account
-  cr :# _ <- sumEntries c $ map getContent $ filter (checkQuery query) $ creditEntries account
-  dt :# _ <- sumEntries c $ map getContent $ filter (checkQuery query) $ debitEntries  account
+  cr :# _ <- sumPostings c $ map getContent $ filter (checkQuery query) $ creditPostings account
+  dt :# _ <- sumPostings c $ map getContent $ filter (checkQuery query) $ debitPostings  account
   return $ (cr `minus` dt) :# c
 
 sumV :: AmountKind v => [v] -> v
 sumV xs = foldr plus zero xs
 
-sumEntries :: (AmountKind v, Throws NoSuchRate l)
-           => Currency -> [Entry v t] -> Ledger l (Amount v)
-sumEntries c es = do
+sumPostings :: (AmountKind v, Throws NoSuchRate l)
+           => Currency -> [Posting v t] -> Ledger l (Amount v)
+sumPostings c es = do
     rs <- gets lsRates
     ams <- mapM (convert c) (map getAmount es)
     let s = sumV [x | x :# _ <- ams]
@@ -114,24 +114,24 @@ uniq :: (Eq a) => [a] -> [a]
 uniq [] = []
 uniq (x:xs) = x: uniq (filter (/= x) xs)
 
-checkPosting :: (Throws NoSuchRate l,
+checkEntry :: (Throws NoSuchRate l,
                  Throws NoCorrespondingAccountFound l,
                  Throws InvalidAccountType l)
              => Attributes
-             -> Posting Decimal Unchecked
-             -> Ledger l (Posting Decimal Checked)
-checkPosting attrs (UPosting dt cr mbCorr) = do
+             -> Entry Decimal Unchecked
+             -> Ledger l (Entry Decimal Checked)
+checkEntry attrs (UEntry dt cr mbCorr) = do
   rs <- gets lsRates
   plan <- gets lsAccountPlan
   amap <- gets lsAccountMap
   defcur <- gets lsDefaultCurrency
   let currencies = uniq $ map getCurrency cr ++ map getCurrency dt ++ [defcur]
       firstCurrency = head currencies
-      accounts = map (getID . creditEntryAccount) cr ++ map (getID . debitEntryAccount) dt
-  dtSum :# _ <- sumEntries firstCurrency dt
-  crSum :# _ <- sumEntries firstCurrency cr
+      accounts = map (getID . creditPostingAccount) cr ++ map (getID . debitPostingAccount) dt
+  dtSum :# _ <- sumPostings firstCurrency dt
+  crSum :# _ <- sumPostings firstCurrency cr
   if dtSum == crSum
-    then return $ CPosting dt cr
+    then return $ CEntry dt cr
     else do
          let diff = crSum - dtSum
              qry = CQuery {
@@ -147,12 +147,12 @@ checkPosting attrs (UPosting dt cr mbCorr) = do
            Just acc -> if diff > 0
                          then do
                               account <- accountAsCredit acc
-                              let e = CEntry account (diff :# firstCurrency)
-                              return $ CPosting dt (e:cr)
+                              let e = CPosting account (diff :# firstCurrency)
+                              return $ CEntry dt (e:cr)
                          else do
                               account <- accountAsDebit acc
-                              let e = DEntry account (diff :# firstCurrency)
-                              return $ CPosting (e:dt) cr
+                              let e = DPosting account (diff :# firstCurrency)
+                              return $ CEntry (e:dt) cr
 
 updateAccount :: Integer
               -> AccountPlan

@@ -48,10 +48,10 @@ class HasCurrency a where
   getCurrency :: a -> Currency
 
 class CanCredit t where
-  credit :: Account t -> Ext (Entry Decimal Credit) -> Account t
+  credit :: Account t -> Ext (Posting Decimal Credit) -> Account t
 
 class CanDebit t where
-  debit :: Account t -> Ext (Entry Decimal Debit) -> Account t
+  debit :: Account t -> Ext (Posting Decimal Debit) -> Account t
 
 class AmountKind v where
   zero :: v
@@ -121,28 +121,28 @@ data Record =
   deriving (Show)
 
 data Transaction v =
-    TPosting (Posting v Unchecked)
+    TEntry (Entry v Unchecked)
   | TReconcilate Path (Amount v)
   | TInitlalize  Path (Amount v)
   deriving (Show)
 
-data Posting v c where
-    CPosting :: {
-      cPostingDebitEntries :: [Entry v Debit],
-      cPostingCreditEntries :: [Entry v Credit]
-    } -> Posting v Checked
+data Entry v c where
+    CEntry :: {
+      cEntryDebitPostings :: [Posting v Debit],
+      cEntryCreditPostings :: [Posting v Credit]
+    } -> Entry v Checked
 
-    UPosting :: {
-      uPostingDebitEntries :: [Entry v Debit],
-      uPostingCreditEntries :: [Entry v Credit],
-      uPostingCorrespondence :: Maybe AnyAccount
-    } -> Posting v Unchecked
+    UEntry :: {
+      uEntryDebitPostings :: [Posting v Debit],
+      uEntryCreditPostings :: [Posting v Credit],
+      uEntryCorrespondence :: Maybe AnyAccount
+    } -> Entry v Unchecked
 
-instance Show v => Show (Posting v t) where
-  show (CPosting dt cr) = "Debit:\n" ++ go dt ++ "\nCredit:\n" ++ go cr
+instance Show v => Show (Entry v t) where
+  show (CEntry dt cr) = "Debit:\n" ++ go dt ++ "\nCredit:\n" ++ go cr
     where
       go lst = unlines $ map ("  " ++) $ map show lst
-  show (UPosting dt cr acc) = "Debit:\n" ++ go dt ++ "\nCredit:\n" ++ go cr
+  show (UEntry dt cr acc) = "Debit:\n" ++ go dt ++ "\nCredit:\n" ++ go cr
                               ++ "(correspondence: " ++ showName acc ++ ")"
     where
       go lst = unlines $ map ("  " ++) $ map show lst
@@ -166,39 +166,39 @@ instance (HasID (f Free), HasID (f t)) => HasID (FreeOr t f) where
   getID (Left x)  = getID x
   getID (Right x) = getID x
 
-data Entry v t where
-  DEntry :: {
-    debitEntryAccount :: FreeOr Debit Account,
-    debitEntryAmount :: Amount v
-  } -> Entry v Debit
+data Posting v t where
+  DPosting :: {
+    debitPostingAccount :: FreeOr Debit Account,
+    debitPostingAmount :: Amount v
+  } -> Posting v Debit
 
-  CEntry :: {
-    creditEntryAccount :: FreeOr Credit Account,
-    creditEntryAmount  :: Amount v
-  } -> Entry v Credit
+  CPosting :: {
+    creditPostingAccount :: FreeOr Credit Account,
+    creditPostingAmount  :: Amount v
+  } -> Posting v Credit
 
-instance Show v => Show (Entry v t) where
-  show (DEntry acc x) = "debit " ++ getName acc ++ " by " ++ show x
-  show (CEntry acc x) = "credit " ++ getName acc ++ " by " ++ show x
+instance Show v => Show (Posting v t) where
+  show (DPosting acc x) = "debit " ++ getName acc ++ " by " ++ show x
+  show (CPosting acc x) = "credit " ++ getName acc ++ " by " ++ show x
 
-instance HasCurrency (Entry v Debit) where
-  getCurrency (DEntry _ (_ :# c)) = c
+instance HasCurrency (Posting v Debit) where
+  getCurrency (DPosting _ (_ :# c)) = c
 
-instance HasCurrency (Entry v Credit) where
-  getCurrency (CEntry _ (_ :# c)) = c
+instance HasCurrency (Posting v Credit) where
+  getCurrency (CPosting _ (_ :# c)) = c
 
-data EntryType =
+data PostingType =
     EDebit
   | ECredit
   deriving (Eq)
 
-instance Show EntryType where
+instance Show PostingType where
   show EDebit  = "debit"
   show ECredit = "credit"
 
-instance HasAmount (Entry v t) v where
-  getAmount (DEntry _ x) = x
-  getAmount (CEntry _ x) = x
+instance HasAmount (Posting v t) v where
+  getAmount (DPosting _ x) = x
+  getAmount (CPosting _ x) = x
 
 instance HasAmount a v => HasAmount (Ext a) v where
   getAmount x = getAmount (getContent x)
@@ -208,22 +208,22 @@ data Account t where
     creditAccountName :: String,
     creditAccountID :: Integer,
     creditAccountCurrency :: Currency,
-    creditAccountEntries :: [Ext (Entry Decimal Credit)]
+    creditAccountPostings :: [Ext (Posting Decimal Credit)]
   } -> Account Credit
 
   DAccount :: {
     debitAccountName :: String,
     debitAccountID :: Integer,
     debitAccountCurrency :: Currency,
-    debitAccountEntries :: [Ext (Entry Decimal Debit)]
+    debitAccountPostings :: [Ext (Posting Decimal Debit)]
   } -> Account Debit
 
   FAccount :: {
     freeAccountName :: String,
     freeAccountID :: Integer,
     freeAccountCurrency :: Currency,
-    freeAccountCreditEntries :: [Ext (Entry Decimal Credit)],
-    freeAccountDebitEntries :: [Ext (Entry Decimal Debit)]
+    freeAccountCreditPostings :: [Ext (Posting Decimal Credit)],
+    freeAccountDebitPostings :: [Ext (Posting Decimal Debit)]
   } -> Account Free
 
 instance HasID (Account t) where

@@ -63,7 +63,7 @@ pTemplate = do
 
 pTran :: Parser v -> Parser (Transaction v)
 pTran p = do
-  es <- try (try (Left <$> pCreditEntry p) <|> (try (Right <$> pDebitEntry p))) `sepEndBy1` (newline <?> "N1")
+  es <- try (try (Left <$> pCreditPosting p) <|> (try (Right <$> pDebitPosting p))) `sepEndBy1` (newline <?> "N1")
   corr <- optionMaybe $ try $ do
             spaces
             symbol "corr"
@@ -76,10 +76,10 @@ pTran p = do
   account <- case corr of
                Nothing -> return Nothing
                Just path -> Just <$> getAccount accountPlan (mkPath path)
-  return $ TPosting $ UPosting dt cr account
+  return $ TEntry $ UEntry dt cr account
 
-pCreditEntry :: Parser v -> Parser (Entry v Credit)
-pCreditEntry p = do
+pCreditPosting :: Parser v -> Parser (Posting v Credit)
+pCreditPosting p = do
   spaces
   symbol "cr"
   accPath <- identifier
@@ -90,10 +90,10 @@ pCreditEntry p = do
                _ -> fail $ printf "Invalid account type: %s: debit instead of credit." accPath
   spaces
   amount <- pAmount p
-  return $ CEntry account amount
+  return $ CPosting account amount
 
-pDebitEntry :: Parser v -> Parser (Entry v Debit)
-pDebitEntry p = do
+pDebitPosting :: Parser v -> Parser (Posting v Debit)
+pDebitPosting p = do
   spaces
   symbol "dr"
   accPath <- identifier
@@ -104,7 +104,7 @@ pDebitEntry p = do
                _ -> fail $ printf "Invalid account type: %s: credit instead of debit." accPath
   spaces
   amount <- pAmount p
-  return $ DEntry account amount
+  return $ DPosting account amount
 
 pAmount :: Parser v -> Parser (Amount v)
 pAmount p = do

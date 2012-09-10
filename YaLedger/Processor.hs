@@ -15,11 +15,11 @@ import YaLedger.Exceptions
 import YaLedger.Correspondence
 import YaLedger.Kernel
 
-putCreditEntry :: (Throws InvalidAccountType l)
-               => Ext (Entry Decimal Credit)
+putCreditPosting :: (Throws InvalidAccountType l)
+               => Ext (Posting Decimal Credit)
                -> AnyAccount
                -> Ledger l AnyAccount
-putCreditEntry e acc =
+putCreditPosting e acc =
   case acc of
     WFree attrs account ->
       return $ WFree attrs $ credit account e
@@ -28,11 +28,11 @@ putCreditEntry e acc =
     WDebit _ _ ->
       throw (InvalidAccountType AGDebit AGCredit)
 
-putDebitEntry :: (Throws InvalidAccountType l)
-               => Ext (Entry Decimal Debit)
+putDebitPosting :: (Throws InvalidAccountType l)
+               => Ext (Posting Decimal Debit)
                -> AnyAccount
                -> Ledger l AnyAccount
-putDebitEntry e acc = do
+putDebitPosting e acc = do
   case acc of
     WFree attrs account ->
       return $ WFree attrs $ debit account e
@@ -41,19 +41,19 @@ putDebitEntry e acc = do
     WCredit _ _ ->
       throw (InvalidAccountType AGCredit AGDebit)
 
-processPosting :: (Throws NoSuchRate l,
+processEntry :: (Throws NoSuchRate l,
                    Throws NoCorrespondingAccountFound l,
                    Throws InvalidAccountType l)
                => DateTime
                -> Attributes
-               -> Posting Decimal Unchecked
+               -> Entry Decimal Unchecked
                -> Ledger l ()
-processPosting date attrs uposting = do
-  CPosting dt cr <- checkPosting attrs uposting
+processEntry date attrs uposting = do
+  CEntry dt cr <- checkEntry attrs uposting
   forM dt $ \e -> updatePlan $ \plan ->
-      updateAccount (getID $ debitEntryAccount e) plan (putDebitEntry $ Ext date attrs e)
+      updateAccount (getID $ debitPostingAccount e) plan (putDebitPosting $ Ext date attrs e)
   forM cr $ \e -> updatePlan $ \plan ->
-      updateAccount (getID $ creditEntryAccount e) plan (putCreditEntry $ Ext date attrs e)
+      updateAccount (getID $ creditPostingAccount e) plan (putCreditPosting $ Ext date attrs e)
   return ()
 
 processTransaction :: (Throws NoSuchRate l,
@@ -61,6 +61,6 @@ processTransaction :: (Throws NoSuchRate l,
                        Throws InvalidAccountType l)
                    => Ext Record
                    -> Ledger l ()
-processTransaction (Ext date attrs (Transaction (TPosting p))) = do
-  processPosting date attrs p
+processTransaction (Ext date attrs (Transaction (TEntry p))) = do
+  processEntry date attrs p
 

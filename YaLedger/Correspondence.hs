@@ -9,12 +9,12 @@ import YaLedger.Types
 import YaLedger.Tree
 
 data CQuery = CQuery {
-  cqType :: EntryType,
+  cqType :: PostingType,
   cqCurrency :: [Currency],
   cqAttributes :: Attributes }
   deriving (Eq, Show)
 
-matchT :: EntryType -> AccountGroupType -> Bool
+matchT :: PostingType -> AccountGroupType -> Bool
 matchT _       AGFree   = True
 matchT ECredit AGCredit = True
 matchT EDebit  AGDebit  = True
