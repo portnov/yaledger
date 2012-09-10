@@ -8,6 +8,7 @@ import Control.Monad.Exception
 import Control.Monad.Loc
 import Data.Dates
 import Data.Decimal
+import qualified Data.Map as M
 
 import YaLedger.Types
 import YaLedger.Monad
@@ -62,6 +63,8 @@ processTransaction :: (Throws NoSuchRate l,
                    => Ext Record
                    -> Ledger l ()
 processTransaction (Ext date attrs (Transaction (TEntry p))) = do
-  processEntry date attrs p
+    processEntry date attrs p
+processTransaction (Ext _ _ (Template name tran)) = do
+    modify $ \st -> st {lsTemplates = M.insert name tran (lsTemplates st)}
 processTransaction x = fail $ show x
 

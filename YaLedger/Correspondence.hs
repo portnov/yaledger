@@ -8,6 +8,10 @@ import Data.Maybe
 import YaLedger.Types
 import YaLedger.Tree
 
+nonsignificantAttributes :: [String]
+nonsignificantAttributes =
+  ["description"]
+
 data CQuery = CQuery {
   cqType :: PostingType,
   cqCurrency :: [Currency],
@@ -18,6 +22,12 @@ matchT :: PostingType -> AccountGroupType -> Bool
 matchT _       AGFree   = True
 matchT ECredit AGCredit = True
 matchT EDebit  AGDebit  = True
+matchT _       _        = False
+
+matchA :: Attributes -> Attributes -> Bool
+matchA attrs qry =
+  let qry' = filter (\(name,_) -> name `notElem` nonsignificantAttributes) qry
+  in  all (`elem` attrs) qry'
 
 first :: (a -> Maybe b) -> [a] -> Maybe b
 first _ [] = Nothing
@@ -35,7 +45,7 @@ runCQuery qry@(CQuery {..}) (Branch {..}) =
 runCQuery qry@(CQuery {..}) (Leaf {..}) =
     if (cqType `matchT` accountType leafData) || (accountType leafData == AGFree)
       then if (getCurrency leafData `elem` cqCurrency) &&
-              all (`elem` accountAttributes leafData) cqAttributes
+              accountAttributes leafData `matchA` cqAttributes
              then Just leafData
              else Nothing
       else Nothing

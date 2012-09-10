@@ -14,6 +14,7 @@ import Data.Dates
 import Data.Decimal
 import qualified Data.Map as M
 import Text.Regex.PCRE
+import Text.Printf
 
 import YaLedger.Types
 import YaLedger.Tree
@@ -133,9 +134,10 @@ checkEntry attrs src@(UEntry dt cr mbCorr) = do
   if dtSum == crSum
     then return $ CEntry dt cr
     else do
+         message $ printf "cr. %s, dt. %s" (show crSum) (show dtSum)
          let diff = crSum - dtSum
              qry = CQuery {
-                     cqType = if diff > 0
+                     cqType = if diff < 0
                                 then ECredit
                                 else EDebit,
                      cqCurrency = currencies,
@@ -144,10 +146,12 @@ checkEntry attrs src@(UEntry dt cr mbCorr) = do
              mbByMap = lookupAMap plan amap qry accounts
          case mbCorr `mplus` mbByMap `mplus` mbAccount of
            Nothing -> throw (NoCorrespondingAccountFound qry)
-           Just acc -> if diff > 0
+           Just acc -> if diff < 0
                          then do
+                              message $ "Corresponding account for " ++ show src ++ ": " ++ show acc
                               account <- accountAsCredit acc
-                              message $ "Corresponding account for " ++ show src ++ ": " ++ show account
+                                          `catchWithSrcLoc`
+                                            \loc (InvalidAccountType t1 t2) -> fail $ show src ++ ": " ++ show acc
                               let e = CPosting account (diff :# firstCurrency)
                               return $ CEntry dt (e:cr)
                          else do

@@ -124,7 +124,7 @@ data Transaction v =
     TEntry (Entry v Unchecked)
   | TReconcilate Path (Amount v)
   | TInitlalize  Path (Amount v)
-  deriving (Show)
+  deriving (Eq, Show)
 
 data Entry v c where
     CEntry :: {
@@ -137,6 +137,12 @@ data Entry v c where
       uEntryCreditPostings :: [Posting v Credit],
       uEntryCorrespondence :: Maybe AnyAccount
     } -> Entry v Unchecked
+
+instance Eq v => Eq (Entry v Checked) where
+  (CEntry dt cr) == (CEntry dt' cr') = (dt == dt') && (cr == cr')
+
+instance Eq v => Eq (Entry v Unchecked) where
+  (UEntry dt cr c) == (UEntry dt' cr' c') = (dt == dt') && (cr == cr') && (c == c')
 
 instance Show v => Show (Entry v t) where
   show (CEntry dt cr) = "Debit:\n" ++ go dt ++ "\nCredit:\n" ++ go cr
@@ -176,6 +182,12 @@ data Posting v t where
     creditPostingAccount :: FreeOr Credit Account,
     creditPostingAmount  :: Amount v
   } -> Posting v Credit
+
+instance Eq v => Eq (Posting v Debit) where
+  (DPosting a1 x1) == (DPosting a2 x2) = (a1 == a2) && (x1 == x2)
+
+instance Eq v => Eq (Posting v Credit) where
+  (CPosting a1 x1) == (CPosting a2 x2) = (a1 == a2) && (x1 == x2)
 
 instance Show v => Show (Posting v t) where
   show (DPosting acc x) = "debit " ++ getName acc ++ " by " ++ show x

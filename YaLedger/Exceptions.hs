@@ -38,6 +38,8 @@ instance Show NoCorrespondingAccountFound where
 
 instance Exception NoCorrespondingAccountFound
 
+-- instance UncaughtException SomeException
+
 force :: Monad m => EMT (Caught NoSuchRate NoExceptions) m a -> m a
 force action = runEMT $ action `catchWithSrcLoc` 
                                \loc (e :: NoSuchRate) -> fail (showExceptionWithTrace loc e)

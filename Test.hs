@@ -60,6 +60,5 @@ test = do
   forM amap print
   trans <- readTrans plan "test.yaledger"
   forM trans print
-  (_, msgs) <- runLedger plan amap $ process trans
-  forM msgs print
+  runLedger plan amap $ process trans
   return ()

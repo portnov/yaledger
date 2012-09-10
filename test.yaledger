@@ -11,5 +11,6 @@ template test
   dr Y1 50.0$
 
 @ 2012/09/09 ---
-  cr X1 3.0$
+{category = "TEST"}
+  cr X1 3.0р
 
