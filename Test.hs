@@ -57,7 +57,9 @@ test = do
   plan <- readPlan "test.accounts"
   print plan
   amap <- readAMap plan "test.map"
+  forM amap print
   trans <- readTrans plan "test.yaledger"
   forM trans print
-  runLedger plan amap $ process trans
+  (_, msgs) <- runLedger plan amap $ process trans
+  forM msgs print
   return ()

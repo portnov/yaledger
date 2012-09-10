@@ -18,7 +18,7 @@ data PState = PState {
 type Parser a = Parsec String PState a
 
 pAccountMap :: Parser AccountMap
-pAccountMap = pMapEntry `sepEndBy1` newline
+pAccountMap = pMapEntry `sepEndBy1` many newline
 
 pMapEntry :: Parser AMEntry
 pMapEntry = do
@@ -27,7 +27,7 @@ pMapEntry = do
   reservedOp "->"
   spaces
   tgtPath <- pPath
-  target <- getAccount accountPlan tgtPath
+  target <- getAccountPlanItem accountPlan tgtPath
   return $ ptr :=> target
 
 pAccount :: Parser Integer

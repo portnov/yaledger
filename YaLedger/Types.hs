@@ -332,11 +332,18 @@ type AccountPlan = Tree AccountGroupData AnyAccount
 
 type AccountMap = [AMEntry]
 
-data AMEntry = AMPointer :=> AnyAccount
-  deriving (Eq, Show)
+data AMEntry = AMPointer :=> AccountPlan
+  deriving (Eq)
+
+instance Show AMEntry where
+  show (ptr :=> tgt) = show ptr ++ " maps to:\n" ++ show tgt
 
 data AMPointer =
     AMAccount Integer
   | AMGroup Integer
-  deriving (Eq, Show)
+  deriving (Eq)
+
+instance Show AMPointer where
+  show (AMAccount i) = "account #" ++ show i
+  show (AMGroup i)   = "group #"   ++ show i
 

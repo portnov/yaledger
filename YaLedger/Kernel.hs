@@ -120,7 +120,7 @@ checkEntry :: (Throws NoSuchRate l,
              => Attributes
              -> Entry Decimal Unchecked
              -> Ledger l (Entry Decimal Checked)
-checkEntry attrs (UEntry dt cr mbCorr) = do
+checkEntry attrs src@(UEntry dt cr mbCorr) = do
   rs <- gets lsRates
   plan <- gets lsAccountPlan
   amap <- gets lsAccountMap
@@ -141,16 +141,18 @@ checkEntry attrs (UEntry dt cr mbCorr) = do
                      cqCurrency = currencies,
                      cqAttributes = attrs }
          let mbAccount = runCQuery qry plan
-             mbByMap = lookupAMap plan amap accounts
+             mbByMap = lookupAMap plan amap qry accounts
          case mbCorr `mplus` mbByMap `mplus` mbAccount of
            Nothing -> throw (NoCorrespondingAccountFound qry)
            Just acc -> if diff > 0
                          then do
                               account <- accountAsCredit acc
+                              message $ "Corresponding account for " ++ show src ++ ": " ++ show account
                               let e = CPosting account (diff :# firstCurrency)
                               return $ CEntry dt (e:cr)
                          else do
                               account <- accountAsDebit acc
+                              message $ "Corresponding account for " ++ show src ++ ": " ++ show account
                               let e = DPosting account (diff :# firstCurrency)
                               return $ CEntry (e:dt) cr
 

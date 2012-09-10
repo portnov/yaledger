@@ -80,16 +80,17 @@ groupIDs i tree = go [] i tree
 -- | Lookup for corresponding account by account map
 lookupAMap :: AccountPlan
            -> AccountMap
+           -> CQuery
            -> [Integer]       -- ^ Account IDs
            -> Maybe AnyAccount
-lookupAMap plan list is = msum [first (good i) list | i <- is]
+lookupAMap plan amap qry is = msum [first (good i) amap | i <- is]
   where
     good i (AMAccount j :=> r)
-      | i == j    = Just r
+      | i == j    = runCQuery qry r
       | otherwise = Nothing
     good i (AMGroup g :=> r) =
       let gids = fromMaybe [] $ groupIDs i plan
       in  if g `elem` gids
-            then Just r
+            then runCQuery qry r
             else Nothing
 

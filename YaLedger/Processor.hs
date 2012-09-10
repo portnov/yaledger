@@ -63,4 +63,5 @@ processTransaction :: (Throws NoSuchRate l,
                    -> Ledger l ()
 processTransaction (Ext date attrs (Transaction (TEntry p))) = do
   processEntry date attrs p
+processTransaction x = fail $ show x
 

@@ -49,3 +49,13 @@ getAccount accountPlan path = do
                         (intercalate "/" path)
                         (length as)
 
+getAccountPlanItem :: (st -> AccountPlan) -> Path -> Parsec String st AccountPlan
+getAccountPlanItem accountPlan path = do
+  st <- getState
+  case search' (accountPlan st) path of
+    [] -> fail $ "No such account plan item: " ++ intercalate "/" path
+    [a] -> return a
+    as -> fail $ printf "Ambigous account plan item specification: %s (%d matching items)."
+                        (intercalate "/" path)
+                        (length as)
+

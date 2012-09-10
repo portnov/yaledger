@@ -20,7 +20,8 @@ data LedgerState = LedgerState {
   lsDefaultCurrency :: Currency,
   lsAccountPlan :: AccountPlan,
   lsAccountMap :: AccountMap,
-  lsRates :: Rates }
+  lsRates :: Rates,
+  lsMessages :: [String] }
   deriving (Eq, Show)
 
 instance MonadState LedgerState (EMT l LedgerMonad) where
@@ -35,10 +36,17 @@ emptyLedgerState plan amap = do
              lsDefaultCurrency = "",
              lsAccountPlan = plan,
              lsAccountMap = amap,
-             lsRates = M.empty }
+             lsRates = M.empty,
+             lsMessages = [] }
 
-runLedger :: AccountPlan -> AccountMap -> LedgerMonad a -> IO a
+message :: String -> Ledger l ()
+message str =
+  modify $ \st -> st {lsMessages = lsMessages st ++ [str]}
+
+runLedger :: AccountPlan -> AccountMap -> LedgerMonad a -> IO (a, [String])
 runLedger plan amap action = do
   let LedgerMonad emt = action
   st <- emptyLedgerState plan amap
-  return $ evalState emt st
+  let (res, st') = runState emt st
+  return (res, lsMessages st')
+
