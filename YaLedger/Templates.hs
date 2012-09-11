@@ -4,6 +4,7 @@ module YaLedger.Templates where
 
 import Control.Applicative
 import Control.Monad
+import Control.Monad.Reader
 import Control.Monad.State
 import Control.Monad.Exception
 import qualified Data.Map as M
@@ -17,12 +18,10 @@ import YaLedger.Monad
 
 type SubstState = M.Map Int Amount
 
-type Subst a = State SubstState a
+type Subst a = Reader SubstState a
 
 use :: Int -> Subst (Maybe Amount)
-use i = do
-  st <- get
-  return $ M.lookup i st
+use i = asks (M.lookup i)
 
 class ATemplate a where
   type Result a
@@ -80,7 +79,8 @@ instance ATemplate (Posting Param t) where
   subst (CPosting acc a) = CPosting acc <$> subst a
 
 fillTemplate :: Transaction Param -> [Amount] -> Ledger l (Transaction Amount)
-fillTemplate = undefined
+fillTemplate tran args =
+  return $ runReader (subst tran) (M.fromList $ zip [1..] args)
 
 getTemplate :: (Throws NoSuchTemplate l)
             => String
