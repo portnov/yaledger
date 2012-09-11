@@ -10,7 +10,10 @@ template test
 @ 2012/09/09 Correspondence test.
   dr Y1 50.0$
 
-@ 2012/09/09 ---
+@ 2012/09/10 template call test.
+call test 7.0$
+
+@ 2012/09/11 ---
 {category = "TEST"}
   cr X1 3.0р
 

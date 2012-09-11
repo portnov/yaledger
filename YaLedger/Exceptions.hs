@@ -38,7 +38,13 @@ instance Show NoCorrespondingAccountFound where
 
 instance Exception NoCorrespondingAccountFound
 
--- instance UncaughtException SomeException
+data NoSuchTemplate = NoSuchTemplate String
+  deriving (Typeable)
+
+instance Show NoSuchTemplate where
+  show (NoSuchTemplate name) = "No such template was defined: " ++ name
+
+instance Exception NoSuchTemplate
 
 force :: Monad m => EMT (Caught NoSuchRate NoExceptions) m a -> m a
 force action = runEMT $ action `catchWithSrcLoc` 

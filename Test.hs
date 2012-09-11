@@ -51,6 +51,8 @@ process trans =
            (\loc (e :: NoSuchRate) -> fail (showExceptionWithTrace loc e))
         `catchWithSrcLoc`
            (\loc (e :: NoCorrespondingAccountFound) -> fail (showExceptionWithTrace loc e))
+        `catchWithSrcLoc`
+           (\loc (e :: NoSuchTemplate) -> fail (showExceptionWithTrace loc e))
 
 test :: IO ()
 test = do

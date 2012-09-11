@@ -35,8 +35,8 @@ data Ext a = Ext {
     getContent :: a }
   deriving (Eq, Show)
 
-class HasAmount a v where
-  getAmount :: a -> Amount v
+class HasAmount a where
+  getAmount :: a -> Amount
 
 class Named a where
   getName :: a -> String
@@ -48,21 +48,14 @@ class HasCurrency a where
   getCurrency :: a -> Currency
 
 class CanCredit t where
-  credit :: Account t -> Ext (Posting Decimal Credit) -> Account t
+  credit :: Account t -> Ext (Posting Amount Credit) -> Account t
 
 class CanDebit t where
-  debit :: Account t -> Ext (Posting Decimal Debit) -> Account t
-
-class AmountKind v where
-  zero :: v
-  plus :: v -> v -> v
-  minus :: v -> v -> v
-  neg :: v -> v
-  multiply :: v -> Double -> v
+  debit :: Account t -> Ext (Posting Amount Debit) -> Account t
 
 data Param =
-    Fixed Decimal
-  | Param Int Double Decimal
+    Fixed Amount
+  | Param Int Double Amount
   | Plus Param Param
   deriving (Eq)
 
@@ -71,40 +64,6 @@ instance Show Param where
   show (Param n x d) = "#" ++ show n ++ " * " ++ show x
                     ++ " (default " ++ show d ++ ")"
   show (Plus x y) = show x ++ " + " ++ show y
-
-instance AmountKind Param where
-  zero = Fixed 0
-
-  Fixed x `plus` Fixed y = Fixed (x+y)
-  x@(Param n1 c1 d1) `plus` y@(Param n2 c2 d2)
-    | n1 == n2  = Param n1 (c1+c2) (d1+d2)
-    | otherwise = Plus x y
-  Plus x (Fixed y) `plus` Fixed z = Plus x (Fixed (y+z))
-  Plus x y `plus` z = Plus x (Plus y z)
-  x `plus` y = Plus x y
-
-  neg (Fixed x) = Fixed (-x)
-  neg (Param n c d) = Param n (-c) d
-  neg (Plus x y) = Plus (neg x) (neg y)
-
-  Fixed x `minus` Fixed y = Fixed (x-y)
-  x@(Param n1 c1 d1) `minus` y@(Param n2 c2 d2)
-    | n1 == n2  = Param n1 (c1-c2) (d1-d2)
-    | otherwise = Plus x (neg y)
-  Plus x (Fixed y) `minus` Fixed z = Plus x (Fixed (y-z))
-  Plus x y `minus` z = Plus x (Plus y (neg z))
-  x `minus` y = Plus x (neg y)
-
-  Fixed x `multiply` c = Fixed (x *. c)
-  Param n c d `multiply` x = Param n (c*x) (d *. x)
-  Plus x y `multiply` c = Plus (x `multiply` c) (y `multiply` c)
-
-instance AmountKind Decimal where
-  zero = 0
-  plus = (+)
-  minus = (-)
-  neg = negate
-  multiply = (*.)
 
 instance Eq a => Ord (Ext a) where
   compare x y = compare (getDate x) (getDate y)
@@ -117,13 +76,14 @@ instance Named a => Named (Ext a) where
 
 data Record =
     Template String (Transaction Param)
-  | Transaction (Transaction Decimal)
+  | Transaction (Transaction Amount)
   deriving (Show)
 
 data Transaction v =
     TEntry (Entry v Unchecked)
-  | TReconcilate Path (Amount v)
-  | TInitlalize  Path (Amount v)
+  | TReconcilate Path v
+  | TInitlalize  Path v
+  | TCallTemplate String [Amount]
   deriving (Eq, Show)
 
 data Entry v c where
@@ -156,10 +116,10 @@ instance Show v => Show (Entry v t) where
       showName Nothing = "to be found automatically"
       showName (Just x) = getName x
 
-data Amount v = v :# Currency
+data Amount = Decimal :# Currency
   deriving (Eq)
 
-instance Show v => Show (Amount v) where
+instance Show Amount where
   show (n :# c) = show n ++ c
 
 type Currency = String
@@ -175,12 +135,12 @@ instance (HasID (f Free), HasID (f t)) => HasID (FreeOr t f) where
 data Posting v t where
   DPosting :: {
     debitPostingAccount :: FreeOr Debit Account,
-    debitPostingAmount :: Amount v
+    debitPostingAmount :: v
   } -> Posting v Debit
 
   CPosting :: {
     creditPostingAccount :: FreeOr Credit Account,
-    creditPostingAmount  :: Amount v
+    creditPostingAmount  :: v
   } -> Posting v Credit
 
 instance Eq v => Eq (Posting v Debit) where
@@ -193,10 +153,8 @@ instance Show v => Show (Posting v t) where
   show (DPosting acc x) = "debit " ++ getName acc ++ " by " ++ show x
   show (CPosting acc x) = "credit " ++ getName acc ++ " by " ++ show x
 
-instance HasCurrency (Posting v Debit) where
+instance HasCurrency (Posting Amount t) where
   getCurrency (DPosting _ (_ :# c)) = c
-
-instance HasCurrency (Posting v Credit) where
   getCurrency (CPosting _ (_ :# c)) = c
 
 data PostingType =
@@ -208,11 +166,11 @@ instance Show PostingType where
   show EDebit  = "debit"
   show ECredit = "credit"
 
-instance HasAmount (Posting v t) v where
+instance HasAmount (Posting Amount t) where
   getAmount (DPosting _ x) = x
   getAmount (CPosting _ x) = x
 
-instance HasAmount a v => HasAmount (Ext a) v where
+instance HasAmount a => HasAmount (Ext a) where
   getAmount x = getAmount (getContent x)
 
 data Account t where
@@ -220,22 +178,22 @@ data Account t where
     creditAccountName :: String,
     creditAccountID :: Integer,
     creditAccountCurrency :: Currency,
-    creditAccountPostings :: [Ext (Posting Decimal Credit)]
+    creditAccountPostings :: [Ext (Posting Amount Credit)]
   } -> Account Credit
 
   DAccount :: {
     debitAccountName :: String,
     debitAccountID :: Integer,
     debitAccountCurrency :: Currency,
-    debitAccountPostings :: [Ext (Posting Decimal Debit)]
+    debitAccountPostings :: [Ext (Posting Amount Debit)]
   } -> Account Debit
 
   FAccount :: {
     freeAccountName :: String,
     freeAccountID :: Integer,
     freeAccountCurrency :: Currency,
-    freeAccountCreditPostings :: [Ext (Posting Decimal Credit)],
-    freeAccountDebitPostings :: [Ext (Posting Decimal Debit)]
+    freeAccountCreditPostings :: [Ext (Posting Amount Credit)],
+    freeAccountDebitPostings :: [Ext (Posting Amount Debit)]
   } -> Account Free
 
 instance HasID (Account t) where

@@ -38,15 +38,15 @@ instance CanCredit Free where
   credit acc@(FAccount {..}) e =
       acc {freeAccountCreditPostings = e: freeAccountCreditPostings}
 
-convert :: (AmountKind v, Throws NoSuchRate l)
-        => Currency -> Amount v -> Ledger l (Amount v)
+convert :: (Throws NoSuchRate l)
+        => Currency -> Amount -> Ledger l Amount
 convert c' (x :# c)
   | c == c' = return (x :# c)
   | otherwise = do
     rs <- gets lsRates
     case M.lookup (c, c') rs of
       Nothing   -> throw (NoSuchRate c c')
-      Just rate -> return $ (x `multiply` rate) :# c'
+      Just rate -> return $ (x *. rate) :# c'
 
 checkQuery :: Query -> Ext a -> Bool
 checkQuery (Query {..}) (Ext {..}) =
@@ -67,34 +67,31 @@ checkQuery (Query {..}) (Ext {..}) =
 
   in  p && q && r
 
-creditPostings :: AnyAccount -> [Ext (Posting Decimal Credit)]
+creditPostings :: AnyAccount -> [Ext (Posting Amount Credit)]
 creditPostings (WCredit _ (CAccount {..})) = creditAccountPostings
 creditPostings (WDebit  _ (DAccount {..})) = []
 creditPostings (WFree   _ (FAccount {..})) = freeAccountCreditPostings
 
-debitPostings :: AnyAccount -> [Ext (Posting Decimal Debit)]
+debitPostings :: AnyAccount -> [Ext (Posting Amount Debit)]
 debitPostings (WCredit _ (CAccount {..})) = []
 debitPostings (WDebit  _ (DAccount {..})) = debitAccountPostings
 debitPostings (WFree   _ (FAccount {..})) = freeAccountDebitPostings
 
 saldo :: (Throws NoSuchRate l)
-      => Query -> AnyAccount -> Ledger l (Amount Decimal)
+      => Query -> AnyAccount -> Ledger l Amount
 saldo query account = do
   rs <- gets lsRates
   let c = getCurrency account
   cr :# _ <- sumPostings c $ map getContent $ filter (checkQuery query) $ creditPostings account
   dt :# _ <- sumPostings c $ map getContent $ filter (checkQuery query) $ debitPostings  account
-  return $ (cr `minus` dt) :# c
+  return $ (cr - dt) :# c
 
-sumV :: AmountKind v => [v] -> v
-sumV xs = foldr plus zero xs
-
-sumPostings :: (AmountKind v, Throws NoSuchRate l)
-           => Currency -> [Posting v t] -> Ledger l (Amount v)
+sumPostings :: (Throws NoSuchRate l)
+           => Currency -> [Posting Amount t] -> Ledger l Amount
 sumPostings c es = do
     rs <- gets lsRates
     ams <- mapM (convert c) (map getAmount es)
-    let s = sumV [x | x :# _ <- ams]
+    let s = sum [x | x :# _ <- ams]
     return (s :# c)
 
 accountAsCredit :: (Throws InvalidAccountType l)
@@ -119,8 +116,8 @@ checkEntry :: (Throws NoSuchRate l,
                  Throws NoCorrespondingAccountFound l,
                  Throws InvalidAccountType l)
              => Attributes
-             -> Entry Decimal Unchecked
-             -> Ledger l (Entry Decimal Checked)
+             -> Entry Amount Unchecked
+             -> Ledger l (Entry Amount Checked)
 checkEntry attrs src@(UEntry dt cr mbCorr) = do
   rs <- gets lsRates
   plan <- gets lsAccountPlan
