@@ -53,21 +53,6 @@ runCQuery qry@(CQuery {..}) (Leaf {..}) =
 inRange :: Integer -> (Integer, Integer) -> Bool
 inRange i (m, n) = (m < i) && (i <= n)
 
-accountByID :: Integer -> AccountPlan -> Maybe AnyAccount
-accountByID i (Branch _ _ ag children)
-  | i `inRange` agRange ag = do
-      let accs = [acc | Leaf _ _ acc <- children]
-      case filter (\a -> getID a == i) accs of
-        [x] -> return x
-        _   -> do
-               let grps = [grp | Branch _ _ _ grp <- children]
-               first (accountByID i) (concat grps)
-  | otherwise = Nothing
-
-accountByID i (Leaf _ _ acc)
-  | getID acc == i = Just acc
-  | otherwise      = Nothing
-
 -- | List of groups IDs of all account's parent groups
 groupIDs :: Integer         -- ^ Account ID
          -> AccountPlan

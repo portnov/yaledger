@@ -94,19 +94,49 @@ sumPostings c es = do
     let s = sum [x | x :# _ <- ams]
     return (s :# c)
 
-accountAsCredit :: (Throws InvalidAccountType l)
-                => AnyAccount
-                -> Ledger l (FreeOr Credit Account)
-accountAsCredit (WFree   _ a) = return $ Left a
-accountAsCredit (WCredit _ a) = return $ Right a
-accountAsCredit _ = throw $ InvalidAccountType AGDebit AGCredit
+accountByID :: AccountID t -> AccountPlan -> Maybe AnyAccount
+accountByID i (Branch _ _ ag children)
+  | i `inRange` agRange ag = do
+      let accs = [acc | Leaf _ _ acc <- children]
+      case filter (\a -> getID a == i) accs of
+        [x] -> return x
+        _   -> do
+               let grps = [grp | Branch _ _ _ grp <- children]
+               first (accountByID i) (concat grps)
+  | otherwise = Nothing
 
-accountAsDebit :: (Throws InvalidAccountType l)
+accountByID i (Leaf _ _ acc)
+  | getID acc == i = Just acc
+  | otherwise      = Nothing
+
+accountIsCredit :: (Throws InvalidAccountType l)
                 => AnyAccount
-                -> Ledger l (FreeOr Debit Account)
-accountAsDebit (WFree   _ a) = return $ Left a
-accountAsDebit (WDebit _ a) = return $ Right a
-accountAsDebit _ = throw $ InvalidAccountType AGCredit AGDebit
+                -> Ledger l ()
+accountIsCredit (WDebit _ _) = throw $ InvalidAccountType AGDebit AGCredit
+accountIsCredit _            = return ()
+
+accountIsDebit :: (Throws InvalidAccountType l)
+                => AnyAccount
+                -> Ledger l ()
+accountIsDebit (WCredit _ _) = throw $ InvalidAccountType AGCredit AGDebit
+accountIsDebit _             = return ()
+
+accountIDIsCredit :: (Throws InvalidAccountType l)
+                => AccountID t
+                -> Ledger l ()
+accountIDIsCredit aid = accountIsCredit =<< accountByIDM aid
+
+accountIDIsDebit :: (Throws InvalidAccountType l)
+                => AccountID t
+                -> Ledger l ()
+accountIDIsDebit aid = accountIsDebit =<< accountByIDM aid
+
+accountByIDM :: AccountID t -> Ledger l AnyAccount
+accountByIDM aid = do
+  plan <- gets lsAccountPlan
+  case accountByID aid plan of
+   Nothing -> fail $ "Internal error: no such account: " ++ show aid
+   Just acc -> return acc
 
 uniq :: (Eq a) => [a] -> [a]
 uniq [] = []
@@ -125,7 +155,7 @@ checkEntry attrs src@(UEntry dt cr mbCorr) = do
   defcur <- gets lsDefaultCurrency
   let currencies = uniq $ map getCurrency cr ++ map getCurrency dt ++ [defcur]
       firstCurrency = head currencies
-      accounts = map (getID . creditPostingAccount) cr ++ map (getID . debitPostingAccount) dt
+      accounts = map creditPostingAccount cr ++ map debitPostingAccount dt
   dtSum :# _ <- sumPostings firstCurrency dt
   crSum :# _ <- sumPostings firstCurrency cr
   if dtSum == crSum
@@ -146,39 +176,42 @@ checkEntry attrs src@(UEntry dt cr mbCorr) = do
            Just acc -> if diff < 0
                          then do
                               message $ "Corresponding account for " ++ show src ++ ": " ++ show acc
-                              account <- accountAsCredit acc
-                                          `catchWithSrcLoc`
-                                            \loc (InvalidAccountType t1 t2) -> fail $ show src ++ ": " ++ show acc
-                              let e = CPosting account (-diff :# firstCurrency)
+                              accountIsCredit acc
+                              let e = CPosting (getID acc) (-diff :# firstCurrency)
                               return $ CEntry dt (e:cr)
                          else do
-                              account <- accountAsDebit acc
-                              message $ "Corresponding account for " ++ show src ++ ": " ++ show account
-                              let e = DPosting account (diff :# firstCurrency)
+                              accountIsDebit acc
+                              message $ "Corresponding account for " ++ show src ++ ": " ++ show acc
+                              let e = DPosting (getID acc) (diff :# firstCurrency)
                               return $ CEntry (e:dt) cr
 
 reconciliate :: (Throws NoSuchRate l,
                  Throws InvalidAccountType l)
              => DateTime
-             -> AnyAccount
+             -> AccountID t
              -> Amount
              -> Ledger l (Entry Amount Unchecked)
-reconciliate date account (x :# c) = do
+reconciliate date aid (x :# c) = do
+  account <- accountByIDM aid
   let qry = Query {
               qStart = Nothing,
               qEnd   = Just date,
               qAttributes = [] }
   bal <- saldo qry account
   (currentBalance :# _) <- convert c bal
+  message $ "Account: " ++ show account
+  message $ "Debit postings: " ++ show (debitPostings account)
+  message $ "Credit postings: " ++ show (creditPostings account)
+  message $ "Current balance: " ++ show bal
   let diff = x - currentBalance
   if diff > 0
     then do
-         account' <- accountAsCredit account
-         let posting = CPosting account' (diff :# c)
+         accountIsCredit account
+         let posting = CPosting (getID account) (diff :# c)
          return $ UEntry [] [posting] Nothing
     else do
-         account' <- accountAsDebit account
-         let posting = DPosting account' (-diff :# c)
+         accountIsDebit account
+         let posting = DPosting (getID account) (-diff :# c)
          return $ UEntry [posting] [] Nothing
 
 updateAccount :: Integer
@@ -187,7 +220,9 @@ updateAccount :: Integer
               -> Ledger l AccountPlan
 updateAccount i leaf@(Leaf _ _ acc) fn
   | getID acc == i = do
+                     message $ "Account found: #" ++ show i
                      acc' <- fn acc
+                     message $ "Credit postings: " ++ show (creditPostings acc')
                      return $ leaf {leafData = acc'}
   | otherwise      = return leaf
 updateAccount i branch@(Branch _ _ ag children) fn

@@ -21,7 +21,8 @@ putCreditPosting :: (Throws InvalidAccountType l)
                => Ext (Posting Amount Credit)
                -> AnyAccount
                -> Ledger l AnyAccount
-putCreditPosting e acc =
+putCreditPosting e acc = do
+  message $ "Credit posting: " ++ show e
   case acc of
     WFree attrs account ->
       return $ WFree attrs $ credit account e
@@ -53,10 +54,12 @@ processEntry :: (Throws NoSuchRate l,
                -> Ledger l ()
 processEntry date attrs uposting = do
   CEntry dt cr <- checkEntry attrs uposting
-  forM dt $ \e -> updatePlan $ \plan ->
-      updateAccount (getID $ debitPostingAccount e) plan (putDebitPosting $ Ext date attrs e)
-  forM cr $ \e -> updatePlan $ \plan ->
-      updateAccount (getID $ creditPostingAccount e) plan (putCreditPosting $ Ext date attrs e)
+  forM dt $ \p -> updatePlan $ \plan ->
+      updateAccount (debitPostingAccount p) plan (putDebitPosting $ Ext date attrs p)
+  forM cr $ \e -> updatePlan $ \plan -> do
+      message $ "Credit posting at acc. #" ++ show (creditPostingAccount e)
+      res <- updateAccount (creditPostingAccount e) plan (putCreditPosting $ Ext date attrs e)
+      return res
   return ()
 
 processTransaction :: (Throws NoSuchRate l,
@@ -76,5 +79,7 @@ processTransaction (Ext date attrs (Transaction (TCallTemplate name args))) = do
 processTransaction (Ext date attrs (Transaction (TReconciliate acc x))) = do
     entry <- reconciliate date acc x
     processEntry date (("category", "reconciliation"):attrs) entry
+processTransaction (Ext _ _ (Transaction (TSetRate c1 c2 x))) = do
+    modify $ \st -> st {lsRates = M.insert (c1, c2) x (lsRates st)}
 processTransaction x = fail $ show x
 

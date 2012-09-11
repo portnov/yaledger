@@ -71,6 +71,7 @@ pRecord :: Parser (Ext Record)
 pRecord = try (ext pTemplate)
           <|> try (ext (Transaction <$> pEntry pAmount))
           <|> try (ext (Transaction <$> pReconciliate))
+          <|> try (ext (Transaction <$> pSetRate))
           <|> ext (Transaction <$> pCall)
 
 pTemplate :: Parser Record
@@ -117,7 +118,22 @@ pReconciliate = do
   account <- getAccount accountPlan path 
   spaces
   x <- pAmount
-  return $ TReconciliate account x
+  return $ TReconciliate (getID account) x
+
+pSetRate :: Parser (Transaction v)
+pSetRate = do
+  symbol "rate"
+  spaces
+  c1 <- currency
+  spaces
+  reservedOp "->"
+  spaces
+  c2 <- currency
+  spaces
+  reservedOp "="
+  spaces
+  x <- float
+  return $ TSetRate c1 c2 x
 
 pCreditPosting :: Parser v -> Parser (Posting v Credit)
 pCreditPosting p = do
@@ -131,7 +147,7 @@ pCreditPosting p = do
                _ -> fail $ printf "Invalid account type: %s: debit instead of credit." (intercalate "/" accPath)
   spaces
   amount <- p
-  return $ CPosting account amount
+  return $ CPosting (getID account) amount
 
 pDebitPosting :: Parser v -> Parser (Posting v Debit)
 pDebitPosting p = do
@@ -145,13 +161,16 @@ pDebitPosting p = do
                _ -> fail $ printf "Invalid account type: %s: credit instead of debit." (intercalate "/" accPath)
   spaces
   amount <- p
-  return $ DPosting account amount
+  return $ DPosting (getID account) amount
 
 pAmount :: Parser Amount
 pAmount = do
   n <- number
-  c <- many $ noneOf " \r\n\t\")}"
+  c <- currency
   return $ n :# c
+
+currency :: Parser Currency
+currency = many $ noneOf " \r\n\t\")}->"
 
 number :: Parser Decimal
 number = do

@@ -42,12 +42,13 @@ instance ATemplate (Transaction Param) where
   nParams (TEntry entry) = nParams entry
   nParams (TReconciliate _ a) = nParams a
   nParams (TInitlalize _ a) = nParams a
-  nParams (TCallTemplate _ _) = 0
+  nParams _ = 0
 
   subst (TEntry entry) = TEntry <$> subst entry
   subst (TReconciliate p a) = TReconciliate p <$> subst a
   subst (TInitlalize p a) = TInitlalize p <$> subst a
   subst (TCallTemplate n t) = return $ TCallTemplate n t
+  subst (TSetRate c1 c2 x)  = return $ TSetRate c1 c2 x
 
 instance ATemplate (Entry Param a) where
   type Result (Entry Param a) = Entry Amount a

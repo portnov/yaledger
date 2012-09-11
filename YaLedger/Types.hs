@@ -81,9 +81,10 @@ data Record =
 
 data Transaction v =
     TEntry (Entry v Unchecked)
-  | TReconciliate AnyAccount v
-  | TInitlalize  AnyAccount v
+  | TReconciliate Integer v
+  | TInitlalize  Integer v
   | TCallTemplate String [Amount]
+  | TSetRate Currency Currency Double
   deriving (Eq, Show)
 
 data Entry v c where
@@ -126,6 +127,8 @@ type Currency = String
 
 type Rates = M.Map (Currency, Currency) Double
 
+type AccountID t = Integer
+
 type FreeOr t f = Either (f Free) (f t)
 
 instance (HasID (f Free), HasID (f t)) => HasID (FreeOr t f) where
@@ -134,12 +137,12 @@ instance (HasID (f Free), HasID (f t)) => HasID (FreeOr t f) where
 
 data Posting v t where
   DPosting :: {
-    debitPostingAccount :: FreeOr Debit Account,
+    debitPostingAccount :: AccountID Debit,
     debitPostingAmount :: v
   } -> Posting v Debit
 
   CPosting :: {
-    creditPostingAccount :: FreeOr Credit Account,
+    creditPostingAccount :: AccountID Credit,
     creditPostingAmount  :: v
   } -> Posting v Credit
 
@@ -150,8 +153,8 @@ instance Eq v => Eq (Posting v Credit) where
   (CPosting a1 x1) == (CPosting a2 x2) = (a1 == a2) && (x1 == x2)
 
 instance Show v => Show (Posting v t) where
-  show (DPosting acc x) = "debit " ++ getName acc ++ " by " ++ show x
-  show (CPosting acc x) = "credit " ++ getName acc ++ " by " ++ show x
+  show (DPosting acc x) = "debit #" ++ show acc ++ " by " ++ show x
+  show (CPosting acc x) = "credit #" ++ show acc ++ " by " ++ show x
 
 instance HasCurrency (Posting Amount t) where
   getCurrency (DPosting _ (_ :# c)) = c

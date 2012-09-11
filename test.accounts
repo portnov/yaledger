@@ -1,6 +1,10 @@
 group Root {
   currency = "$";
   account roubles {currency = "р"};
+  account dollars {
+    currency = "$";
+    category = "reconciliation";
+  };
   group X (credit) {
     currency = "€";
     account X1;
