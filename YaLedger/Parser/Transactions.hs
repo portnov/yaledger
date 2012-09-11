@@ -66,8 +66,6 @@ pTran p = do
   es <- try (try (Left <$> pCreditPosting p) <|> (try (Right <$> pDebitPosting p))) `sepEndBy1` (newline <?> "N1")
   corr <- optionMaybe $ try $ do
             spaces
-            symbol "corr"
-            spaces <?> "S1"
             x <- identifier <?> "I1"
             optional newline
             return x
