@@ -340,7 +340,7 @@ instance Show AccountGroupData where
       (snd $ agRange ag)
       (showA $ agAttributes ag)
 
-type AccountPlan = Tree AccountGroupData AnyAccount
+type AccountPlan = Tree Linked AccountGroupData AnyAccount
 
 type AccountMap = [AMEntry]
 
