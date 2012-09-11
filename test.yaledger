@@ -1,6 +1,6 @@
 @ 2012/09/09 Template test.
 template test
-  dr Y1 #1*1.05 (default 5.0)$
+  dr Y1 #1*1.05 (default 5.0$)
 
 @ 2012/09/09
 {category = "test"}

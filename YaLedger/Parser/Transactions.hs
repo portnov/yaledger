@@ -138,7 +138,7 @@ pDebitPosting p = do
 pAmount :: Parser Amount
 pAmount = do
   n <- number
-  c <- many $ noneOf " \r\n\t"
+  c <- many $ noneOf " \r\n\t\")}"
   return $ n :# c
 
 number :: Parser Decimal
