@@ -73,5 +73,8 @@ processTransaction (Ext date attrs (Transaction (TCallTemplate name args))) = do
     template <- getTemplate name
     tran <- fillTemplate template args
     processTransaction (Ext date attrs (Transaction tran))
+processTransaction (Ext date attrs (Transaction (TReconciliate acc x))) = do
+    entry <- reconciliate date acc x
+    processEntry date (("category", "reconciliation"):attrs) entry
 processTransaction x = fail $ show x
 

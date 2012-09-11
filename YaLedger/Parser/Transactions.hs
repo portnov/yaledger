@@ -5,6 +5,7 @@ import Control.Applicative hiding (many, (<|>), optional)
 import Data.Either
 import Data.Decimal
 import Data.Maybe
+import Data.List
 import Data.Dates
 import qualified Data.Map as M
 import Text.Parsec
@@ -69,6 +70,7 @@ ext p = do
 pRecord :: Parser (Ext Record)
 pRecord = try (ext pTemplate)
           <|> try (ext (Transaction <$> pEntry pAmount))
+          <|> try (ext (Transaction <$> pReconciliate))
           <|> ext (Transaction <$> pCall)
 
 pTemplate :: Parser Record
@@ -107,16 +109,26 @@ pCall = do
                        name (length args) n
     else return $ TCallTemplate name args
 
+pReconciliate :: Parser (Transaction Amount)
+pReconciliate = do
+  symbol "reconciliate"
+  spaces
+  path <- pPath
+  account <- getAccount accountPlan path 
+  spaces
+  x <- pAmount
+  return $ TReconciliate account x
+
 pCreditPosting :: Parser v -> Parser (Posting v Credit)
 pCreditPosting p = do
   spaces
   symbol "cr"
-  accPath <- identifier
-  acc <- getAccount accountPlan (mkPath accPath)
+  accPath <- pPath
+  acc <- getAccount accountPlan accPath
   account <- case acc of
                WFree   _ acc -> return $ Left acc
                WCredit _ acc -> return $ Right acc
-               _ -> fail $ printf "Invalid account type: %s: debit instead of credit." accPath
+               _ -> fail $ printf "Invalid account type: %s: debit instead of credit." (intercalate "/" accPath)
   spaces
   amount <- p
   return $ CPosting account amount
@@ -125,12 +137,12 @@ pDebitPosting :: Parser v -> Parser (Posting v Debit)
 pDebitPosting p = do
   spaces
   symbol "dr"
-  accPath <- identifier
-  acc <- getAccount accountPlan (mkPath accPath)
+  accPath <- pPath
+  acc <- getAccount accountPlan accPath
   account <- case acc of
                WFree   _ acc -> return $ Left acc
                WDebit _ acc -> return $ Right acc
-               _ -> fail $ printf "Invalid account type: %s: credit instead of debit." accPath
+               _ -> fail $ printf "Invalid account type: %s: credit instead of debit." (intercalate "/" accPath)
   spaces
   amount <- p
   return $ DPosting account amount

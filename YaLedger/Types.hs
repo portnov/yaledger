@@ -81,8 +81,8 @@ data Record =
 
 data Transaction v =
     TEntry (Entry v Unchecked)
-  | TReconcilate Path v
-  | TInitlalize  Path v
+  | TReconciliate AnyAccount v
+  | TInitlalize  AnyAccount v
   | TCallTemplate String [Amount]
   deriving (Eq, Show)
 

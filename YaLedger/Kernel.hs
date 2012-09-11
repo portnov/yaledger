@@ -149,13 +149,37 @@ checkEntry attrs src@(UEntry dt cr mbCorr) = do
                               account <- accountAsCredit acc
                                           `catchWithSrcLoc`
                                             \loc (InvalidAccountType t1 t2) -> fail $ show src ++ ": " ++ show acc
-                              let e = CPosting account (diff :# firstCurrency)
+                              let e = CPosting account (-diff :# firstCurrency)
                               return $ CEntry dt (e:cr)
                          else do
                               account <- accountAsDebit acc
                               message $ "Corresponding account for " ++ show src ++ ": " ++ show account
                               let e = DPosting account (diff :# firstCurrency)
                               return $ CEntry (e:dt) cr
+
+reconciliate :: (Throws NoSuchRate l,
+                 Throws InvalidAccountType l)
+             => DateTime
+             -> AnyAccount
+             -> Amount
+             -> Ledger l (Entry Amount Unchecked)
+reconciliate date account (x :# c) = do
+  let qry = Query {
+              qStart = Nothing,
+              qEnd   = Just date,
+              qAttributes = [] }
+  bal <- saldo qry account
+  (currentBalance :# _) <- convert c bal
+  let diff = x - currentBalance
+  if diff > 0
+    then do
+         account' <- accountAsCredit account
+         let posting = CPosting account' (diff :# c)
+         return $ UEntry [] [posting] Nothing
+    else do
+         account' <- accountAsDebit account
+         let posting = DPosting account' (-diff :# c)
+         return $ UEntry [posting] [] Nothing
 
 updateAccount :: Integer
               -> AccountPlan
