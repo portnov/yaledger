@@ -47,13 +47,13 @@ process :: [Ext Record] -> LedgerMonad ()
 process trans =
   runEMT $ forM_ trans processTransaction
         `catchWithSrcLoc`
-           (\loc (e :: InvalidAccountType) -> fail (showExceptionWithTrace loc e))
+           (\loc (e :: InvalidAccountType) -> wrapIO $ putStrLn (showExceptionWithTrace loc e))
         `catchWithSrcLoc`
-           (\loc (e :: NoSuchRate) -> fail (showExceptionWithTrace loc e))
+           (\loc (e :: NoSuchRate) -> wrapIO $ putStrLn (showExceptionWithTrace loc e))
         `catchWithSrcLoc`
-           (\loc (e :: NoCorrespondingAccountFound) -> fail (showExceptionWithTrace loc e))
+           (\loc (e :: NoCorrespondingAccountFound) -> wrapIO $ putStrLn (showExceptionWithTrace loc e))
         `catchWithSrcLoc`
-           (\loc (e :: NoSuchTemplate) -> fail (showExceptionWithTrace loc e))
+           (\loc (e :: NoSuchTemplate) -> wrapIO $ putStrLn (showExceptionWithTrace loc e))
 
 test :: IO ()
 test = do

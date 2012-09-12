@@ -76,7 +76,7 @@ pRecord = try (ext pTemplate)
 
 pTemplate :: Parser Record
 pTemplate = do
-  symbol "template"
+  reserved "template"
   name <- identifier
   tran <- pEntry param
   addTemplate name tran
@@ -99,7 +99,7 @@ pEntry p = do
 
 pCall :: Parser (Transaction v)
 pCall = do
-  symbol "call"
+  reserved "call"
   spaces
   name <- identifier
   spaces
@@ -112,7 +112,7 @@ pCall = do
 
 pReconciliate :: Parser (Transaction Amount)
 pReconciliate = do
-  symbol "reconciliate"
+  reserved "reconciliate"
   spaces
   path <- pPath
   account <- getAccount accountPlan path 
@@ -122,7 +122,7 @@ pReconciliate = do
 
 pSetRate :: Parser (Transaction v)
 pSetRate = do
-  symbol "rate"
+  reserved "rate"
   spaces
   c1 <- currency
   spaces
@@ -138,7 +138,7 @@ pSetRate = do
 pCreditPosting :: Parser v -> Parser (Posting v Credit)
 pCreditPosting p = do
   spaces
-  symbol "cr"
+  reserved "cr"
   accPath <- pPath
   acc <- getAccount accountPlan accPath
   account <- case acc of
@@ -152,7 +152,7 @@ pCreditPosting p = do
 pDebitPosting :: Parser v -> Parser (Posting v Debit)
 pDebitPosting p = do
   spaces
-  symbol "dr"
+  reserved "dr"
   accPath <- pPath
   acc <- getAccount accountPlan accPath
   account <- case acc of
@@ -188,7 +188,7 @@ param = do
          Just _ -> float
   spaces
   d <- option (0 :# "") $ try $ parens $ do
-           symbol "default"
+           reserved "default"
            pAmount
   return $ Param n c d
 
