@@ -25,7 +25,7 @@ data LedgerState = LedgerState {
   lsDefaultCurrency :: Currency,
   lsAccountPlan :: AccountPlan,
   lsAccountMap :: AccountMap,
-  lsTemplates :: M.Map String (Transaction Param),
+  lsTemplates :: M.Map String (Attributes, Transaction Param),
   lsRates :: Rates }
   deriving (Eq, Show)
 

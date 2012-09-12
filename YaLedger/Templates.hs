@@ -85,7 +85,7 @@ fillTemplate tran args =
 
 getTemplate :: (Throws NoSuchTemplate l)
             => String
-            -> Ledger l (Transaction Param)
+            -> Ledger l (Attributes, Transaction Param)
 getTemplate name = do
   tpls <- gets lsTemplates
   case M.lookup name tpls of

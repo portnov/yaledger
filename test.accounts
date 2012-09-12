@@ -25,12 +25,19 @@ group Root {
     account Z2 (credit);
     account Z3 (debit) {currency = "р"};
   };
-  group Расходы (credit) {
+  group активы {
+    currency = "р";
+    account карточка;
+    account карман {
+      category = "транспорт";
+    };
+  };
+  group расходы (credit) {
     currency = "р";
     account трамвай;
     account интернет;
   };
-  group Доходы (debit) {
+  group доходы (debit) {
     currency = "р";
     account зарплата;
     account разное {category = "TEST"};

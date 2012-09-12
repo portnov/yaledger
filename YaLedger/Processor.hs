@@ -42,12 +42,12 @@ processTransaction :: (Throws NoSuchRate l,
                    -> Ledger l ()
 processTransaction (Ext date attrs (Transaction (TEntry p))) = do
     processEntry date attrs p
-processTransaction (Ext _ _ (Template name tran)) = do
-    modify $ \st -> st {lsTemplates = M.insert name tran (lsTemplates st)}
+processTransaction (Ext _ attrs (Template name tran)) = do
+    modify $ \st -> st {lsTemplates = M.insert name (attrs, tran) (lsTemplates st)}
 processTransaction (Ext date attrs (Transaction (TCallTemplate name args))) = do
-    template <- getTemplate name
+    (tplAttrs, template) <- getTemplate name
     tran <- fillTemplate template args
-    processTransaction (Ext date attrs (Transaction tran))
+    processTransaction (Ext date (attrs ++ tplAttrs) (Transaction tran))
 processTransaction (Ext date attrs (Transaction (TReconciliate acc x))) = do
     entry <- reconciliate date acc x
     processEntry date (("category", "reconciliation"):attrs) entry
