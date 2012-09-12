@@ -3,6 +3,7 @@
 
 module YaLedger.Processor where
 
+import Control.Applicative ((<$>))
 import Control.Monad.State
 import Control.Monad.Exception
 import Control.Monad.Loc
@@ -17,37 +18,36 @@ import YaLedger.Correspondence
 import YaLedger.Kernel
 import YaLedger.Templates
 
-putCreditPosting :: (Throws InvalidAccountType l)
+putCreditPosting :: (Throws InvalidAccountType l,
+                     Throws InternalError l)
                => Ext (Posting Amount Credit)
                -> AnyAccount
-               -> Ledger l AnyAccount
-putCreditPosting e acc = do
-  message $ "Credit posting: " ++ show e
+               -> Ledger l ()
+putCreditPosting p acc = do
+  message $ "Credit posting: " ++ show p
   case acc of
-    WFree attrs account ->
-      return $ WFree attrs $ credit account e
-    WCredit attrs account ->
-      return $ WCredit attrs $ credit account e
+    WFree   attrs account -> credit account p
+    WCredit attrs account -> credit account p
     WDebit _ _ ->
       throw (InvalidAccountType AGDebit AGCredit)
 
-putDebitPosting :: (Throws InvalidAccountType l)
+putDebitPosting :: (Throws InvalidAccountType l,
+                    Throws InternalError l)
                => Ext (Posting Amount Debit)
                -> AnyAccount
-               -> Ledger l AnyAccount
-putDebitPosting e acc = do
+               -> Ledger l ()
+putDebitPosting p acc = do
   case acc of
-    WFree attrs account ->
-      return $ WFree attrs $ debit account e
-    WDebit attrs account ->
-      return $ WDebit attrs $ debit account e
+    WFree  attrs account -> debit account p
+    WDebit attrs account -> debit account p
     WCredit _ _ ->
       throw (InvalidAccountType AGCredit AGDebit)
 
 processEntry :: (Throws NoSuchRate l,
-                   Throws NoCorrespondingAccountFound l,
-                   Throws InvalidAccountType l,
-                   Throws NoSuchTemplate l)
+                 Throws NoCorrespondingAccountFound l,
+                 Throws InvalidAccountType l,
+                 Throws NoSuchTemplate l,
+                 Throws InternalError l)
                => DateTime
                -> Attributes
                -> Entry Amount Unchecked
@@ -65,7 +65,8 @@ processEntry date attrs uposting = do
 processTransaction :: (Throws NoSuchRate l,
                        Throws NoCorrespondingAccountFound l,
                        Throws InvalidAccountType l,
-                       Throws NoSuchTemplate l)
+                       Throws NoSuchTemplate l,
+                       Throws InternalError l)
                    => Ext Record
                    -> Ledger l ()
 processTransaction (Ext date attrs (Transaction (TEntry p))) = do

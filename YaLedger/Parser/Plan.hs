@@ -2,7 +2,9 @@
 module YaLedger.Parser.Plan where
 
 import Control.Applicative
+import Control.Monad.Trans
 import Data.Maybe
+import Data.IORef
 import Text.Parsec
 
 import YaLedger.Types
@@ -23,12 +25,19 @@ emptyPState = PState {
   groupCurrency = "",
   groupType = AGFree }
 
-type Parser a = Parsec String PState a
+type Parser a = ParsecT String PState IO a
 
-account :: AccountGroupType -> String -> Integer -> Currency -> Attributes -> AnyAccount
-account AGDebit  name aid c attrs = WDebit  attrs $ DAccount name aid c []
-account AGCredit name aid c attrs = WCredit attrs $ CAccount name aid c []
-account AGFree   name aid c attrs = WFree   attrs $ FAccount name aid c [] []
+account :: AccountGroupType -> String -> Integer -> Currency -> Attributes -> Parser AnyAccount
+account AGDebit  name aid c attrs = do
+    empty <- lift $ newIORef []
+    return $ WDebit  attrs $ DAccount name aid c empty
+account AGCredit name aid c attrs = do
+    empty <- lift $ newIORef []
+    return $ WCredit attrs $ CAccount name aid c empty
+account AGFree   name aid c attrs = do
+    empty1 <- lift $ newIORef []
+    empty2 <- lift $ newIORef []
+    return $ WFree   attrs $ FAccount name aid c empty1 empty2
 
 newAID :: Parser Integer
 newAID = do
@@ -70,7 +79,7 @@ pAccount = do
   aid <- newAID
   let mbCurrency = lookup "currency" attrs
       currency = fromMaybe (groupCurrency st) mbCurrency
-  return $ account tp name aid currency attrs
+  account tp name aid currency attrs
 
 pAccountGroup :: Parser AccountPlan 
 pAccountGroup = do

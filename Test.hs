@@ -23,7 +23,8 @@ import qualified YaLedger.Parser.Map as Map
 readPlan :: FilePath -> IO AccountPlan
 readPlan path = do
   content <- readFile path
-  case runParser Plan.pAccountGroup Plan.emptyPState path content of
+  res <- runParserT Plan.pAccountGroup Plan.emptyPState path content
+  case res of
     Right res -> return res
     Left err -> fail $ show err
 

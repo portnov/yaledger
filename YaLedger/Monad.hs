@@ -10,8 +10,10 @@ import Control.Monad.Exception.Base
 import Control.Monad.Loc
 import Data.Dates
 import qualified Data.Map as M
+import Data.IORef
 
 import YaLedger.Types
+import YaLedger.Exceptions
 
 newtype LedgerMonad a = LedgerMonad (StateT LedgerState IO a)
   deriving (Monad, MonadState LedgerState, MonadIO)
@@ -42,11 +44,14 @@ emptyLedgerState plan amap = do
              lsTemplates = M.empty,
              lsRates = M.empty }
 
-message :: String -> Ledger l ()
+wrapIO :: (MonadIO m, Throws InternalError l)
+       => IO a
+       -> EMT l m a
+wrapIO action = wrapE $ liftIO action
+
+message :: Throws InternalError l => String -> Ledger l ()
 message str =
-  (liftIO $ putStrLn $ ">> " ++ str)
-    `catchWithSrcLoc`
-      \loc (e :: SomeException) -> fail (showExceptionWithTrace loc e)
+  wrapIO $ putStrLn $ ">> " ++ str
 
 runLedger :: AccountPlan -> AccountMap -> LedgerMonad a -> IO a
 runLedger plan amap action = do
@@ -54,4 +59,15 @@ runLedger plan amap action = do
   st <- emptyLedgerState plan amap
   (res, _) <- runStateT emt st
   return res
+
+-- * IOList
+--
+newIOList :: (MonadIO m, Throws InternalError l) => EMT l m (IOList a)
+newIOList = wrapIO $ newIORef []
+
+appendIOList :: (MonadIO m, Throws InternalError l) => IOList a -> a -> EMT l m ()
+appendIOList iolist x = wrapIO $ modifyIORef iolist (x:)
+
+readIOList :: (MonadIO m, Throws InternalError l) => IOList a -> EMT l m [a]
+readIOList iolist = wrapIO (readIORef iolist)
 

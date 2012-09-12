@@ -9,6 +9,7 @@ import Control.Monad.Trans
 import Data.List
 import Data.Dates
 import Data.Decimal
+import Data.IORef
 import qualified Data.Map as M
 import Text.Regex.PCRE
 import Text.Printf
@@ -21,6 +22,16 @@ data Unchecked
 data Credit
 data Debit
 data Free
+
+type IOList a = IORef [a]
+
+type Currency = String
+
+type Rates = M.Map (Currency, Currency) Double
+
+type AccountID = Integer
+
+type FreeOr t f = Either (f Free) (f t)
 
 type Attributes = [(String, String)]
 
@@ -46,12 +57,6 @@ class HasID a where
 
 class HasCurrency a where
   getCurrency :: a -> Currency
-
-class CanCredit t where
-  credit :: Account t -> Ext (Posting Amount Credit) -> Account t
-
-class CanDebit t where
-  debit :: Account t -> Ext (Posting Amount Debit) -> Account t
 
 data Param =
     Fixed Amount
@@ -123,26 +128,18 @@ data Amount = Decimal :# Currency
 instance Show Amount where
   show (n :# c) = show n ++ c
 
-type Currency = String
-
-type Rates = M.Map (Currency, Currency) Double
-
-type AccountID t = Integer
-
-type FreeOr t f = Either (f Free) (f t)
-
 instance (HasID (f Free), HasID (f t)) => HasID (FreeOr t f) where
   getID (Left x)  = getID x
   getID (Right x) = getID x
 
 data Posting v t where
   DPosting :: {
-    debitPostingAccount :: AccountID Debit,
+    debitPostingAccount :: AccountID,
     debitPostingAmount :: v
   } -> Posting v Debit
 
   CPosting :: {
-    creditPostingAccount :: AccountID Credit,
+    creditPostingAccount :: AccountID,
     creditPostingAmount  :: v
   } -> Posting v Credit
 
@@ -178,25 +175,25 @@ instance HasAmount a => HasAmount (Ext a) where
 
 data Account t where
   CAccount :: {
-    creditAccountName :: String,
-    creditAccountID :: Integer,
+    creditAccountName     :: String,
+    creditAccountID       :: AccountID,
     creditAccountCurrency :: Currency,
-    creditAccountPostings :: [Ext (Posting Amount Credit)]
+    creditAccountPostings :: IOList (Ext (Posting Amount Credit))
   } -> Account Credit
 
   DAccount :: {
-    debitAccountName :: String,
-    debitAccountID :: Integer,
+    debitAccountName     :: String,
+    debitAccountID       :: AccountID,
     debitAccountCurrency :: Currency,
-    debitAccountPostings :: [Ext (Posting Amount Debit)]
+    debitAccountPostings :: IOList (Ext (Posting Amount Debit))
   } -> Account Debit
 
   FAccount :: {
-    freeAccountName :: String,
-    freeAccountID :: Integer,
-    freeAccountCurrency :: Currency,
-    freeAccountCreditPostings :: [Ext (Posting Amount Credit)],
-    freeAccountDebitPostings :: [Ext (Posting Amount Debit)]
+    freeAccountName           :: String,
+    freeAccountID             :: AccountID,
+    freeAccountCurrency       :: Currency,
+    freeAccountCreditPostings :: IOList (Ext (Posting Amount Credit)),
+    freeAccountDebitPostings  :: IOList (Ext (Posting Amount Debit))
   } -> Account Free
 
 instance HasID (Account t) where

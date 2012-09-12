@@ -3,6 +3,7 @@
 
 module YaLedger.Kernel where
 
+import Control.Applicative ((<$>))
 import Control.Monad
 import Control.Monad.State
 import Control.Monad.Exception
@@ -22,21 +23,33 @@ import YaLedger.Monad
 import YaLedger.Exceptions
 import YaLedger.Correspondence
 
+class CanCredit t where
+  credit :: Throws InternalError l
+         => Account t
+         -> Ext (Posting Amount Credit)
+         -> Ledger l ()
+
+class CanDebit t where
+  debit :: Throws InternalError l
+        => Account t
+        -> Ext (Posting Amount Debit)
+        -> Ledger l ()
+
 instance CanDebit Debit where
-  debit acc@(DAccount {..}) e =
-      acc {debitAccountPostings = e: debitAccountPostings}
+  debit (DAccount {..}) p =
+      appendIOList debitAccountPostings p
 
 instance CanDebit Free where
-  debit acc@(FAccount {..}) e =
-      acc {freeAccountDebitPostings = e: freeAccountDebitPostings}
+  debit (FAccount {..}) p =
+      appendIOList freeAccountDebitPostings p
 
 instance CanCredit Credit where
-  credit acc@(CAccount {..}) e =
-      acc {creditAccountPostings = e: creditAccountPostings}
+  credit (CAccount {..}) p =
+      appendIOList creditAccountPostings p
 
 instance CanCredit Free where
-  credit acc@(FAccount {..}) e =
-      acc {freeAccountCreditPostings = e: freeAccountCreditPostings}
+  credit (FAccount {..}) p =
+      appendIOList freeAccountCreditPostings p
 
 convert :: (Throws NoSuchRate l)
         => Currency -> Amount -> Ledger l Amount
@@ -67,23 +80,35 @@ checkQuery (Query {..}) (Ext {..}) =
 
   in  p && q && r
 
-creditPostings :: AnyAccount -> [Ext (Posting Amount Credit)]
-creditPostings (WCredit _ (CAccount {..})) = creditAccountPostings
-creditPostings (WDebit  _ (DAccount {..})) = []
-creditPostings (WFree   _ (FAccount {..})) = freeAccountCreditPostings
+creditPostings :: Throws InternalError l
+               => AnyAccount
+               -> Ledger l (IOList (Ext (Posting Amount Credit)))
+creditPostings (WCredit _ (CAccount {..})) = return creditAccountPostings
+creditPostings (WDebit  _ (DAccount {..})) = newIOList
+creditPostings (WFree   _ (FAccount {..})) = return freeAccountCreditPostings
 
-debitPostings :: AnyAccount -> [Ext (Posting Amount Debit)]
-debitPostings (WCredit _ (CAccount {..})) = []
-debitPostings (WDebit  _ (DAccount {..})) = debitAccountPostings
-debitPostings (WFree   _ (FAccount {..})) = freeAccountDebitPostings
+debitPostings :: Throws InternalError l
+              => AnyAccount
+              -> Ledger l (IOList (Ext (Posting Amount Debit)))
+debitPostings (WCredit _ (CAccount {..})) = newIOList
+debitPostings (WDebit  _ (DAccount {..})) = return debitAccountPostings
+debitPostings (WFree   _ (FAccount {..})) = return freeAccountDebitPostings
 
-saldo :: (Throws NoSuchRate l)
+saldo :: (Throws NoSuchRate l,
+          Throws InternalError l)
       => Query -> AnyAccount -> Ledger l Amount
 saldo query account = do
   rs <- gets lsRates
+
   let c = getCurrency account
-  cr :# _ <- sumPostings c $ map getContent $ filter (checkQuery query) $ creditPostings account
-  dt :# _ <- sumPostings c $ map getContent $ filter (checkQuery query) $ debitPostings  account
+
+      filterPostings :: [Ext (Posting Amount t)] -> [Posting Amount t]
+      filterPostings list = map getContent $ filter (checkQuery query) list
+
+  crp <- filterPostings <$> (readIOList =<< creditPostings account)
+  dtp <- filterPostings <$> (readIOList =<< debitPostings  account)
+  cr :# _ <- sumPostings c crp
+  dt :# _ <- sumPostings c dtp
   return $ (cr - dt) :# c
 
 sumPostings :: (Throws NoSuchRate l)
@@ -94,7 +119,7 @@ sumPostings c es = do
     let s = sum [x | x :# _ <- ams]
     return (s :# c)
 
-accountByID :: AccountID t -> AccountPlan -> Maybe AnyAccount
+accountByID :: AccountID -> AccountPlan -> Maybe AnyAccount
 accountByID i (Branch _ _ ag children)
   | i `inRange` agRange ag = do
       let accs = [acc | Leaf _ _ acc <- children]
@@ -122,16 +147,16 @@ accountIsDebit (WCredit _ _) = throw $ InvalidAccountType AGCredit AGDebit
 accountIsDebit _             = return ()
 
 accountIDIsCredit :: (Throws InvalidAccountType l)
-                => AccountID t
+                => AccountID
                 -> Ledger l ()
 accountIDIsCredit aid = accountIsCredit =<< accountByIDM aid
 
 accountIDIsDebit :: (Throws InvalidAccountType l)
-                => AccountID t
+                => AccountID
                 -> Ledger l ()
 accountIDIsDebit aid = accountIsDebit =<< accountByIDM aid
 
-accountByIDM :: AccountID t -> Ledger l AnyAccount
+accountByIDM :: AccountID -> Ledger l AnyAccount
 accountByIDM aid = do
   plan <- gets lsAccountPlan
   case accountByID aid plan of
@@ -144,7 +169,8 @@ uniq (x:xs) = x: uniq (filter (/= x) xs)
 
 checkEntry :: (Throws NoSuchRate l,
                  Throws NoCorrespondingAccountFound l,
-                 Throws InvalidAccountType l)
+                 Throws InvalidAccountType l,
+                 Throws InternalError l)
              => Attributes
              -> Entry Amount Unchecked
              -> Ledger l (Entry Amount Checked)
@@ -186,9 +212,10 @@ checkEntry attrs src@(UEntry dt cr mbCorr) = do
                               return $ CEntry (e:dt) cr
 
 reconciliate :: (Throws NoSuchRate l,
-                 Throws InvalidAccountType l)
+                 Throws InvalidAccountType l,
+                 Throws InternalError l)
              => DateTime
-             -> AccountID t
+             -> AccountID
              -> Amount
              -> Ledger l (Entry Amount Unchecked)
 reconciliate date aid (x :# c) = do
@@ -200,8 +227,6 @@ reconciliate date aid (x :# c) = do
   bal <- saldo qry account
   (currentBalance :# _) <- convert c bal
   message $ "Account: " ++ show account
-  message $ "Debit postings: " ++ show (debitPostings account)
-  message $ "Credit postings: " ++ show (creditPostings account)
   message $ "Current balance: " ++ show bal
   let diff = x - currentBalance
   if diff > 0
@@ -214,27 +239,23 @@ reconciliate date aid (x :# c) = do
          let posting = DPosting (getID account) (-diff :# c)
          return $ UEntry [posting] [] Nothing
 
-updateAccount :: Integer
+updateAccount :: Throws InternalError l
+              => Integer
               -> AccountPlan
-              -> (AnyAccount -> Ledger l AnyAccount)
-              -> Ledger l AccountPlan
-updateAccount i leaf@(Leaf _ _ acc) fn
+              -> (AnyAccount -> Ledger l ())
+              -> Ledger l ()
+updateAccount i (Leaf _ _ acc) fn
   | getID acc == i = do
                      message $ "Account found: #" ++ show i
-                     acc' <- fn acc
-                     message $ "Credit postings: " ++ show (creditPostings acc')
-                     return $ leaf {leafData = acc'}
-  | otherwise      = return leaf
-updateAccount i branch@(Branch _ _ ag children) fn
-  | i `inRange` agRange ag = do
-    children' <- mapM (\c -> updateAccount i c fn) children
-    return $ branch {branchChildren = children'}
-  | otherwise = return branch
+                     fn acc
+  | otherwise      = return ()
+updateAccount i (Branch _ _ ag children) fn
+  | i `inRange` agRange ag = mapM_ (\c -> updateAccount i c fn) children
+  | otherwise              = return ()
 
-updatePlan :: (AccountPlan -> Ledger l AccountPlan) -> Ledger l ()
+updatePlan :: (AccountPlan -> Ledger l ()) -> Ledger l ()
 updatePlan fn = do
   st <- get
   let plan = lsAccountPlan st
-  plan' <- fn plan
-  put $ st {lsAccountPlan = plan'}
+  fn plan
 

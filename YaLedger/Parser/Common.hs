@@ -1,11 +1,13 @@
+{-# LANGUAGE NoMonomorphismRestriction, FlexibleContexts #-}
+
 module YaLedger.Parser.Common where
 
-import Control.Applicative
+import Control.Applicative ((<$>))
 import Data.Maybe
 import Data.List
 import Text.Parsec
 import qualified Text.Parsec.Token as P
-import Text.Parsec.Language (haskellDef)
+import Text.Parsec.Language
 import Text.Printf
 
 import YaLedger.Types
@@ -13,8 +15,25 @@ import YaLedger.Tree
 
 import Debug.Trace
 
+language :: (Stream s m Char, Monad m) => GenLanguageDef s u m
+language    = P.LanguageDef
+               { P.commentStart   = ""
+               , P.commentEnd     = ""
+               , P.commentLine    = "#"
+               , P.nestedComments = True
+               , P.identStart     = letter <|> char '_'
+               , P.identLetter    = alphaNum <|> oneOf "_'"
+               , P.opStart        = P.opLetter language
+               , P.opLetter       = oneOf ":!#$%&*+./<=>?@\\^|-~"
+               , P.reservedOpNames= ["account", "group", "template",
+                                   "call", "reconciliate", "rate",
+                                   "cr", "dr", "default"]
+               , P.reservedNames  = []
+               , P.caseSensitive  = True
+               }
+
 -- The lexer
-lexer       = P.makeTokenParser haskellDef    
+lexer       = P.makeTokenParser language
     
 parens      = P.parens lexer
 braces      = P.braces lexer
@@ -27,7 +46,7 @@ semicolon   = P.semi lexer
 stringLit   = P.stringLiteral lexer
 float       = P.float lexer
 
-pAttributes :: Parsec String st Attributes
+pAttributes :: Monad m => ParsecT String st m Attributes
 pAttributes = try attribute `sepEndBy` semicolon
   where
     attribute = do
@@ -36,10 +55,10 @@ pAttributes = try attribute `sepEndBy` semicolon
       value <- stringLit
       return (name, value)
 
-pPath :: Parsec String st Path
+pPath :: Monad m => ParsecT String st m Path
 pPath = identifier `sepBy` reservedOp "/"
 
-getAccount :: (st -> AccountPlan) -> Path -> Parsec String st AnyAccount
+getAccount :: Monad m => (st -> AccountPlan) -> Path -> ParsecT String st m AnyAccount
 getAccount accountPlan path = do
   st <- getState
   case lookupTree path (accountPlan st) of
@@ -49,7 +68,7 @@ getAccount accountPlan path = do
                         (intercalate "/" path)
                         (length as)
 
-getAccountPlanItem :: (st -> AccountPlan) -> Path -> Parsec String st AccountPlan
+getAccountPlanItem :: Monad m => (st -> AccountPlan) -> Path -> ParsecT String st m AccountPlan
 getAccountPlanItem accountPlan path = do
   st <- getState
   case search' (accountPlan st) path of
