@@ -23,33 +23,41 @@ import YaLedger.Monad
 import YaLedger.Exceptions
 import YaLedger.Correspondence
 
-class CanCredit t where
+class CanCredit a where
   credit :: Throws InternalError l
-         => Account t
+         => a
          -> Ext (Posting Amount Credit)
          -> Ledger l ()
 
-class CanDebit t where
+class CanDebit a where
   debit :: Throws InternalError l
-        => Account t
+        => a
         -> Ext (Posting Amount Debit)
         -> Ledger l ()
 
-instance CanDebit Debit where
+instance CanDebit (Account Debit) where
   debit (DAccount {..}) p =
       appendIOList debitAccountPostings p
 
-instance CanDebit Free where
+instance CanDebit (Account Free) where
   debit (FAccount {..}) p =
       appendIOList freeAccountDebitPostings p
 
-instance CanCredit Credit where
+instance CanCredit (Account Credit) where
   credit (CAccount {..}) p =
       appendIOList creditAccountPostings p
 
-instance CanCredit Free where
+instance CanCredit (Account Free) where
   credit (FAccount {..}) p =
       appendIOList freeAccountCreditPostings p
+
+instance CanCredit (FreeOr Credit Account) where
+  credit (Left  a) p = credit a p
+  credit (Right a) p = credit a p
+
+instance CanDebit (FreeOr Debit Account) where
+  debit (Left  a) p = debit a p
+  debit (Right a) p = debit a p
 
 convert :: (Throws NoSuchRate l)
         => Currency -> Amount -> Ledger l Amount
@@ -134,27 +142,19 @@ accountByID i (Leaf _ _ acc)
   | getID acc == i = Just acc
   | otherwise      = Nothing
 
-accountIsCredit :: (Throws InvalidAccountType l)
+accountAsCredit :: (Throws InvalidAccountType l)
                 => AnyAccount
-                -> Ledger l ()
-accountIsCredit (WDebit _ _) = throw $ InvalidAccountType AGDebit AGCredit
-accountIsCredit _            = return ()
+                -> Ledger l (FreeOr Credit Account)
+accountAsCredit (WDebit  _ _) = throw $ InvalidAccountType AGDebit AGCredit
+accountAsCredit (WCredit _ a) = return $ Right a
+accountAsCredit (WFree   _ a) = return $ Left a
 
-accountIsDebit :: (Throws InvalidAccountType l)
+accountAsDebit :: (Throws InvalidAccountType l)
                 => AnyAccount
-                -> Ledger l ()
-accountIsDebit (WCredit _ _) = throw $ InvalidAccountType AGCredit AGDebit
-accountIsDebit _             = return ()
-
-accountIDIsCredit :: (Throws InvalidAccountType l)
-                => AccountID
-                -> Ledger l ()
-accountIDIsCredit aid = accountIsCredit =<< accountByIDM aid
-
-accountIDIsDebit :: (Throws InvalidAccountType l)
-                => AccountID
-                -> Ledger l ()
-accountIDIsDebit aid = accountIsDebit =<< accountByIDM aid
+                -> Ledger l (FreeOr Debit Account)
+accountAsDebit (WCredit _ _) = throw $ InvalidAccountType AGCredit AGDebit
+accountAsDebit (WDebit  _ a) = return $ Right a
+accountAsDebit (WFree   _ a) = return $ Left a
 
 accountByIDM :: AccountID -> Ledger l AnyAccount
 accountByIDM aid = do
@@ -181,7 +181,7 @@ checkEntry attrs src@(UEntry dt cr mbCorr) = do
   defcur <- gets lsDefaultCurrency
   let currencies = uniq $ map getCurrency cr ++ map getCurrency dt ++ [defcur]
       firstCurrency = head currencies
-      accounts = map creditPostingAccount cr ++ map debitPostingAccount dt
+      accounts = map (getID . creditPostingAccount) cr ++ map (getID . debitPostingAccount) dt
   dtSum :# _ <- sumPostings firstCurrency dt
   crSum :# _ <- sumPostings firstCurrency cr
   if dtSum == crSum
@@ -202,13 +202,13 @@ checkEntry attrs src@(UEntry dt cr mbCorr) = do
            Just acc -> if diff < 0
                          then do
                               message $ "Corresponding account for " ++ show src ++ ": " ++ show acc
-                              accountIsCredit acc
-                              let e = CPosting (getID acc) (-diff :# firstCurrency)
+                              account <- accountAsCredit acc
+                              let e = CPosting account (-diff :# firstCurrency)
                               return $ CEntry dt (e:cr)
                          else do
-                              accountIsDebit acc
                               message $ "Corresponding account for " ++ show src ++ ": " ++ show acc
-                              let e = DPosting (getID acc) (diff :# firstCurrency)
+                              account <- accountAsDebit acc
+                              let e = DPosting account (diff :# firstCurrency)
                               return $ CEntry (e:dt) cr
 
 reconciliate :: (Throws NoSuchRate l,
@@ -231,31 +231,11 @@ reconciliate date aid (x :# c) = do
   let diff = x - currentBalance
   if diff > 0
     then do
-         accountIsCredit account
-         let posting = CPosting (getID account) (diff :# c)
+         account' <- accountAsCredit account
+         let posting = CPosting account' (diff :# c)
          return $ UEntry [] [posting] Nothing
     else do
-         accountIsDebit account
-         let posting = DPosting (getID account) (-diff :# c)
+         account' <- accountAsDebit account
+         let posting = DPosting account' (-diff :# c)
          return $ UEntry [posting] [] Nothing
-
-updateAccount :: Throws InternalError l
-              => Integer
-              -> AccountPlan
-              -> (AnyAccount -> Ledger l ())
-              -> Ledger l ()
-updateAccount i (Leaf _ _ acc) fn
-  | getID acc == i = do
-                     message $ "Account found: #" ++ show i
-                     fn acc
-  | otherwise      = return ()
-updateAccount i (Branch _ _ ag children) fn
-  | i `inRange` agRange ag = mapM_ (\c -> updateAccount i c fn) children
-  | otherwise              = return ()
-
-updatePlan :: (AccountPlan -> Ledger l ()) -> Ledger l ()
-updatePlan fn = do
-  st <- get
-  let plan = lsAccountPlan st
-  fn plan
 

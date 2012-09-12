@@ -18,31 +18,6 @@ import YaLedger.Correspondence
 import YaLedger.Kernel
 import YaLedger.Templates
 
-putCreditPosting :: (Throws InvalidAccountType l,
-                     Throws InternalError l)
-               => Ext (Posting Amount Credit)
-               -> AnyAccount
-               -> Ledger l ()
-putCreditPosting p acc = do
-  message $ "Credit posting: " ++ show p
-  case acc of
-    WFree   attrs account -> credit account p
-    WCredit attrs account -> credit account p
-    WDebit _ _ ->
-      throw (InvalidAccountType AGDebit AGCredit)
-
-putDebitPosting :: (Throws InvalidAccountType l,
-                    Throws InternalError l)
-               => Ext (Posting Amount Debit)
-               -> AnyAccount
-               -> Ledger l ()
-putDebitPosting p acc = do
-  case acc of
-    WFree  attrs account -> debit account p
-    WDebit attrs account -> debit account p
-    WCredit _ _ ->
-      throw (InvalidAccountType AGCredit AGDebit)
-
 processEntry :: (Throws NoSuchRate l,
                  Throws NoCorrespondingAccountFound l,
                  Throws InvalidAccountType l,
@@ -54,12 +29,8 @@ processEntry :: (Throws NoSuchRate l,
                -> Ledger l ()
 processEntry date attrs uposting = do
   CEntry dt cr <- checkEntry attrs uposting
-  forM dt $ \p -> updatePlan $ \plan ->
-      updateAccount (debitPostingAccount p) plan (putDebitPosting $ Ext date attrs p)
-  forM cr $ \e -> updatePlan $ \plan -> do
-      message $ "Credit posting at acc. #" ++ show (creditPostingAccount e)
-      res <- updateAccount (creditPostingAccount e) plan (putCreditPosting $ Ext date attrs e)
-      return res
+  forM dt $ \p -> debit  (debitPostingAccount  p) (Ext date attrs p)
+  forM cr $ \p -> credit (creditPostingAccount p) (Ext date attrs p)
   return ()
 
 processTransaction :: (Throws NoSuchRate l,

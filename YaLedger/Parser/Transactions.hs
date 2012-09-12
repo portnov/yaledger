@@ -76,7 +76,7 @@ pRecord = try (ext pTemplate)
 
 pTemplate :: Parser Record
 pTemplate = do
-  reserved "template"
+  symbol "template"
   name <- identifier
   tran <- pEntry param
   addTemplate name tran
@@ -99,7 +99,7 @@ pEntry p = do
 
 pCall :: Parser (Transaction v)
 pCall = do
-  reserved "call"
+  symbol "call"
   spaces
   name <- identifier
   spaces
@@ -112,7 +112,7 @@ pCall = do
 
 pReconciliate :: Parser (Transaction Amount)
 pReconciliate = do
-  reserved "reconciliate"
+  symbol "reconciliate"
   spaces
   path <- pPath
   account <- getAccount accountPlan path 
@@ -122,7 +122,7 @@ pReconciliate = do
 
 pSetRate :: Parser (Transaction v)
 pSetRate = do
-  reserved "rate"
+  symbol "rate"
   spaces
   c1 <- currency
   spaces
@@ -138,7 +138,7 @@ pSetRate = do
 pCreditPosting :: Parser v -> Parser (Posting v Credit)
 pCreditPosting p = do
   spaces
-  reserved "cr"
+  symbol "cr"
   accPath <- pPath
   acc <- getAccount accountPlan accPath
   account <- case acc of
@@ -147,12 +147,12 @@ pCreditPosting p = do
                _ -> fail $ printf "Invalid account type: %s: debit instead of credit." (intercalate "/" accPath)
   spaces
   amount <- p
-  return $ CPosting (getID account) amount
+  return $ CPosting account amount
 
 pDebitPosting :: Parser v -> Parser (Posting v Debit)
 pDebitPosting p = do
   spaces
-  reserved "dr"
+  symbol "dr"
   accPath <- pPath
   acc <- getAccount accountPlan accPath
   account <- case acc of
@@ -161,7 +161,7 @@ pDebitPosting p = do
                _ -> fail $ printf "Invalid account type: %s: credit instead of debit." (intercalate "/" accPath)
   spaces
   amount <- p
-  return $ DPosting (getID account) amount
+  return $ DPosting account amount
 
 pAmount :: Parser Amount
 pAmount = do
@@ -188,7 +188,7 @@ param = do
          Just _ -> float
   spaces
   d <- option (0 :# "") $ try $ parens $ do
-           reserved "default"
+           symbol "default"
            pAmount
   return $ Param n c d
 

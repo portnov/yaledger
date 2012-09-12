@@ -134,12 +134,12 @@ instance (HasID (f Free), HasID (f t)) => HasID (FreeOr t f) where
 
 data Posting v t where
   DPosting :: {
-    debitPostingAccount :: AccountID,
+    debitPostingAccount :: FreeOr Debit Account,
     debitPostingAmount :: v
   } -> Posting v Debit
 
   CPosting :: {
-    creditPostingAccount :: AccountID,
+    creditPostingAccount :: FreeOr Credit Account,
     creditPostingAmount  :: v
   } -> Posting v Credit
 
