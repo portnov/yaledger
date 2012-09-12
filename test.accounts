@@ -1,6 +1,12 @@
 group Root {
   currency = "$";
-  account roubles {currency = "р"};
+  account сверка {
+    currency = "р";
+    category = "reconciliation"
+  };
+  account roubles {
+    currency = "р";
+  };
   account dollars {
     currency = "$";
     category = "reconciliation";

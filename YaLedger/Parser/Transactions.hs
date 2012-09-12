@@ -69,18 +69,23 @@ ext p = do
 
 pRecord :: Parser (Ext Record)
 pRecord = try (ext pTemplate)
-          <|> try (ext (Transaction <$> pEntry pAmount))
-          <|> try (ext (Transaction <$> pReconciliate))
-          <|> try (ext (Transaction <$> pSetRate))
-          <|> ext (Transaction <$> pCall)
+      <|> try (ext (Transaction <$> pEntry pAmount))
+      <|> try (ext (Transaction <$> pReconciliate pAmount))
+      <|> try (ext (Transaction <$> pSetRate))
+      <|> ext (Transaction <$> pCall)
 
 pTemplate :: Parser Record
 pTemplate = do
   reserved "template"
   name <- identifier
-  tran <- pEntry param
+  tran <- pTemplateTran
   addTemplate name tran
   return $ Template name tran
+
+pTemplateTran :: Parser (Transaction Param)
+pTemplateTran =
+      try (pEntry param)
+  <|> pReconciliate param
 
 pEntry :: Parser v -> Parser (Transaction v)
 pEntry p = do
@@ -110,14 +115,14 @@ pCall = do
                        name (length args) n
     else return $ TCallTemplate name args
 
-pReconciliate :: Parser (Transaction Amount)
-pReconciliate = do
+pReconciliate :: Parser v -> Parser (Transaction v)
+pReconciliate p = do
   reserved "reconciliate"
   spaces
   path <- pPath
   account <- getAccount accountPlan path 
   spaces
-  x <- pAmount
+  x <- p
   return $ TReconciliate (getID account) x
 
 pSetRate :: Parser (Transaction v)

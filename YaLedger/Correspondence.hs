@@ -15,6 +15,7 @@ nonsignificantAttributes =
 data CQuery = CQuery {
   cqType :: PostingType,
   cqCurrency :: [Currency],
+  cqExcept :: [AccountID],
   cqAttributes :: Attributes }
   deriving (Eq, Show)
 
@@ -43,7 +44,9 @@ runCQuery qry@(CQuery {..}) (Branch {..}) =
     else Nothing
 
 runCQuery qry@(CQuery {..}) (Leaf {..}) =
-    if (cqType `matchT` accountType leafData) || (accountType leafData == AGFree)
+    if (getID leafData `notElem` cqExcept) &&
+       ((cqType `matchT` accountType leafData) ||
+        (accountType leafData == AGFree))
       then if (getCurrency leafData `elem` cqCurrency) &&
               accountAttributes leafData `matchA` cqAttributes
              then Just leafData

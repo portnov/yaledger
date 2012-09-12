@@ -194,6 +194,7 @@ checkEntry attrs src@(UEntry dt cr mbCorr) = do
                                 then ECredit
                                 else EDebit,
                      cqCurrency = currencies,
+                     cqExcept = accounts,
                      cqAttributes = attrs }
          let mbAccount = runCQuery qry plan
              mbByMap = lookupAMap plan amap qry accounts
