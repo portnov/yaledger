@@ -24,15 +24,13 @@ import YaLedger.Exceptions
 import YaLedger.Correspondence
 
 class CanCredit a where
-  credit :: (Throws InternalError l,
-             Throws NoSuchRate l)
+  credit :: (Throws InternalError l)
          => a
          -> Ext (Posting Decimal Credit)
          -> Ledger l ()
 
 class CanDebit a where
-  debit :: (Throws InternalError l,
-            Throws NoSuchRate l)
+  debit :: (Throws InternalError l)
         => a
         -> Ext (Posting Decimal Debit)
         -> Ledger l ()
