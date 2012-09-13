@@ -29,6 +29,7 @@ processEntry :: (Throws NoSuchRate l,
                -> Ledger l ()
 processEntry date attrs uposting = do
   CEntry dt cr <- checkEntry attrs uposting
+  message $ "Entry:\n" ++ show (CEntry dt cr)
   forM dt $ \p -> debit  (debitPostingAccount  p) (Ext date attrs p)
   forM cr $ \p -> credit (creditPostingAccount p) (Ext date attrs p)
   return ()

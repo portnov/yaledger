@@ -1,12 +1,14 @@
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ScopedTypeVariables, FlexibleContexts #-}
 {-# OPTIONS_GHC -F -pgmF MonadLoc #-}
 
 module Test where
 
 import Control.Monad
+import Control.Monad.State
 import Control.Monad.Exception
 import Control.Monad.Exception.Base
 import Control.Monad.Loc
+import Data.Dates
 import Text.Parsec
 
 import YaLedger.Types
@@ -43,9 +45,24 @@ readTrans plan path = do
     Right res -> return res
     Left err -> fail $ show err
 
+balance :: (Throws InternalError l,
+            Throws NoSuchRate l)
+        => Ledger l (Tree NotLinked AccountGroupData Amount)
+balance = do
+  now <- wrapIO $ getCurrentDateTime
+  let qry = Query {
+             qStart = Nothing,
+             qEnd   = Just now,
+             qAttributes = [] }
+  plan <- gets lsAccountPlan
+  mapLeafsM (saldo qry) plan
+
 process :: [Ext Record] -> LedgerMonad ()
 process trans =
-  runEMT $ forM_ trans processTransaction
+  runEMT $ do
+           forM_ trans processTransaction
+           b <- balance
+           wrapIO $ print b
         `catchWithSrcLoc`
            (\loc (e :: InvalidAccountType) -> wrapIO $ putStrLn (showExceptionWithTrace loc e))
         `catchWithSrcLoc`

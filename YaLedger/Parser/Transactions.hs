@@ -100,7 +100,7 @@ pEntry p = do
   account <- case corr of
                Nothing -> return Nothing
                Just path -> Just <$> getAccount accountPlan (mkPath path)
-  return $ TEntry $ UEntry dt cr account
+  return $ TEntry $ UEntry dt cr account []
 
 pCall :: Parser (Transaction v)
 pCall = do

@@ -101,22 +101,25 @@ data Entry v c where
     UEntry :: {
       uEntryDebitPostings  :: [Posting v Debit],
       uEntryCreditPostings :: [Posting v Credit],
-      uEntryCorrespondence :: Maybe AnyAccount
+      uEntryCorrespondence :: Maybe AnyAccount,
+      uEntryAdditionalCurrencies :: [Currency]
     } -> Entry v Unchecked
 
 instance Eq v => Eq (Entry v Checked) where
   (CEntry dt cr) == (CEntry dt' cr') = (dt == dt') && (cr == cr')
 
 instance Eq v => Eq (Entry v Unchecked) where
-  (UEntry dt cr c) == (UEntry dt' cr' c') = (dt == dt') && (cr == cr') && (c == c')
+  (UEntry dt cr c cs) == (UEntry dt' cr' c' cs') =
+    (dt == dt') && (cr == cr') && (c == c') && (cs == cs')
 
 instance Show v => Show (Entry v t) where
   show (CEntry dt cr) = "Debit:\n" ++ go dt ++ "\nCredit:\n" ++ go cr
     where
       go :: Show a => [a] -> String
       go lst = unlines $ map ("  " ++) $ map show lst
-  show (UEntry dt cr acc) = "Debit:\n" ++ go dt ++ "\nCredit:\n" ++ go cr
-                              ++ "(correspondence: " ++ showName acc ++ ")"
+  show (UEntry dt cr acc cs) = "Debit:\n" ++ go dt ++ "\nCredit:\n" ++ go cr
+                              ++ "(correspondence: " ++ showName acc ++ ")\n"
+                              ++ "(add. currencies: " ++ intercalate ", " cs ++ ")"
     where
       go :: Show a => [a] -> String
       go lst = unlines $ map ("  " ++) $ map show lst
@@ -129,6 +132,9 @@ data Amount = Decimal :# Currency
 
 instance Show Amount where
   show (n :# c) = show n ++ c
+
+instance HasCurrency Amount where
+  getCurrency (_ :# c) = c
 
 instance (HasID (f Free), HasID (f t)) => HasID (FreeOr t f) where
   getID (Left x)  = getID x
@@ -212,6 +218,10 @@ instance HasCurrency (Account t) where
   getCurrency (CAccount {..}) = creditAccountCurrency
   getCurrency (DAccount {..}) = debitAccountCurrency
   getCurrency (FAccount {..}) = freeAccountCurrency
+
+instance (HasCurrency a, HasCurrency b) => HasCurrency (Either a b) where
+  getCurrency (Left x) = getCurrency x
+  getCurrency (Right x) = getCurrency x
 
 instance Named (Account t) where
   getName (CAccount {..}) = creditAccountName

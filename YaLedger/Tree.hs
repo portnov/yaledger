@@ -7,6 +7,8 @@ import Control.Monad
 import Data.Either
 import Data.List.Utils (split)
 
+import Debug.Trace
+
 data family ParentLink s x
 
 data Linked
@@ -105,15 +107,11 @@ fold f tree =
   in  result
 
 mapLeafsM :: (Monad m, Functor m) => (a -> m b) -> Tree s n a -> m (Tree NotLinked n b)
-mapLeafsM f tree =
-  let result = go tree
-
+mapLeafsM f tree = go tree
+  where
       go (Leaf _ name a) = Leaf NoLink name <$> f a
       go (Branch _ name n lst) = do
-          res <- result
           Branch NoLink name n <$> mapM go lst
-
-  in  result
 
 search :: Tree s n a -> Path -> [Either n a]
 search tree path = map getData $ search' tree path

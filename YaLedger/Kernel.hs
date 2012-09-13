@@ -176,6 +176,16 @@ convertPosting to (CPosting acc a) = do
   x :# _ <- convert to a
   return $ CPosting acc x
 
+convertPosting' :: Throws NoSuchRate l
+               => Posting Amount t
+               -> Ledger l (Posting Decimal t)
+convertPosting' (DPosting acc a) = do
+  x :# _ <- convert (getCurrency acc) a
+  return $ DPosting acc x
+convertPosting' (CPosting acc a) = do
+  x :# _ <- convert (getCurrency acc) a
+  return $ CPosting acc x
+
 checkEntry :: (Throws NoSuchRate l,
                Throws NoCorrespondingAccountFound l,
                Throws InvalidAccountType l,
@@ -183,7 +193,7 @@ checkEntry :: (Throws NoSuchRate l,
              => Attributes
              -> Entry Amount Unchecked
              -> Ledger l (Entry Decimal Checked)
-checkEntry attrs src@(UEntry dt cr mbCorr) = do
+checkEntry attrs src@(UEntry dt cr mbCorr currs) = do
   rs <- gets lsRates
   plan <- gets lsAccountPlan
   amap <- gets lsAccountMap
@@ -192,25 +202,28 @@ checkEntry attrs src@(UEntry dt cr mbCorr) = do
       firstCurrency = head currencies
       accounts = map (getID . creditPostingAccount) cr ++ map (getID . debitPostingAccount) dt
 
-  dtAmounts <- mapM (convert firstCurrency) (map getAmount dt)
-  crAmounts <- mapM (convert firstCurrency) (map getAmount cr)
+  -- Convert all postings into firstCurrency
+  dt1 <- mapM (convertPosting firstCurrency) dt
+  cr1 <- mapM (convertPosting firstCurrency) cr
 
-  dt' <- mapM (convertPosting firstCurrency) dt
-  cr' <- mapM (convertPosting firstCurrency) cr
+  -- And sum them to check if debit == credit
+  let dtSum = sumPostings dt1 
+      crSum = sumPostings cr1
 
-  let dtSum = sumPostings dt' 
-      crSum = sumPostings cr'
+  -- Convert each posting's sum into currency
+  -- of posting's account
+  dt' <- mapM convertPosting' dt
+  cr' <- mapM convertPosting' cr
 
   if dtSum == crSum
     then return $ CEntry dt' cr'
     else do
-         message $ printf "cr. %s, dt. %s" (show crSum) (show dtSum)
-         let diff = crSum - dtSum
+         let diff = crSum - dtSum -- in firstCurrency
              qry = CQuery {
                      cqType = if diff < 0
                                 then ECredit
                                 else EDebit,
-                     cqCurrency = currencies,
+                     cqCurrency = currencies ++ currs,
                      cqExcept = accounts,
                      cqAttributes = attrs }
          let mbAccount = runCQuery qry plan
@@ -219,14 +232,16 @@ checkEntry attrs src@(UEntry dt cr mbCorr) = do
            Nothing -> throw (NoCorrespondingAccountFound qry)
            Just acc -> if diff < 0
                          then do
-                              message $ "Corresponding account for " ++ show src ++ ": " ++ show acc
                               account <- accountAsCredit acc
-                              let e = CPosting account (-diff)
+                              -- Convert diff into currency of found account
+                              diff' :# _ <- convert (getCurrency account) (diff :# firstCurrency)
+                              let e = CPosting account (-diff')
                               return $ CEntry dt' (e:cr')
                          else do
-                              message $ "Corresponding account for " ++ show src ++ ": " ++ show acc
                               account <- accountAsDebit acc
-                              let e = DPosting account diff
+                              -- Convert diff into currency of found account
+                              diff' :# _ <- convert (getCurrency account) (diff :# firstCurrency)
+                              let e = DPosting account diff'
                               return $ CEntry (e:dt') cr'
 
 reconciliate :: (Throws NoSuchRate l,
@@ -236,24 +251,26 @@ reconciliate :: (Throws NoSuchRate l,
              -> AccountID
              -> Amount
              -> Ledger l (Entry Amount Unchecked)
-reconciliate date aid (x :# c) = do
+reconciliate date aid amount = do
   account <- accountByIDM aid
+
   let qry = Query {
               qStart = Nothing,
               qEnd   = Just date,
               qAttributes = [] }
-  bal <- saldo qry account
-  (currentBalance :# _) <- convert c bal
-  message $ "Account: " ++ show account
-  message $ "Current balance: " ++ show bal
-  let diff = x - currentBalance
+
+  currentBalance :# accountCurrency <- saldo qry account
+  actualBalance :# _ <- convert (getCurrency account) amount
+
+  -- diff is in accountCurrency
+  let diff = actualBalance - currentBalance
   if diff > 0
     then do
          account' <- accountAsCredit account
-         let posting = CPosting account' (diff :# c)
-         return $ UEntry [] [posting] Nothing
+         let posting = CPosting account' (diff :# accountCurrency)
+         return $ UEntry [] [posting] Nothing [getCurrency amount]
     else do
          account' <- accountAsDebit account
-         let posting = DPosting account' (-diff :# c)
-         return $ UEntry [posting] [] Nothing
+         let posting = DPosting account' (-diff :# accountCurrency)
+         return $ UEntry [posting] [] Nothing [getCurrency amount]
 

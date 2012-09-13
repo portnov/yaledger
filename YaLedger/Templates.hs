@@ -53,9 +53,9 @@ instance ATemplate (Transaction Param) where
 instance ATemplate (Entry Param Unchecked) where
   type Result (Entry Param Unchecked) = Entry Amount Unchecked
 
-  nParams (UEntry dt cr _) = sum (map nParams dt) + sum (map nParams cr)
+  nParams (UEntry dt cr _ _) = sum (map nParams dt) + sum (map nParams cr)
 
-  subst (UEntry dt cr a) = UEntry <$> mapM subst dt <*> mapM subst cr <*> return a
+  subst (UEntry dt cr a cs) = UEntry <$> mapM subst dt <*> mapM subst cr <*> return a <*> return cs
 
 instance ATemplate Param where
   type Result Param = Amount
