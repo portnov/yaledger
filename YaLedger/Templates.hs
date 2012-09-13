@@ -50,13 +50,11 @@ instance ATemplate (Transaction Param) where
   subst (TCallTemplate n t) = return $ TCallTemplate n t
   subst (TSetRate c1 c2 x)  = return $ TSetRate c1 c2 x
 
-instance ATemplate (Entry Param a) where
-  type Result (Entry Param a) = Entry Amount a
+instance ATemplate (Entry Param Unchecked) where
+  type Result (Entry Param Unchecked) = Entry Amount Unchecked
 
-  nParams (CEntry dt cr) = sum (map nParams dt) + sum (map nParams cr)
   nParams (UEntry dt cr _) = sum (map nParams dt) + sum (map nParams cr)
 
-  subst (CEntry dt cr) = CEntry <$> mapM subst dt <*> mapM subst cr
   subst (UEntry dt cr a) = UEntry <$> mapM subst dt <*> mapM subst cr <*> return a
 
 instance ATemplate Param where

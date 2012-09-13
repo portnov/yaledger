@@ -24,31 +24,33 @@ import YaLedger.Exceptions
 import YaLedger.Correspondence
 
 class CanCredit a where
-  credit :: Throws InternalError l
+  credit :: (Throws InternalError l,
+             Throws NoSuchRate l)
          => a
-         -> Ext (Posting Amount Credit)
+         -> Ext (Posting Decimal Credit)
          -> Ledger l ()
 
 class CanDebit a where
-  debit :: Throws InternalError l
+  debit :: (Throws InternalError l,
+            Throws NoSuchRate l)
         => a
-        -> Ext (Posting Amount Debit)
+        -> Ext (Posting Decimal Debit)
         -> Ledger l ()
 
 instance CanDebit (Account Debit) where
-  debit (DAccount {..}) p =
+  debit (DAccount {..}) p = do
       appendIOList debitAccountPostings p
 
 instance CanDebit (Account Free) where
-  debit (FAccount {..}) p =
+  debit (FAccount {..}) p = do
       appendIOList freeAccountDebitPostings p
 
 instance CanCredit (Account Credit) where
-  credit (CAccount {..}) p =
+  credit (CAccount {..}) p = do
       appendIOList creditAccountPostings p
 
 instance CanCredit (Account Free) where
-  credit (FAccount {..}) p =
+  credit (FAccount {..}) p = do
       appendIOList freeAccountCreditPostings p
 
 instance CanCredit (FreeOr Credit Account) where
@@ -90,14 +92,14 @@ checkQuery (Query {..}) (Ext {..}) =
 
 creditPostings :: Throws InternalError l
                => AnyAccount
-               -> Ledger l (IOList (Ext (Posting Amount Credit)))
+               -> Ledger l (AccountHistory Credit)
 creditPostings (WCredit _ (CAccount {..})) = return creditAccountPostings
 creditPostings (WDebit  _ (DAccount {..})) = newIOList
 creditPostings (WFree   _ (FAccount {..})) = return freeAccountCreditPostings
 
 debitPostings :: Throws InternalError l
               => AnyAccount
-              -> Ledger l (IOList (Ext (Posting Amount Debit)))
+              -> Ledger l (AccountHistory Debit)
 debitPostings (WCredit _ (CAccount {..})) = newIOList
 debitPostings (WDebit  _ (DAccount {..})) = return debitAccountPostings
 debitPostings (WFree   _ (FAccount {..})) = return freeAccountDebitPostings
@@ -110,22 +112,20 @@ saldo query account = do
 
   let c = getCurrency account
 
-      filterPostings :: [Ext (Posting Amount t)] -> [Posting Amount t]
+      filterPostings :: [Ext (Posting Decimal t)] -> [Posting Decimal t]
       filterPostings list = map getContent $ filter (checkQuery query) list
 
   crp <- filterPostings <$> (readIOList =<< creditPostings account)
   dtp <- filterPostings <$> (readIOList =<< debitPostings  account)
-  cr :# _ <- sumPostings c crp
-  dt :# _ <- sumPostings c dtp
+  let cr = sumPostings crp
+      dt = sumPostings dtp
   return $ (cr - dt) :# c
 
-sumPostings :: (Throws NoSuchRate l)
-           => Currency -> [Posting Amount t] -> Ledger l Amount
-sumPostings c es = do
-    rs <- gets lsRates
-    ams <- mapM (convert c) (map getAmount es)
-    let s = sum [x | x :# _ <- ams]
-    return (s :# c)
+sumPostings :: [Posting Decimal t] -> Decimal
+sumPostings es = sum (map go es)
+  where
+    go (CPosting _ x) = x
+    go (DPosting _ x) = x
 
 accountByID :: AccountID -> AccountPlan -> Maybe AnyAccount
 accountByID i (Branch _ _ ag children)
@@ -167,13 +167,24 @@ uniq :: (Eq a) => [a] -> [a]
 uniq [] = []
 uniq (x:xs) = x: uniq (filter (/= x) xs)
 
+convertPosting :: Throws NoSuchRate l
+               => Currency
+               -> Posting Amount t
+               -> Ledger l (Posting Decimal t)
+convertPosting to (DPosting acc a) = do
+  x :# _ <- convert to a
+  return $ DPosting acc x
+convertPosting to (CPosting acc a) = do
+  x :# _ <- convert to a
+  return $ CPosting acc x
+
 checkEntry :: (Throws NoSuchRate l,
-                 Throws NoCorrespondingAccountFound l,
-                 Throws InvalidAccountType l,
-                 Throws InternalError l)
+               Throws NoCorrespondingAccountFound l,
+               Throws InvalidAccountType l,
+               Throws InternalError l)
              => Attributes
              -> Entry Amount Unchecked
-             -> Ledger l (Entry Amount Checked)
+             -> Ledger l (Entry Decimal Checked)
 checkEntry attrs src@(UEntry dt cr mbCorr) = do
   rs <- gets lsRates
   plan <- gets lsAccountPlan
@@ -182,10 +193,18 @@ checkEntry attrs src@(UEntry dt cr mbCorr) = do
   let currencies = uniq $ map getCurrency cr ++ map getCurrency dt ++ [defcur]
       firstCurrency = head currencies
       accounts = map (getID . creditPostingAccount) cr ++ map (getID . debitPostingAccount) dt
-  dtSum :# _ <- sumPostings firstCurrency dt
-  crSum :# _ <- sumPostings firstCurrency cr
+
+  dtAmounts <- mapM (convert firstCurrency) (map getAmount dt)
+  crAmounts <- mapM (convert firstCurrency) (map getAmount cr)
+
+  dt' <- mapM (convertPosting firstCurrency) dt
+  cr' <- mapM (convertPosting firstCurrency) cr
+
+  let dtSum = sumPostings dt' 
+      crSum = sumPostings cr'
+
   if dtSum == crSum
-    then return $ CEntry dt cr
+    then return $ CEntry dt' cr'
     else do
          message $ printf "cr. %s, dt. %s" (show crSum) (show dtSum)
          let diff = crSum - dtSum
@@ -204,13 +223,13 @@ checkEntry attrs src@(UEntry dt cr mbCorr) = do
                          then do
                               message $ "Corresponding account for " ++ show src ++ ": " ++ show acc
                               account <- accountAsCredit acc
-                              let e = CPosting account (-diff :# firstCurrency)
-                              return $ CEntry dt (e:cr)
+                              let e = CPosting account (-diff)
+                              return $ CEntry dt' (e:cr')
                          else do
                               message $ "Corresponding account for " ++ show src ++ ": " ++ show acc
                               account <- accountAsDebit acc
-                              let e = DPosting account (diff :# firstCurrency)
-                              return $ CEntry (e:dt) cr
+                              let e = DPosting account diff
+                              return $ CEntry (e:dt') cr'
 
 reconciliate :: (Throws NoSuchRate l,
                  Throws InvalidAccountType l,

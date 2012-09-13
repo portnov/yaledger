@@ -94,12 +94,12 @@ data Transaction v =
 
 data Entry v c where
     CEntry :: {
-      cEntryDebitPostings :: [Posting v Debit],
-      cEntryCreditPostings :: [Posting v Credit]
-    } -> Entry v Checked
+      cEntryDebitPostings  :: [Posting Decimal Debit],
+      cEntryCreditPostings :: [Posting Decimal Credit]
+    } -> Entry Decimal Checked
 
     UEntry :: {
-      uEntryDebitPostings :: [Posting v Debit],
+      uEntryDebitPostings  :: [Posting v Debit],
       uEntryCreditPostings :: [Posting v Credit],
       uEntryCorrespondence :: Maybe AnyAccount
     } -> Entry v Unchecked
@@ -113,10 +113,12 @@ instance Eq v => Eq (Entry v Unchecked) where
 instance Show v => Show (Entry v t) where
   show (CEntry dt cr) = "Debit:\n" ++ go dt ++ "\nCredit:\n" ++ go cr
     where
+      go :: Show a => [a] -> String
       go lst = unlines $ map ("  " ++) $ map show lst
   show (UEntry dt cr acc) = "Debit:\n" ++ go dt ++ "\nCredit:\n" ++ go cr
                               ++ "(correspondence: " ++ showName acc ++ ")"
     where
+      go :: Show a => [a] -> String
       go lst = unlines $ map ("  " ++) $ map show lst
 
       showName Nothing = "to be found automatically"
@@ -173,27 +175,29 @@ instance HasAmount (Posting Amount t) where
 instance HasAmount a => HasAmount (Ext a) where
   getAmount x = getAmount (getContent x)
 
+type AccountHistory t = IOList (Ext (Posting Decimal t))
+
 data Account t where
   CAccount :: {
     creditAccountName     :: String,
     creditAccountID       :: AccountID,
     creditAccountCurrency :: Currency,
-    creditAccountPostings :: IOList (Ext (Posting Amount Credit))
+    creditAccountPostings :: AccountHistory Credit
   } -> Account Credit
 
   DAccount :: {
     debitAccountName     :: String,
     debitAccountID       :: AccountID,
     debitAccountCurrency :: Currency,
-    debitAccountPostings :: IOList (Ext (Posting Amount Debit))
+    debitAccountPostings :: AccountHistory Debit
   } -> Account Debit
 
   FAccount :: {
     freeAccountName           :: String,
     freeAccountID             :: AccountID,
     freeAccountCurrency       :: Currency,
-    freeAccountCreditPostings :: IOList (Ext (Posting Amount Credit)),
-    freeAccountDebitPostings  :: IOList (Ext (Posting Amount Debit))
+    freeAccountCreditPostings :: AccountHistory Credit,
+    freeAccountDebitPostings  :: AccountHistory Debit
   } -> Account Free
 
 instance HasID (Account t) where
