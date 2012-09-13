@@ -205,9 +205,12 @@ checkEntry attrs src@(UEntry dt cr mbCorr currs) = do
   plan <- gets lsAccountPlan
   amap <- gets lsAccountMap
   defcur <- gets lsDefaultCurrency
-  let currencies = uniq $ map getCurrency cr ++ map getCurrency dt ++ [defcur]
+  let currencies    = uniq $ map getCurrency cr ++ map getCurrency dt ++ [defcur]
       firstCurrency = head currencies
-      accounts = map (getID . creditPostingAccount) cr ++ map (getID . debitPostingAccount) dt
+      accounts      = map (getID . creditPostingAccount) cr
+                   ++ map (getID . debitPostingAccount) dt
+      accountNames  = map (getName . creditPostingAccount) cr
+                   ++ map (getName . debitPostingAccount) dt
 
   -- Convert all postings into firstCurrency
   dt1 <- mapM (convertPosting firstCurrency) dt
@@ -232,7 +235,8 @@ checkEntry attrs src@(UEntry dt cr mbCorr currs) = do
                                 else EDebit,
                      cqCurrency = currencies ++ currs,
                      cqExcept = accounts,
-                     cqAttributes = attrs }
+                     cqAttributes = attrs ++ [("source", head accountNames)]
+                   }
          let mbAccount = runCQuery qry plan
              mbByMap = lookupAMap plan amap qry accounts
          case mbCorr `mplus` mbByMap `mplus` mbAccount of

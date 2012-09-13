@@ -40,7 +40,10 @@ group Root {
   group доходы (debit) {
     currency = "р";
     account зарплата;
-    account разное {category = "TEST"};
+    account разное {
+      category = "TEST";
+      source = "roubles"
+    };
   };
 };
 

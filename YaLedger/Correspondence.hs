@@ -10,7 +10,7 @@ import YaLedger.Tree
 
 nonsignificantAttributes :: [String]
 nonsignificantAttributes =
-  ["description"]
+  ["description", "source"]
 
 data CQuery = CQuery {
   cqType :: PostingType,
@@ -30,6 +30,21 @@ matchA attrs qry =
   let qry' = filter (\(name,_) -> name `notElem` nonsignificantAttributes) qry
   in  all (`elem` attrs) qry'
 
+additionalAttributes :: Attributes -> AnyAccount -> Int
+additionalAttributes as a = 
+    go (filter (\(name,_) -> name `elem` nonsignificantAttributes) as) a
+  where
+    go []     _   = 1
+    go (a:as) acc
+      | a `elem` accountAttributes acc = 1 + go as acc
+      | otherwise                      =     go as acc
+
+filterByAddAttributes :: Attributes -> [AnyAccount] -> [AnyAccount]
+filterByAddAttributes as accs =
+  let scores = [(acc, additionalAttributes as acc) | acc <- accs]
+      m      = maximum (map snd scores)
+  in  [acc | (acc, score) <- scores, score == m]
+
 first :: (a -> Maybe b) -> [a] -> Maybe b
 first _ [] = Nothing
 first fn (x:xs) =
@@ -37,21 +52,28 @@ first fn (x:xs) =
       Just y  -> Just y
       Nothing -> first fn xs
 
-runCQuery :: CQuery -> AccountPlan -> Maybe AnyAccount
-runCQuery qry@(CQuery {..}) (Branch {..}) =
-  if (cqType `matchT` agType branchData) || (agType branchData == AGFree)
-    then first (runCQuery qry) branchChildren
-    else Nothing
+filterPlan :: CQuery -> AccountPlan -> [AnyAccount]
+filterPlan qry@(CQuery {..}) (Branch {..}) =
+    if (cqType `matchT` agType branchData) || (agType branchData == AGFree)
+      then concatMap (filterPlan qry) branchChildren
+      else []
 
-runCQuery qry@(CQuery {..}) (Leaf {..}) =
+filterPlan qry@(CQuery {..}) (Leaf {..}) =
     if (getID leafData `notElem` cqExcept) &&
        ((cqType `matchT` accountType leafData) ||
         (accountType leafData == AGFree))
       then if (getCurrency leafData `elem` cqCurrency) &&
-              accountAttributes leafData `matchA` cqAttributes
-             then Just leafData
-             else Nothing
-      else Nothing
+              (accountAttributes leafData `matchA` cqAttributes)
+             then [leafData]
+             else []
+      else []
+
+runCQuery :: CQuery -> AccountPlan -> Maybe AnyAccount
+runCQuery qry plan =
+  case filterPlan qry plan of
+    []  -> Nothing
+    [x] -> Just x
+    list -> Just $ head $ filterByAddAttributes (cqAttributes qry) list
 
 inRange :: Integer -> (Integer, Integer) -> Bool
 inRange i (m, n) = (m < i) && (i <= n)
