@@ -3,6 +3,7 @@
 
 module YaLedger.Kernel where
 
+import Prelude hiding (catch)
 import Control.Applicative ((<$>))
 import Control.Monad
 import Control.Monad.State
@@ -68,6 +69,12 @@ convert c' (x :# c)
     case M.lookup (c, c') rs of
       Nothing   -> throw (NoSuchRate c c')
       Just rate -> return $ (x *. rate) :# c'
+
+convert' :: Currency -> Amount -> Ledger l Amount
+convert' c x = 
+  convert c x
+    `catch`
+      \(_ :: NoSuchRate) -> return x
 
 checkQuery :: Query -> Ext a -> Bool
 checkQuery (Query {..}) (Ext {..}) =

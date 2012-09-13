@@ -3,6 +3,7 @@
 
 module Test where
 
+import Prelude hiding (catch)
 import Control.Monad
 import Control.Monad.State
 import Control.Monad.Exception
@@ -21,6 +22,7 @@ import YaLedger.Monad
 import qualified YaLedger.Parser.Plan as Plan
 import qualified YaLedger.Parser.Transactions as T
 import qualified YaLedger.Parser.Map as Map
+import YaLedger.Reports.Balance
 
 readPlan :: FilePath -> IO AccountPlan
 readPlan path = do
@@ -44,18 +46,6 @@ readTrans plan path = do
   case runParser T.pRecords st path content of
     Right res -> return res
     Left err -> fail $ show err
-
-balance :: (Throws InternalError l,
-            Throws NoSuchRate l)
-        => Ledger l (Tree NotLinked AccountGroupData Amount)
-balance = do
-  now <- wrapIO $ getCurrentDateTime
-  let qry = Query {
-             qStart = Nothing,
-             qEnd   = Just now,
-             qAttributes = [] }
-  plan <- gets lsAccountPlan
-  mapLeafsM (saldo qry) plan
 
 process :: [Ext Record] -> LedgerMonad ()
 process trans =

@@ -56,15 +56,15 @@ instance (Show n, Show a) => Show (Tree s n a) where
     where
       go i b (Branch {nodeName = name, branchData = n, branchChildren = children}) =
           (concat $ replicate i "│ ") ++ 
-          (glyph b) ++ name ++ ": " ++ (show n) ++ "\n" ++
+          (glyph b) ++ name ++ ":\t" ++ show n ++ "\n" ++
           (concatMap (go (i+1) False) $ init children) ++
           (go (i+1) True $ last children)
       go i b (Leaf {nodeName = name, leafData = a}) =
           (concat $ replicate i "│ ") ++
-          (glyph b) ++ name ++ ": " ++ (show a) ++ "\n"
+          (glyph b) ++ name ++ ":\t" ++ show a ++ "\n"
 
-      glyph True  = "╰—"
-      glyph False = "├—"
+      glyph True  = "╰—□ "
+      glyph False = "├—□ "
 
 type Forest s n a = [Tree s n a]
 
@@ -112,6 +112,20 @@ mapLeafsM f tree = go tree
       go (Leaf _ name a) = Leaf NoLink name <$> f a
       go (Branch _ name n lst) = do
           Branch NoLink name n <$> mapM go lst
+
+mapTreeM :: (Monad m, Functor m)
+         => (n -> [b] -> m b)
+         -> (a -> m b)
+         -> Tree s n a
+         -> m (Tree NotLinked b b)
+mapTreeM foldBranch fn tree = go tree
+  where
+    go (Leaf _ name a) = Leaf NoLink name <$> fn a
+    go (Branch _ name n children) = do
+      res <- mapM go children
+      let res' = map getData res
+      r <- foldBranch n (lefts res' ++ rights res')
+      return $ Branch NoLink name r res
 
 search :: Tree s n a -> Path -> [Either n a]
 search tree path = map getData $ search' tree path
