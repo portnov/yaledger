@@ -70,7 +70,7 @@ instance (Pretty v) => Pretty (Entry v c) where
 
 instance (Pretty v) => Pretty (Posting v t) where
   prettyPrint (DPosting acc x) =
-    printf "  dt %s  %s"
+    printf "  dr %s  %s"
            (getName acc)
            (prettyPrint x)
   prettyPrint (CPosting acc x) =
