@@ -19,34 +19,9 @@ import YaLedger.Correspondence
 import YaLedger.Processor
 import YaLedger.Exceptions
 import YaLedger.Monad
+import YaLedger.Parser
 import YaLedger.Pretty
-import qualified YaLedger.Parser.Plan as Plan
-import qualified YaLedger.Parser.Transactions as T
-import qualified YaLedger.Parser.Map as Map
 import YaLedger.Reports.Balance
-
-readPlan :: FilePath -> IO AccountPlan
-readPlan path = do
-  content <- readFile path
-  res <- runParserT Plan.pAccountGroup Plan.emptyPState path content
-  case res of
-    Right res -> return res
-    Left err -> fail $ show err
-
-readAMap :: AccountPlan -> FilePath -> IO AccountMap
-readAMap plan path = do
-  content <- readFile path
-  case runParser Map.pAccountMap (Map.PState plan) path content of
-    Right res -> return res
-    Left err -> fail $ show err
-
-readTrans :: AccountPlan -> FilePath -> IO [Ext Record]
-readTrans plan path = do
-  content <- readFile path
-  st <- T.emptyPState plan
-  case runParser T.pRecords st path content of
-    Right res -> return res
-    Left err -> fail $ show err
 
 process :: [Ext Record] -> LedgerMonad ()
 process trans =
