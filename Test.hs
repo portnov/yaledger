@@ -19,6 +19,7 @@ import YaLedger.Correspondence
 import YaLedger.Processor
 import YaLedger.Exceptions
 import YaLedger.Monad
+import YaLedger.Pretty
 import qualified YaLedger.Parser.Plan as Plan
 import qualified YaLedger.Parser.Transactions as T
 import qualified YaLedger.Parser.Map as Map
@@ -69,6 +70,7 @@ test = do
   amap <- readAMap plan "test.map"
   forM amap print
   trans <- readTrans plan "test.yaledger"
-  forM trans print
+  forM trans $ \t ->
+    putStrLn (prettyPrint t)
   runLedger plan amap $ process trans
   return ()

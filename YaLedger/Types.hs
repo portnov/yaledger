@@ -87,7 +87,6 @@ data Record =
 data Transaction v =
     TEntry (Entry v Unchecked)
   | TReconciliate AnyAccount v
-  | TInitlalize  AnyAccount v
   | TCallTemplate String [Amount]
   | TSetRate Currency Currency Double
   deriving (Eq, Show)
