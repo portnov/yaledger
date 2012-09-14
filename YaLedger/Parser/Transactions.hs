@@ -123,7 +123,7 @@ pReconciliate p = do
   account <- getAccount accountPlan path 
   spaces
   x <- p
-  return $ TReconciliate (getID account) x
+  return $ TReconciliate account x
 
 pSetRate :: Parser (Transaction v)
 pSetRate = do

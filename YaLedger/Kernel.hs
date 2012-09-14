@@ -259,11 +259,10 @@ reconciliate :: (Throws NoSuchRate l,
                  Throws InvalidAccountType l,
                  Throws InternalError l)
              => DateTime
-             -> AccountID
+             -> AnyAccount
              -> Amount
              -> Ledger l (Entry Amount Unchecked)
-reconciliate date aid amount = do
-  account <- accountByIDM aid
+reconciliate date account amount = do
 
   let qry = Query {
               qStart = Nothing,
