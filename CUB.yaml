@@ -1,0 +1,20 @@
+separator: ';'
+dateformat: "DD/MM/YYYY"
+date:
+  field: 1
+currency: "р"
+amount:
+  field: 4
+account: "карточка"
+description:
+  field: 3
+category:
+  field: 3
+  rules:
+    интернет: "ИНТЕРНЕТ"
+    премия: "премия"
+    зарплата: "Заработная плата"
+    аванс: "Аванс"
+    наличные: "Выдача наличных"
+    комиссии: "(Комиссия)|(Плата за .*обслуживание)"
+
