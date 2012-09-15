@@ -58,6 +58,15 @@ class HasID a where
 class HasCurrency a where
   getCurrency :: a -> Currency
 
+data Amount = Decimal :# Currency
+  deriving (Eq)
+
+instance Show Amount where
+  show (n :# c) = show n ++ c
+
+instance HasCurrency Amount where
+  getCurrency (_ :# c) = c
+
 data Param =
     Fixed Amount
   | Param Int Double Amount
@@ -90,54 +99,6 @@ data Transaction v =
   | TCallTemplate String [Amount]
   | TSetRate Currency Currency Double
   deriving (Eq, Show)
-
-data Entry v c where
-    CEntry :: {
-      cEntryDebitPostings  :: [Posting Decimal Debit],
-      cEntryCreditPostings :: [Posting Decimal Credit]
-    } -> Entry Decimal Checked
-
-    UEntry :: {
-      uEntryDebitPostings  :: [Posting v Debit],
-      uEntryCreditPostings :: [Posting v Credit],
-      uEntryCorrespondence :: Maybe AnyAccount,
-      uEntryAdditionalCurrencies :: [Currency]
-    } -> Entry v Unchecked
-
-instance Eq v => Eq (Entry v Checked) where
-  (CEntry dt cr) == (CEntry dt' cr') = (dt == dt') && (cr == cr')
-
-instance Eq v => Eq (Entry v Unchecked) where
-  (UEntry dt cr c cs) == (UEntry dt' cr' c' cs') =
-    (dt == dt') && (cr == cr') && (c == c') && (cs == cs')
-
-instance Show v => Show (Entry v t) where
-  show (CEntry dt cr) = "Debit:\n" ++ go dt ++ "\nCredit:\n" ++ go cr
-    where
-      go :: Show a => [a] -> String
-      go lst = unlines $ map ("  " ++) $ map show lst
-  show (UEntry dt cr acc cs) = "Debit:\n" ++ go dt ++ "\nCredit:\n" ++ go cr
-                              ++ "(correspondence: " ++ showName acc ++ ")\n"
-                              ++ "(add. currencies: " ++ intercalate ", " cs ++ ")"
-    where
-      go :: Show a => [a] -> String
-      go lst = unlines $ map ("  " ++) $ map show lst
-
-      showName Nothing = "to be found automatically"
-      showName (Just x) = getName x
-
-data Amount = Decimal :# Currency
-  deriving (Eq)
-
-instance Show Amount where
-  show (n :# c) = show n ++ c
-
-instance HasCurrency Amount where
-  getCurrency (_ :# c) = c
-
-instance (HasID (f Free), HasID (f t)) => HasID (FreeOr t f) where
-  getID (Left x)  = getID x
-  getID (Right x) = getID x
 
 data Posting v t where
   DPosting :: {
@@ -176,6 +137,45 @@ instance Show PostingType where
 instance HasAmount (Posting Amount t) where
   getAmount (DPosting _ x) = x
   getAmount (CPosting _ x) = x
+
+data Entry v c where
+    CEntry :: {
+      cEntryDebitPostings  :: [Posting Decimal Debit],
+      cEntryCreditPostings :: [Posting Decimal Credit]
+    } -> Entry Decimal Checked
+
+    UEntry :: {
+      uEntryDebitPostings  :: [Posting v Debit],
+      uEntryCreditPostings :: [Posting v Credit],
+      uEntryCorrespondence :: Maybe AnyAccount,
+      uEntryAdditionalCurrencies :: [Currency]
+    } -> Entry v Unchecked
+
+instance Eq v => Eq (Entry v Checked) where
+  (CEntry dt cr) == (CEntry dt' cr') = (dt == dt') && (cr == cr')
+
+instance Eq v => Eq (Entry v Unchecked) where
+  (UEntry dt cr c cs) == (UEntry dt' cr' c' cs') =
+    (dt == dt') && (cr == cr') && (c == c') && (cs == cs')
+
+instance Show v => Show (Entry v t) where
+  show (CEntry dt cr) = "Debit:\n" ++ go dt ++ "\nCredit:\n" ++ go cr
+    where
+      go :: Show a => [a] -> String
+      go lst = unlines $ map ("  " ++) $ map show lst
+  show (UEntry dt cr acc cs) = "Debit:\n" ++ go dt ++ "\nCredit:\n" ++ go cr
+                              ++ "(correspondence: " ++ showName acc ++ ")\n"
+                              ++ "(add. currencies: " ++ intercalate ", " cs ++ ")"
+    where
+      go :: Show a => [a] -> String
+      go lst = unlines $ map ("  " ++) $ map show lst
+
+      showName Nothing = "to be found automatically"
+      showName (Just x) = getName x
+
+instance (HasID (f Free), HasID (f t)) => HasID (FreeOr t f) where
+  getID (Left x)  = getID x
+  getID (Right x) = getID x
 
 instance HasAmount a => HasAmount (Ext a) where
   getAmount x = getAmount (getContent x)
