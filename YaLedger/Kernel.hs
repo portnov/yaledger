@@ -281,6 +281,6 @@ reconciliate date account amount = do
          return $ UEntry [] [posting] Nothing [getCurrency amount]
     else do
          account' <- accountAsDebit account
-         let posting = DPosting account' (-diff :# accountCurrency)
+         let posting = DPosting account' ((-diff) :# accountCurrency)
          return $ UEntry [posting] [] Nothing [getCurrency amount]
 
