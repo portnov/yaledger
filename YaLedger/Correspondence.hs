@@ -4,6 +4,8 @@ module YaLedger.Correspondence where
 
 import Control.Monad
 import Data.Maybe
+import Data.List
+import Text.Printf
 
 import YaLedger.Types
 import YaLedger.Tree
@@ -17,7 +19,15 @@ data CQuery = CQuery {
   cqCurrency :: [Currency],
   cqExcept :: [AccountID],
   cqAttributes :: Attributes }
-  deriving (Eq, Show)
+  deriving (Eq)
+
+instance Show CQuery where
+  show (CQuery {..}) =
+    printf "{\n  Type = %s\n  Currencies = %s\n  Except accounts: %s\n  Attributes: %s\n}"
+      (show cqType)
+      (intercalate ", " cqCurrency)
+      (show cqExcept)
+      (showA cqAttributes)
 
 matchT :: PostingType -> AccountGroupType -> Bool
 matchT _       AGFree   = True

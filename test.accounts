@@ -31,18 +31,34 @@ group Root {
     account карман {
       category = "транспорт";
     };
+    account кошелёк {
+      category = "наличные";
+    };
   };
-  group расходы (credit) {
+  group движение {
     currency = "р";
-    account трамвай;
-    account интернет;
-  };
-  group доходы (debit) {
-    currency = "р";
-    account зарплата;
-    account разное {
-      category = "TEST";
-      source = "roubles"
+    group расходы (credit) {
+      account трамвай;
+      account интернет {
+        category = "интернет";
+      };
+      account банковское_обслуживание {
+        category = "комиссии";
+      };
+    };
+    group доходы (debit) {
+      account зарплата {
+        category = "зарплата";
+      };
+      account премия {
+        category = "премия";
+      };
+      account аванс {
+        category = "аванс";
+      };
+      account разное {
+        source = "roubles"
+      };
     };
   };
 };

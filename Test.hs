@@ -1,7 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables, FlexibleContexts #-}
 {-# OPTIONS_GHC -F -pgmF MonadLoc #-}
 
-module Test where
+module Main where
 
 import Prelude hiding (catch)
 import Control.Monad
@@ -11,6 +11,7 @@ import Control.Monad.Exception.Base
 import Control.Monad.Loc
 import Data.Dates
 import Text.Parsec
+import System.Environment
 
 import YaLedger.Types
 import YaLedger.Tree
@@ -38,13 +39,14 @@ process trans =
         `catchWithSrcLoc`
            (\loc (e :: NoSuchTemplate) -> wrapIO $ putStrLn (showExceptionWithTrace loc e))
 
-test :: IO ()
-test = do
+main :: IO ()
+main = do
+  [path] <- getArgs
   plan <- readPlan "test.accounts"
   print plan
   amap <- readAMap plan "test.map"
   forM amap print
-  trans <- readTrans plan "test.yaledger"
+  trans <- readTrans plan path
   forM trans $ \t ->
     putStrLn (prettyPrint t)
   runLedger plan amap $ process trans
