@@ -4,7 +4,7 @@ module YaLedger.Types
   (Checked, Unchecked,
    Credit, Debit, Free,
    Currency, Rates, FreeOr,
-   Ext (..), AccountID,
+   Ext (..), AccountID, GroupID,
    Account (..), Amount (..),
    AnyAccount (..),
    Posting (..), Entry (..),
@@ -12,7 +12,7 @@ module YaLedger.Types
    Transaction (..), Record (..),
    AccountGroupData (..), AccountPlan,
    AccountGroupType (..), PostingType (..),
-   AccountMap, AMEntry (..), AMPointer (..),
+   AccountMap, AMEntry (..), AMFrom (..), AMTo (..),
    HasCurrency (..),  HasAmount (..), Named (..), HasID (..),
    AccountHistory, Query (..), IOList,
    accountAttributes, accountType,
@@ -20,16 +20,11 @@ module YaLedger.Types
    module YaLedger.Attributes
   ) where
 
-import Control.Monad.Exception
-import Control.Monad.Exception.Base
-import Control.Monad.Loc
-import Control.Monad.Trans
 import Data.List
 import Data.Dates
 import Data.Decimal
 import Data.IORef
 import qualified Data.Map as M
-import Text.Regex.PCRE
 import Text.Printf
 
 import YaLedger.Tree
@@ -49,6 +44,8 @@ type Currency = String
 type Rates = M.Map (Currency, Currency) Double
 
 type AccountID = Integer
+
+type GroupID = Integer
 
 type FreeOr t f = Either (f Free) (f t)
 
@@ -327,18 +324,25 @@ type AccountPlan = Tree Linked AccountGroupData AnyAccount
 
 type AccountMap = [AMEntry]
 
-data AMEntry = AMPointer :=> AccountPlan
+data AMEntry = AMFrom :=> AMTo
   deriving (Eq)
 
 instance Show AMEntry where
   show (ptr :=> tgt) = show ptr ++ " maps to:\n" ++ show tgt
 
-data AMPointer =
-    AMAccount Integer
-  | AMGroup Integer
+data AMFrom =
+    AMAccount AccountID
+  | AMGroup GroupID
+  | AMAttributes Attributes
   deriving (Eq)
 
-instance Show AMPointer where
+instance Show AMFrom where
   show (AMAccount i) = "account #" ++ show i
   show (AMGroup i)   = "group #"   ++ show i
+  show (AMAttributes as) = "attributes " ++ showA as
+
+data AMTo =
+    ToAccountPlan AccountPlan
+  | ToAttributes Attributes
+  deriving (Eq, Show)
 

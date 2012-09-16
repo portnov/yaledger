@@ -26,7 +26,7 @@ matchAV :: AttributeValue -> AttributeValue -> Bool
 matchAV (Exactly x) (Exactly y) = x == y
 matchAV (Exactly x) (AnyBut y)  = x /= y
 matchAV (AnyBut x)  (Exactly y) = x /= y
-matchAV (AnyBut _)  _           = False
 matchAV (Exactly x) (Regexp re) = x =~ re
-matchAV (Regexp _)  _           = False
+matchAV (Regexp re) (Exactly x) = x =~ re
+matchAV _           _           = False
 

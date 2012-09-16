@@ -3,11 +3,8 @@
 module YaLedger.Tree where
 
 import Control.Applicative
-import Control.Monad
 import Data.Either
 import Data.List.Utils (split)
-
-import Debug.Trace
 
 data family ParentLink s x
 

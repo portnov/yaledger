@@ -22,25 +22,34 @@ pAccountMap = pMapEntry `sepEndBy1` many newline
 
 pMapEntry :: Parser AMEntry
 pMapEntry = do
-  ptr <- try (AMAccount <$> pAccount) <|> (AMGroup <$> pGroup)
+  ptr <- try (AMAccount <$> pAccount)
+     <|> try (AMGroup <$> pGroup)
+     <|> (AMAttributes <$> pFromAttributes)
   spaces
   reservedOp "->"
   spaces
-  tgtPath <- pPath
-  target <- getAccountPlanItem accountPlan tgtPath
+  target <- try pToAttributes <|> pToAccountPlan
   return $ ptr :=> target
 
-pAccount :: Parser Integer
+pToAccountPlan :: Parser AMTo
+pToAccountPlan = do
+  tgtPath <- pPath
+  ToAccountPlan <$> getAccountPlanItem accountPlan tgtPath
+
+pToAttributes :: Parser AMTo
+pToAttributes =
+  ToAttributes <$> braces pAttributes
+
+pAccount :: Parser AccountID
 pAccount = do
-  symbol "account"
+  reserved "account"
   spaces
   path <- pPath
-  account <- getAccount accountPlan path
-  return $ getID account
+  getID <$> getAccount accountPlan path
 
-pGroup :: Parser Integer
+pGroup :: Parser GroupID
 pGroup = do
-  symbol "group"
+  reserved "group"
   spaces
   path <- pPath
   st <- getState
@@ -50,4 +59,10 @@ pGroup = do
     xs ->  fail $ printf "Ambigous accounts group specification: %s (%d matching elements)."
                         (intercalate "/" path)
                         (length xs)
+
+pFromAttributes :: Parser Attributes
+pFromAttributes = do
+  reserved "attributes"
+  spaces
+  braces pAttributes
 

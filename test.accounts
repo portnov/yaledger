@@ -18,7 +18,10 @@ group Root {
   };
   group Y (debit) {
     account Y1;
-    account Y2
+    account Y2;
+    account Y2 {
+      category = /TEST/;
+    };
   };
   group Z {
     account Z1 {

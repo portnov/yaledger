@@ -1,3 +1,4 @@
 account Z1 -> Y1
 account Y/Y1 -> Z2
 group X -> доходы
+account X2 -> {category = "TEST"}
