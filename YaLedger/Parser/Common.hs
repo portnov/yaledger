@@ -11,7 +11,6 @@ import Text.Parsec.Language
 import Text.Printf
 
 import YaLedger.Types
-import YaLedger.Tree
 
 import Debug.Trace
 
@@ -46,13 +45,37 @@ semicolon   = P.semi lexer
 stringLit   = P.stringLiteral lexer
 float       = P.float lexer
 
+pRegexp :: Monad m => ParsecT String st m String
+pRegexp = do
+    char '/'
+    go ""
+  where
+    go acc = do
+      c <- anyChar
+      v <- case c of
+            '\\' -> anyChar
+            _    -> return c
+      if v == '/'
+        then return acc
+        else go (acc ++ [v])
+
+pAttributeValue :: Monad m => ParsecT String st m AttributeValue
+pAttributeValue =
+        try (Exactly <$> stringLit)
+    <|> try (AnyBut  <$> anyBut)
+    <|> (Regexp <$> pRegexp)
+  where
+    anyBut = do
+      char '!'
+      stringLit
+
 pAttributes :: Monad m => ParsecT String st m Attributes
 pAttributes = try attribute `sepEndBy` semicolon
   where
     attribute = do
       name <- identifier
       reservedOp "="
-      value <- stringLit
+      value <- pAttributeValue
       return (name, value)
 
 pPath :: Monad m => ParsecT String st m Path

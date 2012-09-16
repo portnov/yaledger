@@ -133,9 +133,9 @@ convert pc plan row = do
       account2 = case pcAccount2 pc of
                    Just fc -> Just $ field fc row
                    Nothing -> Nothing
-      as = [(name, field fc row) | (name, fc) <- pcOther pc,
+      as = [(name, Exactly $ field fc row) | (name, fc) <- pcOther pc,
                                     name `notElem` reservedFields]
-      attrs = filter (\p -> not $ null (snd p)) as
+      attrs = [p | p@(n,v) <- as, v /= Exactly ""]
 
       lookupAccount path =
          case lookupTree (mkPath path) plan of

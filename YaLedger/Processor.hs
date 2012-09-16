@@ -51,7 +51,7 @@ processTransaction (Ext date attrs (Transaction (TCallTemplate name args))) = do
     processTransaction (Ext date (attrs ++ tplAttrs) (Transaction tran))
 processTransaction (Ext date attrs (Transaction (TReconciliate acc x))) = do
     entry <- reconciliate date acc x
-    processEntry date (("category", "reconciliation"):attrs) entry
+    processEntry date (("category", Exactly "reconciliation"):attrs) entry
 processTransaction (Ext _ _ (Transaction (TSetRate c1 c2 x))) = do
     modify $ \st -> st {lsRates = M.insert (c1, c2) x (lsRates st)}
 processTransaction x = fail $ show x

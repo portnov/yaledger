@@ -88,10 +88,10 @@ checkQuery (Query {..}) (Ext {..}) =
 
       r = all matches qAttributes
 
-      matches (name, regex) =
+      matches (name, avalue) =
         case lookup name getAttributes of
           Nothing  -> False
-          Just val -> val =~ regex
+          Just val -> matchAV val avalue
 
   in  p && q && r
 
@@ -235,7 +235,8 @@ checkEntry attrs src@(UEntry dt cr mbCorr currs) = do
                                 else EDebit,
                      cqCurrency = currencies ++ currs,
                      cqExcept = accounts,
-                     cqAttributes = attrs ++ [("source", head accountNames)]
+                     cqAttributes = attrs ++
+                          [("source", Exactly (head accountNames))]
                    }
          let mbAccount = runCQuery qry plan
              mbByMap = lookupAMap plan amap qry accounts

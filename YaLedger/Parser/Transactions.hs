@@ -63,7 +63,7 @@ ext p = do
   attrs <- option [] $ braces $ pAttributes
   let attrs' = case descr of
                  Nothing -> attrs
-                 Just s -> ("description", s): attrs
+                 Just s -> ("description", Exactly s): attrs
   content <- p
   return $ Ext date attrs' content
 

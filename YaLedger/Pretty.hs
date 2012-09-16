@@ -17,7 +17,7 @@ instance Pretty a => Pretty (Ext a) where
   prettyPrint (Ext date attrs a) =
       printf "@ %s %s\n%s%s"
              (prettyPrint date)
-             (fromMaybe "" $ lookup "description" attrs)
+             (maybe "" show $ lookup "description" attrs)
              (prettyPrint attrs)
              (prettyPrint a)
 

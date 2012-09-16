@@ -69,6 +69,15 @@ pAGType t = do
     notFollowedBy (parens identifier) <?> ("Cannot override account type: " ++ show t)
     return t
 
+lookupCurrency :: Attributes -> Parser Currency
+lookupCurrency attrs = do
+  st <- getState
+  mbCurrency <- case lookup "currency" attrs of
+                  Nothing -> return Nothing
+                  Just (Exactly c) -> return (Just c)
+                  Just _ -> fail $ "Currency must be specified exactly!"
+  return $ fromMaybe (groupCurrency st) mbCurrency
+
 pAccount :: Parser AnyAccount
 pAccount = do
   st <- getState
@@ -77,8 +86,7 @@ pAccount = do
   tp <- pAGType (groupType st)
   attrs <- option [] $ braces $ pAttributes
   aid <- newAID
-  let mbCurrency = lookup "currency" attrs
-      currency = fromMaybe (groupCurrency st) mbCurrency
+  currency <- lookupCurrency attrs
   account tp name aid currency attrs
 
 pAccountGroup :: Parser AccountPlan 
@@ -90,8 +98,8 @@ pAccountGroup = do
   gid <- newGID
   reserved "{"
   attrs <- option [] pAttributes
-  let currency = fromMaybe (groupCurrency st) $ lookup "currency" attrs
-      agData r = AccountGroupData {
+  currency <- lookupCurrency attrs
+  let agData r = AccountGroupData {
                    agName = name,
                    agID = gid,
                    agRange = r,

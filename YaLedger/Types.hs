@@ -1,6 +1,24 @@
 {-# LANGUAGE EmptyDataDecls, GADTs, FlexibleContexts, FlexibleInstances, UndecidableInstances, TypeSynonymInstances, DeriveDataTypeable, RecordWildCards, ScopedTypeVariables, MultiParamTypeClasses #-}
 
-module YaLedger.Types where
+module YaLedger.Types
+  (Checked, Unchecked,
+   Credit, Debit, Free,
+   Currency, Rates, FreeOr,
+   Ext (..), AccountID,
+   Account (..), Amount (..),
+   AnyAccount (..),
+   Posting (..), Entry (..),
+   Param (..),
+   Transaction (..), Record (..),
+   AccountGroupData (..), AccountPlan,
+   AccountGroupType (..), PostingType (..),
+   AccountMap, AMEntry (..), AMPointer (..),
+   HasCurrency (..),  HasAmount (..), Named (..), HasID (..),
+   AccountHistory, Query (..), IOList,
+   accountAttributes, accountType,
+   module YaLedger.Tree,
+   module YaLedger.Attributes
+  ) where
 
 import Control.Monad.Exception
 import Control.Monad.Exception.Base
@@ -15,6 +33,7 @@ import Text.Regex.PCRE
 import Text.Printf
 
 import YaLedger.Tree
+import YaLedger.Attributes
 
 data Checked
 data Unchecked
@@ -32,13 +51,6 @@ type Rates = M.Map (Currency, Currency) Double
 type AccountID = Integer
 
 type FreeOr t f = Either (f Free) (f t)
-
-type Attributes = [(String, String)]
-
-showA :: Attributes -> String
-showA attrs = "{" ++ intercalate ", " (map one attrs) ++ "}"
-  where
-    one (name, value) = name ++ " = \"" ++ value ++ "\""
 
 data Ext a = Ext {
     getDate :: DateTime,
