@@ -21,7 +21,10 @@ group Root {
     account Y2
   };
   group Z {
-    account Z1;
+    account Z1 {
+      currency = "р";
+      category = /TEST/;
+    };
     account Z2 (credit);
     account Z3 (debit) {currency = "р"};
   };
@@ -29,7 +32,7 @@ group Root {
     currency = "р";
     account карточка;
     account карман {
-      category = "транспорт";
+      category = /транспорт/;
     };
     account кошелёк {
       category = "наличные";

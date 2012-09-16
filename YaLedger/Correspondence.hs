@@ -38,7 +38,10 @@ matchT _       _        = False
 matchA :: Attributes -> Attributes -> Bool
 matchA attrs qry =
   let qry' = filter (\(name,_) -> name `notElem` nonsignificantAttributes) qry
-  in  all (`elem` attrs) qry'
+      check (name, value) = case lookup name attrs of
+                              Nothing -> False
+                              Just av  -> matchAV value av
+  in  all check qry'
 
 additionalAttributes :: Attributes -> AnyAccount -> Int
 additionalAttributes as a = 
