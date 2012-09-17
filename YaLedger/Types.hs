@@ -17,7 +17,8 @@ module YaLedger.Types
    AccountHistory, Query (..), IOList,
    accountAttributes, accountType,
    module YaLedger.Tree,
-   module YaLedger.Attributes
+   module YaLedger.Attributes,
+   trace, traceS
   ) where
 
 import Data.List
@@ -29,6 +30,8 @@ import Text.Printf
 
 import YaLedger.Tree
 import YaLedger.Attributes
+
+import Debug.Trace
 
 data Checked
 data Unchecked
@@ -328,7 +331,7 @@ data AMEntry = AMFrom :=> AMTo
   deriving (Eq)
 
 instance Show AMEntry where
-  show (ptr :=> tgt) = show ptr ++ " maps to:\n" ++ show tgt
+  show (ptr :=> tgt) = show ptr ++ " maps to " ++ show tgt
 
 data AMFrom =
     AMAccount AccountID
@@ -344,5 +347,9 @@ instance Show AMFrom where
 data AMTo =
     ToAccountPlan AccountPlan
   | ToAttributes Attributes
-  deriving (Eq, Show)
+  deriving (Eq)
+
+instance Show AMTo where
+  show (ToAccountPlan p) = "account plan item:\n" ++ show p
+  show (ToAttributes as) = "attributes " ++ showA as
 

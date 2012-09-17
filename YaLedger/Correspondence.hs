@@ -34,22 +34,33 @@ matchT ECredit AGCredit = True
 matchT EDebit  AGDebit  = True
 matchT _       _        = False
 
-matchA :: Attributes -> Attributes -> Bool
-matchA attrs qry =
-  let qry' = filter (\(name,_) -> name `notElem` nonsignificantAttributes) qry
-      check (name, value) = case lookup name attrs of
-                              Nothing -> False
+match :: Attributes -> Attributes -> Bool
+match attrs qry =
+  let check (name, value) = case lookup name attrs of
+                              Nothing -> name `elem` nonsignificantAttributes
                               Just av  -> matchAV value av
-  in  all check qry'
+      t = showA attrs ++ " `match` " ++ showA qry ++ " = "
+  in  traceS t $ all check qry
+
+matchAll :: Attributes -> Attributes -> Bool
+matchAll attrs qry =
+  let t = showA attrs ++ " `matchAll` " ++ showA qry ++ " = "
+      check (name, value) = case lookup name qry of
+                              Nothing -> name == "source"
+                              Just av  -> matchAV value av
+  in  traceS t $ all check attrs && all (`elem` map fst attrs) (map fst qry)
 
 additionalAttributes :: Attributes -> AnyAccount -> Int
 additionalAttributes as a = 
     go (filter (\(name,_) -> name `elem` nonsignificantAttributes) as) a
   where
     go []     _   = 1
-    go (a:as) acc
-      | a `elem` accountAttributes acc = 1 + go as acc
-      | otherwise                      =     go as acc
+    go ((k,v):as) acc =
+      case lookup k (accountAttributes acc) of
+        Nothing -> go as acc
+        Just av -> if matchAV v av
+                     then 1 + go as acc
+                     else     go as acc
 
 filterByAddAttributes :: Attributes -> [AnyAccount] -> [AnyAccount]
 filterByAddAttributes as accs =
@@ -75,7 +86,7 @@ filterPlan (CQuery {..}) (Leaf {..}) =
        ((cqType `matchT` accountType leafData) ||
         (accountType leafData == AGFree))
       then if (getCurrency leafData `elem` cqCurrency) &&
-              (accountAttributes leafData `matchA` cqAttributes)
+              (accountAttributes leafData `match` cqAttributes)
              then [leafData]
              else []
       else []
@@ -83,7 +94,7 @@ filterPlan (CQuery {..}) (Leaf {..}) =
 runCQuery :: CQuery -> AccountPlan -> Maybe AnyAccount
 runCQuery qry plan =
   case filterPlan qry plan of
-    []  -> Nothing
+    []  -> trace ("CQ: " ++ show qry) Nothing
     [x] -> Just x
     list -> Just $ head $ filterByAddAttributes (cqAttributes qry) list
 
@@ -115,8 +126,9 @@ lookupAMap :: AccountPlan
            -> CQuery
            -> [AccountID]       -- ^ Account IDs
            -> Maybe AnyAccount
-lookupAMap plan amap qry is = msum [first (good i) amap | i <- is]
+lookupAMap plan amap qry is = listToMaybe $ catMaybes $ concat [map (good i) amap | i <- is]
   where
+    good :: AccountID -> AMEntry -> Maybe AnyAccount
     good i (AMAccount j :=> ToAccountPlan r)
       | i == j    = runCQuery qry r
       | otherwise = Nothing
@@ -135,10 +147,12 @@ lookupAMap plan amap qry is = msum [first (good i) amap | i <- is]
             then runCQuery qry' plan
             else Nothing
     good _ (AMAttributes as :=> ToAccountPlan r)
-      | as `matchA` cqAttributes qry = runCQuery qry r
+      | cqAttributes qry `matchAll` as = runCQuery qry r
       | otherwise = Nothing
     good _ (AMAttributes as :=> ToAttributes as')
-      | as `matchA` cqAttributes qry =
-            runCQuery (qry {cqAttributes = as' ++ cqAttributes qry}) plan
+      | cqAttributes qry `matchAll` as =
+            let attrs = as' ++ cqAttributes qry
+                t = show qry ++ " -> " ++ showA attrs
+            in  runCQuery (qry {cqAttributes = trace t attrs}) plan
       | otherwise = Nothing
 

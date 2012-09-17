@@ -4,6 +4,8 @@ module YaLedger.Attributes where
 import Data.List
 import Text.Regex.PCRE
 
+import Debug.Trace
+
 data AttributeValue =
     Exactly String
   | AnyBut String
@@ -26,7 +28,9 @@ matchAV :: AttributeValue -> AttributeValue -> Bool
 matchAV (Exactly x) (Exactly y) = x == y
 matchAV (Exactly x) (AnyBut y)  = x /= y
 matchAV (AnyBut x)  (Exactly y) = x /= y
-matchAV (Exactly x) (Regexp re) = x =~ re
-matchAV (Regexp re) (Exactly x) = x =~ re
+matchAV (Exactly x) (Regexp re) = traceS (x ++ " =~ " ++ re ++ ": ") $ x =~ re
+matchAV (Regexp re) (Exactly x) = traceS (x ++ " =~ " ++ re ++ ": ") $ x =~ re
 matchAV _           _           = False
+
+traceS a x = trace (a ++ show x) x
 
