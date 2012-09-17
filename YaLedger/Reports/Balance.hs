@@ -7,6 +7,7 @@ import Control.Monad
 import Control.Monad.State
 import Control.Monad.Exception
 import Control.Monad.Loc
+import qualified Data.Map as M
 import Data.Dates
 
 import YaLedger.Types
@@ -34,7 +35,7 @@ balance = do
   let qry = Query {
              qStart = Nothing,
              qEnd   = Just now,
-             qAttributes = [] }
+             qAttributes = M.empty }
   plan <- gets lsAccountPlan
   mapTreeM sumGroup (saldo qry) plan
 

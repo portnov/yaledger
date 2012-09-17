@@ -60,10 +60,10 @@ ext p = do
   date <- try $ pDate (currentDate st)
   descr <- optionMaybe $ many1 $ noneOf "\n\r"
   newline
-  attrs <- option [] $ braces $ pAttributes
+  attrs <- option M.empty $ braces $ pAttributes
   let attrs' = case descr of
                  Nothing -> attrs
-                 Just s -> ("description", Exactly s): attrs
+                 Just s -> M.insert "description" (Exactly s) attrs
   content <- p
   return $ Ext date attrs' content
 

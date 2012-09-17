@@ -5,6 +5,7 @@ module YaLedger.Correspondence where
 import Control.Monad
 import Data.Maybe
 import Data.List
+import qualified Data.Map as M
 import Text.Printf
 
 import YaLedger.Types
@@ -36,27 +37,27 @@ matchT _       _        = False
 
 match :: Attributes -> Attributes -> Bool
 match attrs qry =
-  let check (name, value) = case lookup name attrs of
+  let check (name, value) = case M.lookup name attrs of
                               Nothing -> name `elem` nonsignificantAttributes
                               Just av  -> matchAV value av
       t = showA attrs ++ " `match` " ++ showA qry ++ " = "
-  in  traceS t $ all check qry
+  in  traceS t $ all check $ M.assocs qry
 
 matchAll :: Attributes -> Attributes -> Bool
 matchAll attrs qry =
   let t = showA attrs ++ " `matchAll` " ++ showA qry ++ " = "
-      check (name, value) = case lookup name qry of
+      check (name, value) = case M.lookup name qry of
                               Nothing -> name == "source"
                               Just av  -> matchAV value av
-  in  traceS t $ all check attrs && all (`elem` map fst attrs) (map fst qry)
+  in  traceS t $ all check (M.assocs attrs) && all (`elem` M.keys attrs) (M.keys qry)
 
 additionalAttributes :: Attributes -> AnyAccount -> Int
 additionalAttributes as a = 
-    go (filter (\(name,_) -> name `elem` nonsignificantAttributes) as) a
+    go (filter (\(name,_) -> name `elem` nonsignificantAttributes) $ M.assocs as) a
   where
     go []     _   = 1
     go ((k,v):as) acc =
-      case lookup k (accountAttributes acc) of
+      case M.lookup k (accountAttributes acc) of
         Nothing -> go as acc
         Just av -> if matchAV v av
                      then 1 + go as acc
@@ -133,7 +134,7 @@ lookupAMap plan amap qry is = listToMaybe $ catMaybes $ concat [map (good i) ama
       | i == j    = runCQuery qry r
       | otherwise = Nothing
     good i (AMAccount j :=> ToAttributes as)
-      | i == j    = runCQuery (qry {cqAttributes = as ++ cqAttributes qry}) plan
+      | i == j    = runCQuery (qry {cqAttributes = as `M.union` cqAttributes qry}) plan
       | otherwise = Nothing
     good i (AMGroup g :=> ToAccountPlan r) =
       let gids = fromMaybe [] $ groupIDs i plan
@@ -142,7 +143,7 @@ lookupAMap plan amap qry is = listToMaybe $ catMaybes $ concat [map (good i) ama
             else Nothing
     good i (AMGroup g :=> ToAttributes as) =
       let gids = fromMaybe [] $ groupIDs i plan
-          qry' = qry {cqAttributes = as ++ cqAttributes qry}
+          qry' = qry {cqAttributes = as `M.union` cqAttributes qry}
       in  if g `elem` gids
             then runCQuery qry' plan
             else Nothing
@@ -151,7 +152,7 @@ lookupAMap plan amap qry is = listToMaybe $ catMaybes $ concat [map (good i) ama
       | otherwise = Nothing
     good _ (AMAttributes as :=> ToAttributes as')
       | cqAttributes qry `matchAll` as =
-            let attrs = as' ++ cqAttributes qry
+            let attrs = as' `M.union` cqAttributes qry
                 t = show qry ++ " -> " ++ showA attrs
             in  runCQuery (qry {cqAttributes = trace t attrs}) plan
       | otherwise = Nothing

@@ -5,6 +5,7 @@ import Control.Applicative
 import Control.Monad.Trans
 import Data.Maybe
 import Data.IORef
+import qualified Data.Map as M
 import Text.Parsec
 
 import YaLedger.Types
@@ -72,7 +73,7 @@ pAGType t = do
 lookupCurrency :: Attributes -> Parser Currency
 lookupCurrency attrs = do
   st <- getState
-  mbCurrency <- case lookup "currency" attrs of
+  mbCurrency <- case M.lookup "currency" attrs of
                   Nothing -> return Nothing
                   Just (Exactly c) -> return (Just c)
                   Just _ -> fail $ "Currency must be specified exactly!"
@@ -84,7 +85,7 @@ pAccount = do
   symbol "account"
   name <- identifier
   tp <- pAGType (groupType st)
-  attrs <- option [] $ braces $ pAttributes
+  attrs <- option M.empty $ braces $ pAttributes
   aid <- newAID
   currency <- lookupCurrency attrs
   account tp name aid currency attrs
@@ -97,7 +98,7 @@ pAccountGroup = do
   tp <- pAGType (groupType st)
   gid <- newGID
   reserved "{"
-  attrs <- option [] pAttributes
+  attrs <- option M.empty pAttributes
   currency <- lookupCurrency attrs
   let agData r = AccountGroupData {
                    agName = name,

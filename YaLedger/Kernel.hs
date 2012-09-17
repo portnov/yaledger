@@ -16,10 +16,8 @@ import Data.Dates
 import Data.Decimal
 import qualified Data.Map as M
 import Text.Regex.PCRE
-import Text.Printf
 
 import YaLedger.Types
-import YaLedger.Tree
 import YaLedger.Monad
 import YaLedger.Exceptions
 import YaLedger.Correspondence
@@ -86,10 +84,10 @@ checkQuery (Query {..}) (Ext {..}) =
             Just e -> getDate <= e
             Nothing -> True
 
-      r = all matches qAttributes
+      r = all matches $ M.assocs qAttributes
 
       matches (name, avalue) =
-        case lookup name getAttributes of
+        case M.lookup name getAttributes of
           Nothing  -> False
           Just val -> matchAV val avalue
 
@@ -113,8 +111,6 @@ saldo :: (Throws NoSuchRate l,
           Throws InternalError l)
       => Query -> AnyAccount -> Ledger l Amount
 saldo query account = do
-  rs <- gets lsRates
-
   let c = getCurrency account
 
       filterPostings :: [Ext (Posting Decimal t)] -> [Posting Decimal t]
@@ -193,6 +189,17 @@ convertPosting' (CPosting acc a) = do
   x :# _ <- convert (getCurrency acc) a
   return $ CPosting acc x
 
+convertDecimal :: Throws NoSuchRate l
+               => Currency
+               -> Posting Decimal t
+               -> Ledger l Decimal
+convertDecimal to (DPosting acc a) = do
+  x :# _ <- convert to (a :# getCurrency acc)
+  return x
+convertDecimal to (CPosting acc a) = do
+  x :# _ <- convert to (a :# getCurrency acc)
+  return x
+
 checkEntry :: (Throws NoSuchRate l,
                Throws NoCorrespondingAccountFound l,
                Throws InvalidAccountType l,
@@ -200,15 +207,20 @@ checkEntry :: (Throws NoSuchRate l,
              => Attributes
              -> Entry Amount Unchecked
              -> Ledger l (Entry Decimal Checked)
-checkEntry attrs src@(UEntry dt cr mbCorr currs) = do
+checkEntry attrs (UEntry dt cr mbCorr currs) = do
   defcur <- gets lsDefaultCurrency
   let currencies    = uniq $ map getCurrency cr ++ map getCurrency dt ++ [defcur]
-      nCurrencies   = length $ uniq $ map getCurrency cr ++ map getCurrency dt
+      nCurrencies   = length $ nub $ sort $
+                          map getCurrency cr ++
+                          map getCurrency dt ++
+                          map (getCurrency . creditPostingAccount) cr ++
+                          map (getCurrency . debitPostingAccount)  dt
       firstCurrency = head currencies
       accounts      = map (getID . creditPostingAccount) cr
                    ++ map (getID . debitPostingAccount) dt
       accountNames  = map (getName . creditPostingAccount) cr
                    ++ map (getName . debitPostingAccount) dt
+      source        = head accountNames
 
   -- Convert all postings into firstCurrency
   dt1 <- mapM (convertPosting firstCurrency) dt
@@ -223,12 +235,76 @@ checkEntry attrs src@(UEntry dt cr mbCorr currs) = do
   dt' <- mapM convertPosting' dt
   cr' <- mapM convertPosting' cr
 
-  if dtSum == crSum
-    then return $ CEntry dt' cr'
-    else do
-         let diff = crSum - dtSum -- in firstCurrency
-         e@(CEntry dtF crF) <- fillEntry dt' cr' accounts mbCorr (head accountNames) diff (currencies ++ currs) attrs firstCurrency
-         return e
+  e@(CEntry dtF crF _) <-
+            -- Should we add credit / debit posting
+            -- to entry?
+            if dtSum == crSum
+              then return $ CEntry dt' cr' OneCurrency
+              else do
+                   let diff = crSum - dtSum -- in firstCurrency
+                   -- Fill credit / debit entry parts
+                   fillEntry dt' cr'
+                             accounts
+                             mbCorr
+                             source
+                             diff
+                             (currencies ++ currs)
+                             attrs firstCurrency
+  -- If there is more than 1 currency,
+  -- then we should calculate rates difference.
+  if traceS "currencies: " nCurrencies > 1
+    then do
+         -- Convert all postings into default currency
+         crD <- mapM (convertDecimal defcur) crF
+         dtD <- mapM (convertDecimal defcur) dtF
+
+         let diffD :: Decimal -- In default currency
+             diffD = sum crD - sum dtD
+         rd <- if diffD == 0
+                 then return OneCurrency
+                 else do
+                      correspondence <- lookupCorrespondingAccount (M.insert "category" (Exactly "rates-difference") attrs)
+                                                                   source
+                                                                   accounts
+                                                                   diffD
+                                                                   [defcur] -- Use only accounts in default currency
+                                                                   Nothing
+                      if diffD < 0
+                        then do
+                             account <- accountAsCredit correspondence
+                             return $ CreditDifference $ CPosting account (-diffD)
+                        else do
+                             account <- accountAsDebit correspondence
+                             return $ DebitDifference $ DPosting account diffD
+         return $ e {cEntryRatesDifference = rd}
+    else return e
+
+lookupCorrespondingAccount :: (Throws NoCorrespondingAccountFound l)
+                           => Attributes
+                           -> String
+                           -> [AccountID]
+                           -> Decimal
+                           -> [Currency]
+                           -> Maybe AnyAccount
+                           -> Ledger l AnyAccount
+lookupCorrespondingAccount attrs source accounts value currencies mbCorr = do
+  plan <- gets lsAccountPlan
+  amap <- gets lsAccountMap
+  let qry = CQuery {
+               cqType = if value < 0
+                          then ECredit
+                          else EDebit,
+               cqCurrency = currencies,
+               cqExcept = accounts,
+               cqAttributes = M.insert "source" (Exactly source) attrs
+             }
+  let mbAccount = runCQuery qry plan
+      mbByMap = lookupAMap plan amap qry accounts
+  case mbByMap `mplus` mbAccount of
+    Nothing -> case mbCorr of
+                 Nothing -> throw (NoCorrespondingAccountFound qry)
+                 Just acc -> return acc
+    Just acc -> return acc
 
 fillEntry :: (Throws NoSuchRate l,
               Throws NoCorrespondingAccountFound l,
@@ -245,34 +321,22 @@ fillEntry :: (Throws NoSuchRate l,
            -> Currency
            -> Ledger l (Entry Decimal Checked)
 fillEntry dt cr accounts mbCorr source value currencies attrs currency = do
-  plan <- gets lsAccountPlan
-  amap <- gets lsAccountMap
-  let qry = CQuery {
-               cqType = if value < 0
-                          then ECredit
-                          else EDebit,
-               cqCurrency = currencies,
-               cqExcept = accounts,
-               cqAttributes = attrs ++
-                    [("source", Exactly source)]
-             }
-  let mbAccount = runCQuery qry plan
-      mbByMap = lookupAMap plan amap qry accounts
-  case mbCorr `mplus` mbByMap `mplus` mbAccount of
-     Nothing -> throw (NoCorrespondingAccountFound qry)
-     Just acc -> if value < 0
-                   then do
-                        account <- accountAsCredit acc
-                        -- Convert value into currency of found account
-                        value' :# _ <- convert (getCurrency account) (value :# currency)
-                        let e = CPosting account (-value')
-                        return $ CEntry dt (e:cr)
-                   else do
-                        account <- accountAsDebit acc
-                        -- Convert value into currency of found account
-                        value' :# _ <- convert (getCurrency account) (value :# currency)
-                        let e = DPosting account value'
-                        return $ CEntry (e:dt) cr
+  correspondence <- lookupCorrespondingAccount attrs source accounts value currencies mbCorr
+  if value < 0
+     then do
+          account <- accountAsCredit correspondence
+          -- Convert value into currency of found account
+          value' :# _ <- convert (getCurrency account) (value :# currency)
+          let e = CPosting account (-value')
+          -- Will fill rates difference later
+          return $ CEntry dt (e:cr) OneCurrency
+     else do
+          account <- accountAsDebit correspondence
+          -- Convert value into currency of found account
+          value' :# _ <- convert (getCurrency account) (value :# currency)
+          let e = DPosting account value'
+          -- Will fill rates difference later
+          return $ CEntry (e:dt) cr OneCurrency
 
 reconciliate :: (Throws NoSuchRate l,
                  Throws InvalidAccountType l,
@@ -286,7 +350,7 @@ reconciliate date account amount = do
   let qry = Query {
               qStart = Nothing,
               qEnd   = Just date,
-              qAttributes = [] }
+              qAttributes = M.empty }
 
   currentBalance :# accountCurrency <- saldo qry account
   actualBalance :# _ <- convert (getCurrency account) amount

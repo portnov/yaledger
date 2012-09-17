@@ -3,6 +3,7 @@ module YaLedger.Pretty where
 
 import Data.Maybe
 import Data.Dates
+import qualified Data.Map as M
 import Text.Printf
 
 import YaLedger.Types
@@ -17,15 +18,16 @@ instance Pretty a => Pretty (Ext a) where
   prettyPrint (Ext date attrs a) =
       printf "@ %s %s\n%s%s"
              (prettyPrint date)
-             (maybe "" show $ lookup "description" attrs)
+             (maybe "" show $ M.lookup "description" attrs)
              (prettyPrint attrs)
              (prettyPrint a)
 
 instance Pretty Attributes where
-  prettyPrint as = go $ filter (\(name,_) -> name /= "description") as
+  prettyPrint as = go $ M.filterWithKey (\name _ -> name /= "description") as
     where
-      go [] = ""
-      go x = showA x ++ "\n"
+      go x
+        | M.null x = ""
+        | otherwise = showA x ++ "\n"
 
 instance Pretty DateTime where
   prettyPrint (DateTime {..}) = printf "%4d/%02d/%02d" year month day
@@ -60,7 +62,7 @@ instance (Pretty t) => Pretty (Transaction t) where
     printf "rate %s -> %s = %0.4f\n" c1 c2 x
 
 instance (Pretty v) => Pretty (Entry v c) where
-  prettyPrint (CEntry dt cr) =
+  prettyPrint (CEntry dt cr _) =
     unlines $ map prettyPrint dt ++ map prettyPrint cr
   prettyPrint (UEntry dt cr corr _) =
     (unlines $ map prettyPrint dt ++ map prettyPrint cr) ++

@@ -11,6 +11,9 @@ group Root {
     currency = "$";
     category = "reconciliation";
   };
+  account difference {
+    category = "rates-difference";
+  };
   group X (credit) {
     currency = "€";
     account X1;

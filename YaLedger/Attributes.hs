@@ -3,6 +3,7 @@ module YaLedger.Attributes where
 
 import Data.List
 import Text.Regex.PCRE
+import qualified Data.Map as M
 
 import Debug.Trace
 
@@ -17,10 +18,10 @@ instance Show AttributeValue where
   show (AnyBut s)  = "!\"" ++ s ++ "\""
   show (Regexp s)  = "/" ++ s ++ "/"
 
-type Attributes = [(String, AttributeValue)]
+type Attributes = M.Map String AttributeValue
 
 showA :: Attributes -> String
-showA attrs = "{" ++ intercalate ", " (map one attrs) ++ "}"
+showA attrs = "{" ++ intercalate ", " (map one $ M.assocs attrs) ++ "}"
   where
     one (name, value) = name ++ " = " ++ show value
 
@@ -32,5 +33,6 @@ matchAV (Exactly x) (Regexp re) = traceS (x ++ " =~ " ++ re ++ ": ") $ x =~ re
 matchAV (Regexp re) (Exactly x) = traceS (x ++ " =~ " ++ re ++ ": ") $ x =~ re
 matchAV _           _           = False
 
+traceS :: Show a => String -> a -> a
 traceS a x = trace (a ++ show x) x
 

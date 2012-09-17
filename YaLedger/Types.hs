@@ -8,6 +8,7 @@ module YaLedger.Types
    Account (..), Amount (..),
    AnyAccount (..),
    Posting (..), Entry (..),
+   RatesDifference (..),
    Param (..),
    Transaction (..), Record (..),
    AccountGroupData (..), AccountPlan,
@@ -113,12 +114,15 @@ data Transaction v =
   deriving (Eq, Show)
 
 data Posting v t where
+  -- Debit posting
   DPosting :: {
+    -- Debit posting should use debit or free account
     debitPostingAccount :: FreeOr Debit Account,
     debitPostingAmount :: v
   } -> Posting v Debit
 
   CPosting :: {
+    -- Credit posting should use credit or free account
     creditPostingAccount :: FreeOr Credit Account,
     creditPostingAmount  :: v
   } -> Posting v Credit
@@ -150,28 +154,42 @@ instance HasAmount (Posting Amount t) where
   getAmount (DPosting _ x) = x
   getAmount (CPosting _ x) = x
 
+data RatesDifference =
+    OneCurrency
+  | CreditDifference (Posting Decimal Credit)
+  | DebitDifference (Posting Decimal Debit)
+  deriving (Eq)
+
+instance Show RatesDifference where
+  show OneCurrency = "one currency, no rates difference"
+  show (CreditDifference p) = "credit rates difference: " ++ show p
+  show (DebitDifference p) = "debit rates difference: " ++ show p
+
 data Entry v c where
     CEntry :: {
       cEntryDebitPostings  :: [Posting Decimal Debit],
-      cEntryCreditPostings :: [Posting Decimal Credit]
+      cEntryCreditPostings :: [Posting Decimal Credit],
+      cEntryRatesDifference :: RatesDifference
     } -> Entry Decimal Checked
 
     UEntry :: {
       uEntryDebitPostings  :: [Posting v Debit],
-      uEntryCreditPostings :: [Posting v Credit],
+      uEntryCreditPostings :: [Posting v Credit], 
       uEntryCorrespondence :: Maybe AnyAccount,
       uEntryAdditionalCurrencies :: [Currency]
     } -> Entry v Unchecked
 
 instance Eq v => Eq (Entry v Checked) where
-  (CEntry dt cr) == (CEntry dt' cr') = (dt == dt') && (cr == cr')
+  (CEntry dt cr rd) == (CEntry dt' cr' rd') =
+      (dt == dt') && (cr == cr') && (rd == rd')
 
 instance Eq v => Eq (Entry v Unchecked) where
   (UEntry dt cr c cs) == (UEntry dt' cr' c' cs') =
     (dt == dt') && (cr == cr') && (c == c') && (cs == cs')
 
 instance Show v => Show (Entry v t) where
-  show (CEntry dt cr) = "Debit:\n" ++ go dt ++ "\nCredit:\n" ++ go cr
+  show (CEntry dt cr rd) =
+      "Debit:\n" ++ go dt ++ "Credit:\n" ++ go cr ++ "Rates difference: " ++ show rd
     where
       go :: Show a => [a] -> String
       go lst = unlines $ map ("  " ++) $ map show lst

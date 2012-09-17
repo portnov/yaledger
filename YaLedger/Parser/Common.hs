@@ -5,6 +5,7 @@ module YaLedger.Parser.Common where
 import Control.Applicative ((<$>))
 import Data.Maybe
 import Data.List
+import qualified Data.Map as M
 import Text.Parsec
 import qualified Text.Parsec.Token as P
 import Text.Parsec.Language
@@ -70,7 +71,7 @@ pAttributeValue =
       stringLit
 
 pAttributes :: Monad m => ParsecT String st m Attributes
-pAttributes = try attribute `sepEndBy` semicolon
+pAttributes = M.fromList <$> try attribute `sepEndBy` semicolon
   where
     attribute = do
       name <- identifier

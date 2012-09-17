@@ -57,7 +57,8 @@ runLedger :: AccountPlan -> AccountMap -> LedgerMonad a -> IO a
 runLedger plan amap action = do
   let LedgerMonad emt = action
   st <- emptyLedgerState plan amap
-  (res, _) <- runStateT emt st
+  -- Use currency of root accounts group as default currency
+  (res, _) <- runStateT emt (st {lsDefaultCurrency = agCurrency $ branchData plan})
   return res
 
 -- * IOList
