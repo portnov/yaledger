@@ -201,11 +201,9 @@ checkEntry :: (Throws NoSuchRate l,
              -> Entry Amount Unchecked
              -> Ledger l (Entry Decimal Checked)
 checkEntry attrs src@(UEntry dt cr mbCorr currs) = do
-  rs <- gets lsRates
-  plan <- gets lsAccountPlan
-  amap <- gets lsAccountMap
   defcur <- gets lsDefaultCurrency
   let currencies    = uniq $ map getCurrency cr ++ map getCurrency dt ++ [defcur]
+      nCurrencies   = length $ uniq $ map getCurrency cr ++ map getCurrency dt
       firstCurrency = head currencies
       accounts      = map (getID . creditPostingAccount) cr
                    ++ map (getID . debitPostingAccount) dt
@@ -229,32 +227,52 @@ checkEntry attrs src@(UEntry dt cr mbCorr currs) = do
     then return $ CEntry dt' cr'
     else do
          let diff = crSum - dtSum -- in firstCurrency
-             qry = CQuery {
-                     cqType = if diff < 0
-                                then ECredit
-                                else EDebit,
-                     cqCurrency = currencies ++ currs,
-                     cqExcept = accounts,
-                     cqAttributes = attrs ++
-                          [("source", Exactly (head accountNames))]
-                   }
-         let mbAccount = runCQuery qry plan
-             mbByMap = lookupAMap plan amap qry accounts
-         case mbCorr `mplus` mbByMap `mplus` mbAccount of
-           Nothing -> throw (NoCorrespondingAccountFound qry)
-           Just acc -> if diff < 0
-                         then do
-                              account <- accountAsCredit acc
-                              -- Convert diff into currency of found account
-                              diff' :# _ <- convert (getCurrency account) (diff :# firstCurrency)
-                              let e = CPosting account (-diff')
-                              return $ CEntry dt' (e:cr')
-                         else do
-                              account <- accountAsDebit acc
-                              -- Convert diff into currency of found account
-                              diff' :# _ <- convert (getCurrency account) (diff :# firstCurrency)
-                              let e = DPosting account diff'
-                              return $ CEntry (e:dt') cr'
+         e@(CEntry dtF crF) <- fillEntry dt' cr' accounts mbCorr (head accountNames) diff (currencies ++ currs) attrs firstCurrency
+         return e
+
+fillEntry :: (Throws NoSuchRate l,
+              Throws NoCorrespondingAccountFound l,
+              Throws InvalidAccountType l,
+              Throws InternalError l)
+           => [Posting Decimal Debit]
+           -> [Posting Decimal Credit]
+           -> [AccountID]
+           -> Maybe AnyAccount
+           -> String
+           -> Decimal
+           -> [Currency]
+           -> Attributes
+           -> Currency
+           -> Ledger l (Entry Decimal Checked)
+fillEntry dt cr accounts mbCorr source value currencies attrs currency = do
+  plan <- gets lsAccountPlan
+  amap <- gets lsAccountMap
+  let qry = CQuery {
+               cqType = if value < 0
+                          then ECredit
+                          else EDebit,
+               cqCurrency = currencies,
+               cqExcept = accounts,
+               cqAttributes = attrs ++
+                    [("source", Exactly source)]
+             }
+  let mbAccount = runCQuery qry plan
+      mbByMap = lookupAMap plan amap qry accounts
+  case mbCorr `mplus` mbByMap `mplus` mbAccount of
+     Nothing -> throw (NoCorrespondingAccountFound qry)
+     Just acc -> if value < 0
+                   then do
+                        account <- accountAsCredit acc
+                        -- Convert value into currency of found account
+                        value' :# _ <- convert (getCurrency account) (value :# currency)
+                        let e = CPosting account (-value')
+                        return $ CEntry dt (e:cr)
+                   else do
+                        account <- accountAsDebit acc
+                        -- Convert value into currency of found account
+                        value' :# _ <- convert (getCurrency account) (value :# currency)
+                        let e = DPosting account value'
+                        return $ CEntry (e:dt) cr
 
 reconciliate :: (Throws NoSuchRate l,
                  Throws InvalidAccountType l,
