@@ -235,21 +235,20 @@ checkEntry attrs (UEntry dt cr mbCorr currs) = do
   dt' <- mapM convertPosting' dt
   cr' <- mapM convertPosting' cr
 
-  e@(CEntry dtF crF _) <-
-            -- Should we add credit / debit posting
-            -- to entry?
-            if dtSum == crSum
-              then return $ CEntry dt' cr' OneCurrency
-              else do
-                   let diff = crSum - dtSum -- in firstCurrency
-                   -- Fill credit / debit entry parts
-                   fillEntry dt' cr'
-                             accounts
-                             mbCorr
-                             source
-                             diff
-                             (currencies ++ currs)
-                             attrs firstCurrency
+  -- Should we add credit / debit posting
+  -- to entry?
+  (dtF, crF) <- if dtSum == crSum
+                  then return (dt', cr')
+                  else do
+                       let diff = crSum - dtSum -- in firstCurrency
+                       -- Fill credit / debit entry parts
+                       fillEntry dt' cr'
+                                 accounts
+                                 mbCorr
+                                 source
+                                 diff
+                                 (currencies ++ currs)
+                                 attrs firstCurrency
   -- If there is more than 1 currency,
   -- then we should calculate rates difference.
   if traceS "currencies: " nCurrencies > 1
@@ -276,8 +275,8 @@ checkEntry attrs (UEntry dt cr mbCorr currs) = do
                         else do
                              account <- accountAsDebit correspondence
                              return $ DebitDifference $ DPosting account diffD
-         return $ e {cEntryRatesDifference = rd}
-    else return e
+         return $ CEntry dtF crF rd
+    else return $ CEntry dtF crF OneCurrency
 
 lookupCorrespondingAccount :: (Throws NoCorrespondingAccountFound l)
                            => Attributes
@@ -319,7 +318,7 @@ fillEntry :: (Throws NoSuchRate l,
            -> [Currency]
            -> Attributes
            -> Currency
-           -> Ledger l (Entry Decimal Checked)
+           -> Ledger l ([Posting Decimal Debit], [Posting Decimal Credit])
 fillEntry dt cr accounts mbCorr source value currencies attrs currency = do
   correspondence <- lookupCorrespondingAccount attrs source accounts value currencies mbCorr
   if value < 0
@@ -329,14 +328,14 @@ fillEntry dt cr accounts mbCorr source value currencies attrs currency = do
           value' :# _ <- convert (getCurrency account) (value :# currency)
           let e = CPosting account (-value')
           -- Will fill rates difference later
-          return $ CEntry dt (e:cr) OneCurrency
+          return (dt, e:cr)
      else do
           account <- accountAsDebit correspondence
           -- Convert value into currency of found account
           value' :# _ <- convert (getCurrency account) (value :# currency)
           let e = DPosting account value'
           -- Will fill rates difference later
-          return $ CEntry (e:dt) cr OneCurrency
+          return (e:dt, cr)
 
 reconciliate :: (Throws NoSuchRate l,
                  Throws InvalidAccountType l,
