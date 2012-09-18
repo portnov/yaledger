@@ -6,6 +6,10 @@ template test
 template rec
 reconciliate roubles #1
 
+@ 2012/09/09 0.5%
+rule testRule = when credit X1 do
+  cr X2 #1*0.005
+
 @ 2012/09/09 -
 {category = "транспорт"}
 template трамвай

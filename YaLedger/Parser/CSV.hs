@@ -6,6 +6,7 @@ import Control.Monad
 import qualified Data.Text as T
 import qualified Data.HashMap.Strict as H
 import qualified Data.ByteString as B
+import qualified Data.Map as M
 import Data.String
 import Data.Yaml
 import Data.String.Utils
@@ -135,7 +136,7 @@ convert pc plan row = do
                    Nothing -> Nothing
       as = [(name, Exactly $ field fc row) | (name, fc) <- pcOther pc,
                                     name `notElem` reservedFields]
-      attrs = [p | p@(n,v) <- as, v /= Exactly ""]
+      attrs = M.fromList [p | p@(n,v) <- as, v /= Exactly ""]
 
       lookupAccount path =
          case lookupTree (mkPath path) plan of

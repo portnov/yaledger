@@ -26,6 +26,7 @@ data LedgerState = LedgerState {
   lsAccountPlan :: AccountPlan,
   lsAccountMap :: AccountMap,
   lsTemplates :: M.Map String (Attributes, Transaction Param),
+  lsRules :: [(String, Attributes, Rule)],
   lsRates :: Rates }
   deriving (Eq, Show)
 
@@ -42,6 +43,7 @@ emptyLedgerState plan amap = do
              lsAccountPlan = plan,
              lsAccountMap = amap,
              lsTemplates = M.empty,
+             lsRules = [],
              lsRates = M.empty }
 
 wrapIO :: (MonadIO m, Throws InternalError l)

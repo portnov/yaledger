@@ -3,6 +3,7 @@ module YaLedger.Pretty where
 
 import Data.Maybe
 import Data.Dates
+import Data.List
 import qualified Data.Map as M
 import Text.Printf
 
@@ -35,7 +36,28 @@ instance Pretty DateTime where
 instance Pretty Record where
   prettyPrint (Template name tran) = 
     printf "template %s\n%s" name (prettyPrint tran)
+  prettyPrint (RuleR name (Condition {..}) tran) =
+    printf "rule %s = when %s %s%s do\n%s"
+           name
+           (prettyPrint cAction)
+           (intercalate ", " $ map show cAccounts ++ map show cGroups)
+           (prettyPrint cValue)
+           (prettyPrint tran)
   prettyPrint (Transaction tran) = prettyPrint tran
+
+instance Pretty (Maybe PostingType) where
+  prettyPrint Nothing = "use"
+  prettyPrint (Just t) = prettyPrint t
+
+instance Pretty PostingType where
+  prettyPrint ECredit = "credit"
+  prettyPrint EDebit  = "debit"
+
+instance Pretty ValueCondition where
+  prettyPrint AnyValue = ""
+  prettyPrint (MoreThan x) = " > " ++ prettyPrint x
+  prettyPrint (LessThan x) = " < " ++ prettyPrint x
+  prettyPrint (Equals x)   = " == " ++ prettyPrint x
 
 instance Pretty Amount where
   prettyPrint (x :# c) = show x ++ c

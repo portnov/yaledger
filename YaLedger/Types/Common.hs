@@ -116,3 +116,5 @@ instance Show AccountGroupData where
       (snd $ agRange ag)
       (showA $ agAttributes ag)
 
+instance HasID AccountGroupData where
+  getID ag = agID ag

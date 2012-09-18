@@ -39,6 +39,9 @@ group Root {
     };
     account Z2 (credit);
     account Z3 (debit) {currency = "р"};
+    account Z4 {
+      rule = "testRule";
+    };
   };
   group активы {
     currency = "р";

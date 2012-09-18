@@ -27,7 +27,8 @@ language    = P.LanguageDef
                , P.opLetter       = oneOf ":!#$%&*+./<=>?@\\^|-~"
                , P.reservedOpNames= ["account", "group", "template",
                                    "call", "reconciliate", "rate",
-                                   "cr", "dr", "default"]
+                                   "credit", "debit", "when", "do",
+                                   "rule", "cr", "dr", "default"]
                , P.reservedNames  = []
                , P.caseSensitive  = True
                }

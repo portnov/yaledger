@@ -1,4 +1,4 @@
-
+{-# LANGUAGE RecordWildCards #-}
 module YaLedger.Parser.Transactions where
 
 import Control.Applicative hiding (many, (<|>), optional)
@@ -69,6 +69,7 @@ ext p = do
 
 pRecord :: Parser (Ext Record)
 pRecord = try (ext pTemplate)
+      <|> try (ext pRule)
       <|> try (ext (Transaction <$> pEntry pAmount))
       <|> try (ext (Transaction <$> pReconciliate pAmount))
       <|> try (ext (Transaction <$> pSetRate))
@@ -82,10 +83,62 @@ pTemplate = do
   addTemplate name tran
   return $ Template name tran
 
+pRule :: Parser Record
+pRule = do
+  trace "rule" $ return ()
+  reserved "rule"
+  spaces
+  name <- identifier
+  spaces
+  reservedOp "="
+  spaces
+  reserved "when"
+  spaces
+  condition <- try pCondition
+  spaces
+  reserved "do"
+  spaces
+  tran <- pTemplateTran
+  return $ RuleR name condition tran
+
 pTemplateTran :: Parser (Transaction Param)
 pTemplateTran =
       try (pEntry param)
   <|> pReconciliate param
+
+pCondition :: Parser Condition
+pCondition = do
+    trace "condition" $ return ()
+    action <- try (reserved "credit" >> return (Just ECredit))
+          <|> try (reserved "debit"  >> return (Just EDebit))
+          <|> (reserved "use" >> return Nothing)
+    spaces
+    objects <- pRuleObject `sepBy1` comma
+    trace (show objects) $ return ()
+    optional spaces
+    value <- try (cmp MoreThan ">")
+         <|> try (cmp LessThan "<")
+         <|> try (cmp Equals   "==")
+         <|> return AnyValue
+    return $ Condition {
+               cAccounts = lefts  objects,
+               cGroups   = rights objects,
+               cAction   = action,
+               cValue    = value }
+  where
+    cmp constructor op = do
+      reservedOp op
+      spaces
+      x <- pAmount
+      return $ constructor x
+
+pRuleObject :: Parser (Either AccountID GroupID)
+pRuleObject = do
+  path <- pPath
+  item <- getAccountPlanItem accountPlan path
+  case item of
+    Leaf {..}   -> return $ Left  (getID leafData)
+    Branch {..} -> return $ Right (getID branchData)
 
 pEntry :: Parser v -> Parser (Transaction v)
 pEntry p = do
@@ -183,17 +236,19 @@ number = do
   return $ realFracToDecimal 10 x
 
 param :: Parser Param
-param = do
-  char '#'
-  ns <- many1 digit
-  let n = read ns
-  a <- optionMaybe $ try $ reservedOp "*"
-  c <- case a of
-         Nothing -> return 1.0
-         Just _ -> float
-  spaces
-  d <- option (0 :# "") $ try $ parens $ do
-           reserved "default"
-           pAmount
-  return $ Param n c d
+param = try pParam <|> (Fixed <$> pAmount)
+  where
+    pParam = do
+      char '#'
+      ns <- many1 digit
+      let n = read ns
+      a <- optionMaybe $ try $ reservedOp "*"
+      c <- case a of
+             Nothing -> return 1.0
+             Just _ -> float
+      spaces
+      d <- option (0 :# "") $ try $ parens $ do
+               reserved "default"
+               pAmount
+      return $ Param n c d
 

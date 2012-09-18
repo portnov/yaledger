@@ -17,6 +17,7 @@ import YaLedger.Exceptions
 import YaLedger.Correspondence
 import YaLedger.Kernel
 import YaLedger.Templates
+import YaLedger.Rules
 
 processEntry :: (Throws NoSuchRate l,
                  Throws NoCorrespondingAccountFound l,
@@ -27,15 +28,23 @@ processEntry :: (Throws NoSuchRate l,
                -> Attributes
                -> Entry Amount Unchecked
                -> Ledger l ()
-processEntry date attrs uposting = do
-  CEntry dt cr rd <- checkEntry attrs uposting
+processEntry date attrs uentry = do
+  CEntry dt cr rd <- checkEntry attrs uentry
   message $ "Entry:\n" ++ show (CEntry dt cr rd)
-  forM dt $ \p -> debit  (debitPostingAccount  p) (Ext date attrs p)
-  forM cr $ \p -> credit (creditPostingAccount p) (Ext date attrs p)
+  forM dt $ \p -> do
+      debit  (debitPostingAccount  p) (Ext date attrs p)
+      runRules date attrs p processTransaction
+  forM cr $ \p -> do
+      credit (creditPostingAccount p) (Ext date attrs p)
+      runRules date attrs p processTransaction
   case rd of
     OneCurrency -> return ()
-    CreditDifference p -> credit (creditPostingAccount p) (Ext date attrs p)
-    DebitDifference  p -> debit  (debitPostingAccount  p) (Ext date attrs p)
+    CreditDifference p -> do
+        credit (creditPostingAccount p) (Ext date attrs p)
+        runRules date attrs p processTransaction
+    DebitDifference  p -> do
+        debit  (debitPostingAccount  p) (Ext date attrs p)
+        runRules date attrs p processTransaction
   return ()
 
 processTransaction :: (Throws NoSuchRate l,
@@ -49,6 +58,8 @@ processTransaction (Ext date attrs (Transaction (TEntry p))) = do
     processEntry date attrs p
 processTransaction (Ext _ attrs (Template name tran)) = do
     modify $ \st -> st {lsTemplates = M.insert name (attrs, tran) (lsTemplates st)}
+processTransaction (Ext _ attrs (RuleR name cond tran)) = do
+    modify $ \st -> st {lsRules = (name, attrs, When cond tran):lsRules st}
 processTransaction (Ext date attrs (Transaction (TCallTemplate name args))) = do
     (tplAttrs, template) <- getTemplate name
     tran <- fillTemplate template args
