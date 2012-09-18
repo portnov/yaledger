@@ -37,11 +37,14 @@ instance Pretty Record where
   prettyPrint (Template name tran) = 
     printf "template %s\n%s" name (prettyPrint tran)
   prettyPrint (RuleR name (Condition {..}) tran) =
-    printf "rule %s = when %s %s%s do\n%s"
+    printf "rule %s = when %s %s%s%s do\n%s"
            name
            (prettyPrint cAction)
            (intercalate ", " $ map show cAccounts ++ map show cGroups)
            (prettyPrint cValue)
+           (if M.null cAttributes
+              then ""
+              else " with " ++ showA cAttributes)
            (prettyPrint tran)
   prettyPrint (Transaction tran) = prettyPrint tran
 

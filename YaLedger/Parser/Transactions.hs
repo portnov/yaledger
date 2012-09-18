@@ -108,22 +108,23 @@ pTemplateTran =
 
 pCondition :: Parser Condition
 pCondition = do
-    trace "condition" $ return ()
     action <- try (reserved "credit" >> return (Just ECredit))
           <|> try (reserved "debit"  >> return (Just EDebit))
           <|> (reserved "use" >> return Nothing)
     spaces
     objects <- pRuleObject `sepBy1` comma
-    trace (show objects) $ return ()
-    optional spaces
+    spaces
     value <- try (cmp MoreThan ">")
          <|> try (cmp LessThan "<")
          <|> try (cmp Equals   "==")
          <|> return AnyValue
+    spaces
+    attrs <- option M.empty pAttrs
     return $ Condition {
                cAccounts = lefts  objects,
                cGroups   = rights objects,
                cAction   = action,
+               cAttributes = attrs,
                cValue    = value }
   where
     cmp constructor op = do
@@ -131,6 +132,11 @@ pCondition = do
       spaces
       x <- pAmount
       return $ constructor x
+
+    pAttrs = do
+      reserved "with"
+      spaces
+      braces pAttributes
 
 pRuleObject :: Parser (Either AccountID GroupID)
 pRuleObject = do

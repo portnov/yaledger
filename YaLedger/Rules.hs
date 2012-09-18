@@ -61,7 +61,7 @@ runRules date pAttrs p run = do
   rules <- gets lsRules
   forM_ rules $ \(name, attrs, When cond tran) -> do
     y <- p `matchC` cond
-    if y
+    if y && (pAttrs `matchAll` cAttributes cond)
       then do
            let attrs' = M.insert "rule" (Exactly name) attrs
                (c, x) = case p of

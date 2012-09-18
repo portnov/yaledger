@@ -10,6 +10,7 @@ data Condition =
     cAccounts :: [AccountID],
     cGroups :: [GroupID],
     cAction :: Maybe PostingType,
+    cAttributes :: Attributes,
     cValue  :: ValueCondition }
   deriving (Eq, Show)
 
