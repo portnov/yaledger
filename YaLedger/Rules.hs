@@ -63,7 +63,7 @@ runRules date pAttrs p run = do
     y <- p `matchC` cond
     if y && (pAttrs `matchAll` cAttributes cond)
       then do
-           let attrs' = M.insert "rule" (Exactly name) attrs
+           let attrs' = M.insert "rule" (Exactly name) (pAttrs `M.union` attrs)
                (c, x) = case p of
                             DPosting acc x -> (getCurrency acc,x)
                             CPosting acc x -> (getCurrency acc,x)

@@ -299,10 +299,8 @@ lookupCorrespondingAccount attrs source accounts value currencies mbCorr = do
              }
   let mbAccount = runCQuery qry plan
       mbByMap = lookupAMap plan amap qry accounts
-  case mbByMap `mplus` mbAccount of
-    Nothing -> case mbCorr of
-                 Nothing -> throw (NoCorrespondingAccountFound qry)
-                 Just acc -> return acc
+  case mbCorr `mplus` mbByMap `mplus` mbAccount of
+    Nothing -> throw (NoCorrespondingAccountFound qry)
     Just acc -> return acc
 
 fillEntry :: (Throws NoSuchRate l,

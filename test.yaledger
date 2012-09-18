@@ -10,6 +10,11 @@ reconciliate roubles #1
 rule testRule = when credit X1 with {description = /Just/} do
   cr X2 #1*0.005
 
+@ 2012/09/09 0.5% за снятие с карточки
+{category = "комиссии"; rule = !"one"}
+rule one = when debit карточка with {description = /банкомат/} do
+  dr карточка #1*0.005
+
 @ 2012/09/09 -
 {category = "транспорт"}
 template трамвай
@@ -62,4 +67,8 @@ call трамвай
 
 @ 2012/09/17 Another test.
   cr X1 3.0€
+
+@ 2012/09/18 Снял в банкомате
+  cr карман 100.0р
+  карточка
 

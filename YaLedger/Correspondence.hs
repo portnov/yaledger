@@ -47,7 +47,7 @@ matchAll :: Attributes -> Attributes -> Bool
 matchAll attrs qry =
   let t = showA attrs ++ " `matchAll` " ++ showA qry ++ " = "
       check (name, value) = case M.lookup name qry of
-                              Nothing -> name == "source"
+                              Nothing -> name `elem` ["source", "rule"]
                               Just av  -> matchAV value av
   in  traceS t $ all check (M.assocs attrs) && all (`elem` M.keys attrs) (M.keys qry)
 

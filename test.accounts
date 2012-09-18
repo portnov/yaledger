@@ -62,7 +62,9 @@ group Root {
       };
       account банковское_обслуживание {
         category = "комиссии";
+        rule = "one";
       };
+      account чай;
     };
     group доходы (debit) {
       account зарплата {

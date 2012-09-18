@@ -85,7 +85,6 @@ pTemplate = do
 
 pRule :: Parser Record
 pRule = do
-  trace "rule" $ return ()
   reserved "rule"
   spaces
   name <- identifier
@@ -118,7 +117,6 @@ pCondition = do
          <|> try (cmp LessThan "<")
          <|> try (cmp Equals   "==")
          <|> return AnyValue
-    spaces
     attrs <- option M.empty pAttrs
     return $ Condition {
                cAccounts = lefts  objects,
@@ -134,6 +132,7 @@ pCondition = do
       return $ constructor x
 
     pAttrs = do
+      spaces
       reserved "with"
       spaces
       braces pAttributes
