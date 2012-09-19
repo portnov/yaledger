@@ -122,7 +122,7 @@ processAll = do
   trans <- processRecord
   finish <- gets null
   if finish
-    then return []
+    then return trans
     else do
          other <- processAll
          return $ merge other trans
