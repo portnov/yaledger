@@ -52,7 +52,7 @@ instance Pretty Record where
            (prettyPrint interval)
            (prettyPrint tran)
   prettyPrint (StopPeriodic name) =
-    "stop " ++ name
+    "stop " ++ name ++ "\n"
   prettyPrint (Transaction tran) = prettyPrint tran
 
 instance Pretty DateInterval where

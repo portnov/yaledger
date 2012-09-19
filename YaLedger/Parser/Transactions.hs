@@ -278,8 +278,10 @@ currency = many $ noneOf " \r\n\t\")}->"
 
 number :: Parser Decimal
 number = do
-  x <- float
-  return $ realFracToDecimal 10 x
+  x <- naturalOrFloat
+  return $ case x of
+             Left i  -> fromIntegral i
+             Right x -> realFracToDecimal 10 x
 
 param :: Parser Param
 param = try pParam <|> (Fixed <$> pAmount)

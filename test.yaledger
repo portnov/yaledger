@@ -41,7 +41,7 @@ rate р -> $ = 0.0323
   dr Y1 50.0$
 
 @ 2012/09/10 template call test.
-call test 7.0$
+call test 7$
 
 @ 2012/09/10 Periodic test.
 periodic testPeriodic = every 3 days do
@@ -52,10 +52,10 @@ reconciliate X1 120.0$
 
 @ 2012/09/11 ---
 {category = "TEST regexps"}
-  cr X1 3.0р
+  cr X1 3р
 
 @ 2012/09/12
-call rec 100.0р
+call rec 100р
 
 @ 2012/09/12
 call трамвай
@@ -73,7 +73,7 @@ call трамвай
   cr X1 2.0$
 
 @ 2012/09/17 Another test.
-  cr X1 3.0€
+  cr X1 3€
 
 @ 2012/09/17 ---
 stop testPeriodic
