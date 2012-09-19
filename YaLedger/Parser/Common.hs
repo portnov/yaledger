@@ -38,6 +38,7 @@ lexer       = P.makeTokenParser language
     
 parens      = P.parens lexer
 braces      = P.braces lexer
+brackets    = P.brackets lexer
 identifier  = P.identifier lexer
 symbol      = P.symbol lexer
 reserved    = P.reserved lexer
@@ -66,11 +67,16 @@ pAttributeValue :: Monad m => ParsecT String st m AttributeValue
 pAttributeValue =
         try (Exactly <$> stringLit)
     <|> try (AnyBut  <$> anyBut)
+    <|> try (OneOf   <$> brackets list)
+    <|> try (reservedOp "*" >> return Any)
     <|> (Regexp <$> pRegexp)
   where
     anyBut = do
       char '!'
       stringLit
+
+    list = stringLit `sepBy1` comma
+
 
 pAttributes :: Monad m => ParsecT String st m Attributes
 pAttributes = M.fromList <$> try attribute `sepEndBy` semicolon
