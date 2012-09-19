@@ -70,10 +70,16 @@ ext p = do
 pRecord :: Parser (Ext Record)
 pRecord = try (ext pTemplate)
       <|> try (ext pRule)
-      <|> try (ext (Transaction <$> pEntry pAmount))
-      <|> try (ext (Transaction <$> pReconciliate pAmount))
-      <|> try (ext (Transaction <$> pSetRate))
-      <|> ext (Transaction <$> pCall)
+      <|> try (ext pPeriodic)
+      <|> try (ext pStop)
+      <|> ext (Transaction <$> pTransaction pAmount)
+
+pTransaction :: Parser v -> Parser (Transaction v)
+pTransaction p =
+        try (pEntry p)
+    <|> try (pReconciliate p)
+    <|> try pSetRate
+    <|> pCall
 
 pTemplate :: Parser Record
 pTemplate = do
@@ -144,6 +150,41 @@ pRuleObject = do
   case item of
     Leaf {..}   -> return $ Left  (getID leafData)
     Branch {..} -> return $ Right (getID branchData)
+
+pPeriodic :: Parser Record
+pPeriodic = do
+  reserved "periodic"
+  spaces
+  name <- identifier
+  spaces
+  reservedOp "="
+  spaces
+  reserved "every"
+  spaces
+  interval <- pInterval
+  spaces
+  reserved "do"
+  tran <- pTransaction pAmount
+  return $ Periodic name interval tran
+
+pStop :: Parser Record
+pStop = do
+  reserved "stop"
+  name <- identifier
+  return $ StopPeriodic name
+
+pInterval :: Parser DateInterval
+pInterval = try (go Days "day")
+        <|> try (go Weeks "week")
+        <|> try (go Months "month")
+        <|> go Years "year"
+  where
+    go constructor str = do
+      n <- natural
+      spaces
+      string str
+      optional $ char 's'
+      return (constructor n)
 
 pEntry :: Parser v -> Parser (Transaction v)
 pEntry p = do

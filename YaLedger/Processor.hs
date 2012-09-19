@@ -1,5 +1,5 @@
 {-# LANGUAGE GADTs, RecordWildCards, ScopedTypeVariables, FlexibleContexts, FlexibleInstances #-}
-{-# OPTIONS_GHC -F -pgmF MonadLoc #-}
+{- # OPTIONS_GHC -F -pgmF MonadLoc #-}
 
 module YaLedger.Processor where
 
@@ -20,6 +20,17 @@ import YaLedger.Kernel
 import YaLedger.Templates
 import YaLedger.Rules
 
+merge :: Ord a => [a] -> [a] -> [a]
+merge xs [] = xs
+merge [] ys = ys
+merge (x:xs) (y:ys) =
+  if x < y
+    then x: merge xs (y:ys)
+    else y: merge (x:xs) ys
+
+mergeAll :: Ord a => [[a]] -> [a]
+mergeAll = foldr1 merge
+
 processEntry :: (Throws NoSuchRate l,
                  Throws NoCorrespondingAccountFound l,
                  Throws InvalidAccountType l,
@@ -31,7 +42,7 @@ processEntry :: (Throws NoSuchRate l,
                -> Ledger l ()
 processEntry date attrs uentry = do
   CEntry dt cr rd <- checkEntry attrs uentry
-  message $ "Entry:\n" ++ show (CEntry dt cr rd)
+  message $ show date ++ ":\nEntry:\n" ++ show (CEntry dt cr rd)
   forM dt $ \p -> do
       debit  (debitPostingAccount  p) (Ext date attrs p)
       runRules date attrs p processTransaction
@@ -48,15 +59,73 @@ processEntry date attrs uentry = do
         runRules date attrs p processTransaction
   return ()
 
-processRecord :: Ext Record -> Ledger l [Ext (Transaction Amount)]
-processRecord (Ext date attrs (Transaction tran)) =
-    return [ Ext date attrs tran ]
-processRecord (Ext _ attrs (Template name tran)) = do
-    modify $ \st -> st {lsTemplates = M.insert name (attrs, tran) (lsTemplates st)}
-    return []
-processRecord (Ext _ attrs (RuleR name cond tran)) = do
-    modify $ \st -> st {lsRules = (name, attrs, When cond tran):lsRules st}
-    return []
+getNext :: Monad m => StateT [a] m (Maybe a)
+getNext = do
+  list <- get
+  case list of
+    [] -> return Nothing
+    (x:xs) -> do
+              put xs
+              return (Just x)
+
+getNextP :: (Monad m, Eq a) => (a -> Bool) -> (a -> Bool) -> StateT [a] m (Maybe a)
+getNextP p doDelete = do
+  list <- get
+  case filter p list of
+    [] -> return Nothing
+    (x:xs) -> do
+        if doDelete x
+          then put (delete x list)
+          else return ()
+        return (Just x)
+
+processRecord :: Throws InternalError l
+              => StateT [Ext Record] (EMT l LedgerMonad) [Ext (Transaction Amount)]
+processRecord = do
+  rec <- getNext
+  case rec of
+    Nothing -> return []
+
+    Just (Ext date attrs (Transaction tran)) ->
+      return [ Ext date attrs tran ]
+
+    Just (Ext _ attrs (Template name tran)) -> do
+      lift $ modify $ \st -> st {lsTemplates = M.insert name (attrs, tran) (lsTemplates st)}
+      return []
+
+    Just (Ext _ attrs (RuleR name cond tran)) -> do
+      lift $ modify $ \st -> st {lsRules = (name, attrs, When cond tran):lsRules st}
+      return []
+
+    Just (Ext date attrs (Periodic name interval tran)) -> do
+      mbNext <- getNextP (periodic name . getContent)
+                         (isStop name   . getContent)
+      let prune = case getDate <$> mbNext of
+                    Just dateX -> takeWhile (\x -> getDate x < dateX)
+                    Nothing    -> id
+      let listFrom start =
+              Ext start attrs tran: listFrom (start `addInterval` interval)
+      let result = prune $ listFrom date
+      lift $ message $ "Periodic " ++ name ++ ": " ++ show (length result)
+      return result
+
+periodic name (Periodic x _ _) = name == x
+periodic name (StopPeriodic x) = name == x
+periodic _    _                = False
+
+isStop name (StopPeriodic x) = name == x
+isStop _    _                = False
+
+processAll :: Throws InternalError l
+           => StateT [Ext Record] (EMT l LedgerMonad) [Ext (Transaction Amount)]
+processAll = do
+  trans <- processRecord
+  finish <- gets null
+  if finish
+    then return []
+    else do
+         other <- processAll
+         return $ merge other trans
 
 processRecords :: (Throws NoSuchRate l,
                    Throws NoCorrespondingAccountFound l,
@@ -66,8 +135,10 @@ processRecords :: (Throws NoSuchRate l,
                => [Ext Record]
                -> Ledger l ()
 processRecords list = do
-  list' <- mapM processRecord (sort list)
-  forM_ (concat list') processTransaction
+  list' <- evalStateT processAll (sort list)
+  now <- wrapIO getCurrentDateTime 
+  forM_ (takeWhile (\t -> getDate t <= now) list') $
+      processTransaction
 
 processTransaction :: (Throws NoSuchRate l,
                        Throws NoCorrespondingAccountFound l,

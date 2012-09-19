@@ -46,6 +46,7 @@ comma       = P.comma lexer
 semicolon   = P.semi lexer
 stringLit   = P.stringLiteral lexer
 float       = P.float lexer
+natural     = P.natural lexer
 
 pRegexp :: Monad m => ParsecT String st m String
 pRegexp = do

@@ -46,7 +46,20 @@ instance Pretty Record where
               then ""
               else " with " ++ showA cAttributes)
            (prettyPrint tran)
+  prettyPrint (Periodic name interval tran) =
+    printf "periodic %s = every %s do\n%s"
+           name
+           (prettyPrint interval)
+           (prettyPrint tran)
+  prettyPrint (StopPeriodic name) =
+    "stop " ++ name
   prettyPrint (Transaction tran) = prettyPrint tran
+
+instance Pretty DateInterval where
+  prettyPrint (Days n)   = show n ++ " days"
+  prettyPrint (Weeks n)  = show n ++ " weeks"
+  prettyPrint (Months n) = show n ++ " months"
+  prettyPrint (Years n)  = show n ++ " years"
 
 instance Pretty (Maybe PostingType) where
   prettyPrint Nothing = "use"

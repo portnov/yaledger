@@ -11,6 +11,8 @@ import YaLedger.Types.Rules
 data Record =
     Template String (Transaction Param)
   | RuleR String Condition (Transaction Param)
+  | Periodic String DateInterval (Transaction Amount)
+  | StopPeriodic String
   | Transaction (Transaction Amount)
   deriving (Eq, Show)
 

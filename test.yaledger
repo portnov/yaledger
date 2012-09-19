@@ -43,6 +43,10 @@ rate р -> $ = 0.0323
 @ 2012/09/10 template call test.
 call test 7.0$
 
+@ 2012/09/10 Periodic test.
+periodic testPeriodic = every 3 days do
+  dr Y1  1.5$
+
 @ 2012/09/10 reconciliation test.
 reconciliate X1 120.0$
 
@@ -70,6 +74,9 @@ call трамвай
 
 @ 2012/09/17 Another test.
   cr X1 3.0€
+
+@ 2012/09/17 ---
+stop testPeriodic
 
 @ 2012/09/18 Снял в банкомате
   cr карман 100.0р
