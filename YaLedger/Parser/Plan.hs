@@ -30,15 +30,18 @@ type Parser a = ParsecT String PState IO a
 
 account :: AccountGroupType -> String -> Integer -> Currency -> Attributes -> Parser AnyAccount
 account AGDebit  name aid c attrs = do
-    empty <- lift $ newIORef []
-    return $ WDebit  attrs $ DAccount name aid c empty
+    empty1 <- lift $ newIORef []
+    empty2 <- lift $ newIORef []
+    return $ WDebit  attrs $ DAccount name aid c empty1 empty2
 account AGCredit name aid c attrs = do
-    empty <- lift $ newIORef []
-    return $ WCredit attrs $ CAccount name aid c empty
+    empty1 <- lift $ newIORef []
+    empty2 <- lift $ newIORef []
+    return $ WCredit attrs $ CAccount name aid c empty1 empty2
 account AGFree   name aid c attrs = do
     empty1 <- lift $ newIORef []
     empty2 <- lift $ newIORef []
-    return $ WFree   attrs $ FAccount name aid c empty1 empty2
+    empty3 <- lift $ newIORef []
+    return $ WFree   attrs $ FAccount name aid c empty1 empty2 empty3
 
 newAID :: Parser Integer
 newAID = do

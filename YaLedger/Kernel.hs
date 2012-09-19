@@ -95,14 +95,14 @@ checkQuery (Query {..}) (Ext {..}) =
 
 creditPostings :: Throws InternalError l
                => AnyAccount
-               -> Ledger l (AccountHistory Credit)
+               -> Ledger l (History (Posting Decimal) Credit)
 creditPostings (WCredit _ (CAccount {..})) = return creditAccountPostings
 creditPostings (WDebit  _ (DAccount {..})) = newIOList
 creditPostings (WFree   _ (FAccount {..})) = return freeAccountCreditPostings
 
 debitPostings :: Throws InternalError l
               => AnyAccount
-              -> Ledger l (AccountHistory Debit)
+              -> Ledger l (History (Posting Decimal) Debit)
 debitPostings (WCredit _ (CAccount {..})) = newIOList
 debitPostings (WDebit  _ (DAccount {..})) = return debitAccountPostings
 debitPostings (WFree   _ (FAccount {..})) = return freeAccountDebitPostings

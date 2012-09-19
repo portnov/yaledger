@@ -100,30 +100,45 @@ instance Show v => Show (Entry v t) where
       showName Nothing = "to be found automatically"
       showName (Just x) = getName x
 
-type AccountHistory t = IOList (Ext (Posting Decimal t))
+type History f t = IOList (Ext (f t))
 
 data Account t where
   CAccount :: {
     creditAccountName     :: String,
     creditAccountID       :: AccountID,
     creditAccountCurrency :: Currency,
-    creditAccountPostings :: AccountHistory Credit
+    creditAccountEntries  :: History (Entry Decimal) Checked,
+    creditAccountPostings :: History (Posting Decimal) Credit
   } -> Account Credit
 
   DAccount :: {
     debitAccountName     :: String,
     debitAccountID       :: AccountID,
     debitAccountCurrency :: Currency,
-    debitAccountPostings :: AccountHistory Debit
+    debitAccountEntries  :: History (Entry Decimal) Checked,
+    debitAccountPostings :: History (Posting Decimal) Debit
   } -> Account Debit
 
   FAccount :: {
     freeAccountName           :: String,
     freeAccountID             :: AccountID,
     freeAccountCurrency       :: Currency,
-    freeAccountCreditPostings :: AccountHistory Credit,
-    freeAccountDebitPostings  :: AccountHistory Debit
+    freeAccountEntries        :: History (Entry Decimal) Checked,
+    freeAccountCreditPostings :: History (Posting Decimal) Credit,
+    freeAccountDebitPostings  :: History (Posting Decimal) Debit
   } -> Account Free
+
+class HasEntries a where
+  accountEntries :: a -> History (Entry Decimal) Checked
+
+instance HasEntries (Account t) where
+  accountEntries (CAccount {..}) = creditAccountEntries
+  accountEntries (DAccount {..}) = debitAccountEntries
+  accountEntries (FAccount {..}) = freeAccountEntries
+
+instance HasEntries (FreeOr t Account) where
+  accountEntries (Left a)  = accountEntries a
+  accountEntries (Right a) = accountEntries a
 
 instance HasID (Account t) where
   getID (CAccount {..}) = creditAccountID

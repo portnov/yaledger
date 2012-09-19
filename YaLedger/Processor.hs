@@ -41,21 +41,29 @@ processEntry :: (Throws NoSuchRate l,
                -> Entry Amount Unchecked
                -> Ledger l ()
 processEntry date attrs uentry = do
-  CEntry dt cr rd <- checkEntry attrs uentry
-  message $ show date ++ ":\nEntry:\n" ++ show (CEntry dt cr rd)
+  entry@(CEntry dt cr rd) <- checkEntry attrs uentry
+  message $ show date ++ ":\nEntry:\n" ++ show entry
   forM dt $ \p -> do
-      debit  (debitPostingAccount  p) (Ext date attrs p)
+      let account = debitPostingAccount p
+      debit  account (Ext date attrs p)
+      appendIOList (accountEntries account) (Ext date attrs entry)
       runRules date attrs p processTransaction
   forM cr $ \p -> do
-      credit (creditPostingAccount p) (Ext date attrs p)
+      let account = creditPostingAccount p
+      credit account (Ext date attrs p)
+      appendIOList (accountEntries account) (Ext date attrs entry)
       runRules date attrs p processTransaction
   case rd of
     OneCurrency -> return ()
     CreditDifference p -> do
+        let account = creditPostingAccount p
         credit (creditPostingAccount p) (Ext date attrs p)
+        appendIOList (accountEntries account) (Ext date attrs entry)
         runRules date attrs p processTransaction
     DebitDifference  p -> do
+        let account = debitPostingAccount p
         debit  (debitPostingAccount  p) (Ext date attrs p)
+        appendIOList (accountEntries account) (Ext date attrs entry)
         runRules date attrs p processTransaction
   return ()
 
