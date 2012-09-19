@@ -12,7 +12,7 @@ data Record =
     Template String (Transaction Param)
   | RuleR String Condition (Transaction Param)
   | Transaction (Transaction Amount)
-  deriving (Show)
+  deriving (Eq, Show)
 
 data Transaction v =
     TEntry (Entry v Unchecked)

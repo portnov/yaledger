@@ -7,6 +7,7 @@ import Control.Applicative ((<$>))
 import Control.Monad.State
 import Control.Monad.Exception
 import Control.Monad.Loc
+import Data.List
 import Data.Dates
 import Data.Decimal
 import qualified Data.Map as M
@@ -47,27 +48,44 @@ processEntry date attrs uentry = do
         runRules date attrs p processTransaction
   return ()
 
+processRecord :: Ext Record -> Ledger l [Ext (Transaction Amount)]
+processRecord (Ext date attrs (Transaction tran)) =
+    return [ Ext date attrs tran ]
+processRecord (Ext _ attrs (Template name tran)) = do
+    modify $ \st -> st {lsTemplates = M.insert name (attrs, tran) (lsTemplates st)}
+    return []
+processRecord (Ext _ attrs (RuleR name cond tran)) = do
+    modify $ \st -> st {lsRules = (name, attrs, When cond tran):lsRules st}
+    return []
+
+processRecords :: (Throws NoSuchRate l,
+                   Throws NoCorrespondingAccountFound l,
+                   Throws InvalidAccountType l,
+                   Throws NoSuchTemplate l,
+                   Throws InternalError l)
+               => [Ext Record]
+               -> Ledger l ()
+processRecords list = do
+  list' <- mapM processRecord (sort list)
+  forM_ (concat list') processTransaction
+
 processTransaction :: (Throws NoSuchRate l,
                        Throws NoCorrespondingAccountFound l,
                        Throws InvalidAccountType l,
                        Throws NoSuchTemplate l,
                        Throws InternalError l)
-                   => Ext Record
+                   => Ext (Transaction Amount)
                    -> Ledger l ()
-processTransaction (Ext date attrs (Transaction (TEntry p))) = do
+processTransaction (Ext date attrs (TEntry p)) = do
     processEntry date attrs p
-processTransaction (Ext _ attrs (Template name tran)) = do
-    modify $ \st -> st {lsTemplates = M.insert name (attrs, tran) (lsTemplates st)}
-processTransaction (Ext _ attrs (RuleR name cond tran)) = do
-    modify $ \st -> st {lsRules = (name, attrs, When cond tran):lsRules st}
-processTransaction (Ext date attrs (Transaction (TCallTemplate name args))) = do
-    (tplAttrs, template) <- getTemplate name
-    tran <- fillTemplate template args
-    processTransaction (Ext date (attrs `M.union` tplAttrs) (Transaction tran))
-processTransaction (Ext date attrs (Transaction (TReconciliate acc x))) = do
+processTransaction (Ext date attrs (TReconciliate acc x)) = do
     entry <- reconciliate date acc x
     processEntry date (M.insert "category" (Exactly "reconciliation") attrs) entry
-processTransaction (Ext _ _ (Transaction (TSetRate c1 c2 x))) = do
+processTransaction (Ext _ _ (TSetRate c1 c2 x)) = do
     modify $ \st -> st {lsRates = M.insert (c1, c2) x (lsRates st)}
+processTransaction (Ext date attrs (TCallTemplate name args)) = do
+    (tplAttrs, template) <- getTemplate name
+    tran <- fillTemplate template args
+    processTransaction (Ext date (attrs `M.union` tplAttrs) tran)
 processTransaction x = fail $ show x
 

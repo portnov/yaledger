@@ -55,7 +55,7 @@ runRules :: (Throws NoSuchRate l,
          => DateTime
          -> Attributes
          -> Posting Decimal t
-         -> (Ext Record -> Ledger l ())
+         -> (Ext (Transaction Amount) -> Ledger l ())
          -> Ledger l ()
 runRules date pAttrs p run = do
   rules <- gets lsRules
@@ -68,6 +68,6 @@ runRules date pAttrs p run = do
                             DPosting acc x -> (getCurrency acc,x)
                             CPosting acc x -> (getCurrency acc,x)
            tran' <- fillTemplate tran [x :# c]
-           run (Ext date attrs' (Transaction tran'))
+           run (Ext date attrs' tran')
       else return ()
 

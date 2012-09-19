@@ -25,9 +25,9 @@ import YaLedger.Pretty
 import YaLedger.Reports.Balance
 
 process :: [Ext Record] -> LedgerMonad ()
-process trans =
+process records =
   runEMT $ do
-           forM_ trans processTransaction
+           processRecords records
            b <- balance
            wrapIO $ print b
         `catchWithSrcLoc`
