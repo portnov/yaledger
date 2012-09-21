@@ -12,6 +12,7 @@ import Control.Monad.Exception
 import Control.Monad.Exception.Base
 import Data.Maybe
 import qualified Data.Map as M
+import Data.List
 import Data.Generics
 import Data.Dates
 import System.Environment
@@ -102,6 +103,9 @@ parseCmdLine = do
                  else return $ res { reportParams = params }
     (_,_,errs) -> fail $ concat errs ++ usageInfo header options
 
+lookupInit :: String -> [(String, a)] -> [a]
+lookupInit key list = [v | (k,v) <- list, key `isPrefixOf` k]
+
 defaultMain :: [(String, Report)] -> IO ()
 defaultMain list = do
   options <- parseCmdLine
@@ -110,12 +114,13 @@ defaultMain list = do
     _ -> do
          let report = head $ reportParams options
              params = tail $ reportParams options
-         case lookup report list of
-           Nothing -> fail $ "No such report: " ++ report
-           Just fn -> run (accountPlan options)
-                          (accountMap options)
-                          (query options)
-                          (files options) fn params
+         case lookupInit report list of
+           [] -> fail $ "No such report: " ++ report
+           [fn] -> run (accountPlan options)
+                       (accountMap options)
+                       (query options)
+                       (files options) fn params
+           _ -> fail $ "Ambigous report specification: " ++ report
 
 try action =
   (Right <$> action) `catchWithSrcLoc` (\l e -> return (Left (l, e)))
