@@ -1,8 +1,9 @@
-{-# LANGUAGE TypeFamilies, EmptyDataDecls, MultiParamTypeClasses, FlexibleInstances #-}
+{-# LANGUAGE TypeFamilies, EmptyDataDecls, MultiParamTypeClasses, FlexibleInstances, RecordWildCards #-}
 
 module YaLedger.Tree where
 
 import Control.Applicative
+import Control.Monad
 import Data.Either
 import Data.List.Utils (split)
 
@@ -109,6 +110,16 @@ mapLeafsM f tree = go tree
       go (Leaf _ name a) = Leaf NoLink name <$> f a
       go (Branch _ name n lst) = do
           Branch NoLink name n <$> mapM go lst
+
+forL :: (Monad m) => Tree s n a -> (String -> a -> m b) -> m ()
+forL tree f = go "" tree
+  where
+    go path (Leaf {..}) = do
+        f (path ++ "/" ++ nodeName) leafData
+        return ()
+    go path (Branch {..}) =
+        forM_ branchChildren $ \tree ->
+          go (path ++ "/" ++ nodeName) tree
 
 mapTreeM :: (Monad m, Functor m)
          => (n -> [b] -> m b)

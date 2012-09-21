@@ -11,6 +11,7 @@ import Data.Dates
 import YaLedger.Tree
 import YaLedger.Exceptions
 import YaLedger.Types.Ledger
+import YaLedger.Types.Transactions
 import YaLedger.Monad
 
 class ReportGenerator a r where
@@ -20,7 +21,7 @@ class ReportGenerator a r where
 
 data Report =
   forall a. (ReportGenerator a (Ledger NoExceptions ()))
-           => Report a
+           => Report (Query -> a)
 
 instance ReportGenerator r r where
   runGenerator r [] = return r

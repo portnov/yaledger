@@ -29,17 +29,10 @@ sumGroup ag ams = do
   let res = sum [x | x :# _ <- ams']
   return $ res :# c
 
-balance :: Maybe DateTime
+balance :: Query
         -> Maybe Path
         -> Ledger NoExceptions ()
-balance mbDate mbPath = (do
-    end <- case mbDate of
-             Nothing -> gets lsStartDate
-             Just date -> return date
-    let qry = Query {
-               qStart = Nothing,
-               qEnd   = Just end,
-               qAttributes = M.empty }
+balance qry mbPath = (do
     plan <- case mbPath of
               Nothing   -> gets lsAccountPlan
               Just path -> getAccountPlanItem path

@@ -129,7 +129,7 @@ run planPath mapPath qry inputPath (Report report) params = do
       case t of
         Left (l, e :: SomeException) -> wrapIO $ putStrLn $ showExceptionWithTrace l e
         Right _ -> do
-              x <- runGenerator report params
+              x <- runGenerator (report qry) params
                      `catchWithSrcLoc`
                        (\loc (e :: InvalidCmdLine) -> do
                              wrapIO (putStrLn $ showExceptionWithTrace loc e)

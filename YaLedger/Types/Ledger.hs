@@ -31,8 +31,12 @@ instance Eq v => Eq (Posting v Credit) where
   (CPosting a1 x1) == (CPosting a2 x2) = (a1 == a2) && (x1 == x2)
 
 instance Show v => Show (Posting v t) where
-  show (DPosting acc x) = "debit #" ++ show acc ++ " by " ++ show x
-  show (CPosting acc x) = "credit #" ++ show acc ++ " by " ++ show x
+  show (DPosting acc x) = "debit "  ++ showFA acc ++ " by " ++ show x
+  show (CPosting acc x) = "credit " ++ showFA acc ++ " by " ++ show x
+
+showFA :: FreeOr t Account -> String
+showFA (Left a) = show a
+showFA (Right a) = show a
 
 instance HasCurrency (Posting Amount t) where
   getCurrency (DPosting _ (_ :# c)) = c
@@ -58,9 +62,9 @@ data RatesDifference =
   deriving (Eq)
 
 instance Show RatesDifference where
-  show OneCurrency = "one currency, no rates difference"
-  show (CreditDifference p) = "credit rates difference: " ++ show p
-  show (DebitDifference p) = "debit rates difference: " ++ show p
+  show OneCurrency = "no rates difference"
+  show (CreditDifference p) = show p
+  show (DebitDifference p) = show p
 
 data Entry v c where
     CEntry :: {
@@ -140,6 +144,11 @@ instance HasEntries (FreeOr t Account) where
   accountEntries (Left a)  = accountEntries a
   accountEntries (Right a) = accountEntries a
 
+instance HasEntries AnyAccount where
+  accountEntries (WCredit _ a) = accountEntries a
+  accountEntries (WDebit  _ a) = accountEntries a
+  accountEntries (WFree   _ a) = accountEntries a
+
 instance HasID (Account t) where
   getID (CAccount {..}) = creditAccountID
   getID (DAccount {..}) = debitAccountID
@@ -168,8 +177,7 @@ instance (Named (f Free), Named (f t)) => Named (FreeOr t f) where
 
 instance Show (Account t) where
   show x =
-    printf "#%d: %s (%s)"
-      (getID x)
+    printf "%s (%s)"
       (getName x)
       (getCurrency x)
 
