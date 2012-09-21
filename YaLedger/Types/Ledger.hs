@@ -211,3 +211,18 @@ accountAttributes (WFree   as _) = as
 
 type AccountPlan = Tree Linked AccountGroupData AnyAccount
 
+data CQuery = CQuery {
+  cqType :: PostingType,
+  cqCurrency :: [Currency],
+  cqExcept :: [AccountID],
+  cqAttributes :: Attributes }
+  deriving (Eq)
+
+instance Show CQuery where
+  show (CQuery {..}) =
+    printf "{\n  Type = %s\n  Currencies = %s\n  Except accounts: %s\n  Attributes: %s\n}"
+      (show cqType)
+      (intercalate ", " cqCurrency)
+      (show cqExcept)
+      (showA cqAttributes)
+

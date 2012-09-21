@@ -118,3 +118,4 @@ instance Show AccountGroupData where
 
 instance HasID AccountGroupData where
   getID ag = agID ag
+

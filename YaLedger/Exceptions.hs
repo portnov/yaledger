@@ -7,8 +7,8 @@ import Control.Monad.Exception
 import Control.Monad.Exception.Base
 import Control.Monad.Loc
 
-import YaLedger.Types
-import YaLedger.Correspondence
+import YaLedger.Types.Ledger
+import YaLedger.Types.Common
 
 data InternalError = InternalError String
   deriving (Typeable)
@@ -63,10 +63,6 @@ instance Show InvalidCmdLine where
   show (InvalidCmdLine e) = "Invalid command line parameter: " ++ e
 
 instance Exception InvalidCmdLine
-
-force :: Monad m => EMT (Caught NoSuchRate NoExceptions) m a -> m a
-force action = runEMT $ action `catchWithSrcLoc` 
-                               \loc (e :: NoSuchRate) -> fail (showExceptionWithTrace loc e)
 
 wrapE :: (Monad m, Throws InternalError l)
       => EMT (Caught SomeException (Caught FailException l)) m a
