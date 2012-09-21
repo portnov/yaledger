@@ -53,9 +53,8 @@ wrapIO action = wrapE $ liftIO action
 
 type EHandler e = [String] -> e -> Ledger NoExceptions ()
 
-handler :: Exception e => EHandler e
-handler =
-  \loc (e :: e) -> wrapIO (putStrLn $ showExceptionWithTrace loc e)
+handler loc e =
+  wrapIO (putStrLn $ showExceptionWithTrace loc e)
 
 message :: Throws InternalError l => String -> Ledger l ()
 message str =

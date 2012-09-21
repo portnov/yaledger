@@ -29,18 +29,23 @@ sumGroup ag ams = do
   return $ res :# c
 
 balance :: Maybe DateTime
+        -> Maybe Path
         -> Ledger NoExceptions ()
-balance mbDate = do
+balance mbDate mbPath = (do
     end <- case mbDate of
-             Nothing -> wrapIO $ getCurrentDateTime
+             Nothing -> gets lsStartDate
              Just date -> return date
     let qry = Query {
                qStart = Nothing,
                qEnd   = Just end,
                qAttributes = M.empty }
-    plan <- gets lsAccountPlan
+    plan <- case mbPath of
+              Nothing   -> gets lsAccountPlan
+              Just path -> getAccountPlanItem path
     res <- mapTreeM sumGroup (saldo qry) plan
-    wrapIO $ print res
+    wrapIO $ print res)
   `catchWithSrcLoc`
-    (handler :: EHandler NoSuchRate)
+    (\l (e :: InvalidPath) -> handler l e)
+  `catchWithSrcLoc`
+    (\l (e :: NoSuchRate) -> handler l e)
 

@@ -6,7 +6,9 @@ module YaLedger.Exceptions where
 import Control.Monad.Exception
 import Control.Monad.Exception.Base
 import Control.Monad.Loc
+import Data.List (intercalate)
 
+import YaLedger.Tree
 import YaLedger.Types.Ledger
 import YaLedger.Types.Common
 
@@ -63,6 +65,20 @@ instance Show InvalidCmdLine where
   show (InvalidCmdLine e) = "Invalid command line parameter: " ++ e
 
 instance Exception InvalidCmdLine
+
+data InvalidPath = InvalidPath Path [AccountPlan]
+  deriving (Typeable)
+
+instance Show InvalidPath where
+  show (InvalidPath path []) =
+    "No such account: " ++ intercalate "/" path
+  show (InvalidPath path list) =
+    "Ambigous account/group specification: " ++ 
+      intercalate "/" path ++
+      ". Matching are:\n" ++
+      unlines (map show list)
+
+instance Exception InvalidPath
 
 wrapE :: (Monad m, Throws InternalError l)
       => EMT (Caught SomeException (Caught FailException l)) m a

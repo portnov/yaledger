@@ -33,6 +33,9 @@ group Root {
     };
   };
   group Z {
+    account Y4 {
+      currency = "р";
+    };
     account Z1 {
       currency = "р";
       category = /TEST/;

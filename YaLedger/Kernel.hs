@@ -143,6 +143,15 @@ accountByID i (Leaf _ _ acc)
   | getID acc == i = Just acc
   | otherwise      = Nothing
 
+getAccountPlanItem :: Throws InvalidPath l
+                   => Path -> Ledger l AccountPlan
+getAccountPlanItem path = do
+  plan <- gets lsAccountPlan
+  case search' plan path of
+    [] -> throw (InvalidPath path [])
+    [a] -> return a
+    as -> throw (InvalidPath path as)
+
 accountAsCredit :: (Throws InvalidAccountType l)
                 => AnyAccount
                 -> Ledger l (FreeOr Credit Account)
