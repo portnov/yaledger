@@ -12,49 +12,58 @@ import YaLedger.Tree
 import YaLedger.Types.Ledger
 import YaLedger.Types.Common
 
-data InternalError = InternalError String
+showPos :: SourcePos -> String -> String
+showPos pos msg =
+  msg ++ "\n  at " ++ show pos
+
+data InternalError = InternalError String SourcePos
   deriving (Typeable)
 
 instance Show InternalError where
-  show (InternalError msg) = "Internal error: " ++ msg
+  show (InternalError msg pos) =
+    showPos pos $ "Internal error: " ++ msg
 
 instance Exception InternalError
 
 instance UncaughtException InternalError
 
-data NoSuchRate = NoSuchRate Currency Currency
+data NoSuchRate = NoSuchRate Currency Currency SourcePos
   deriving (Typeable)
 
 instance Show NoSuchRate where
-  show (NoSuchRate c1 c2) =
-    "No conversion rate defined to convert " ++ c1 ++ " -> " ++ c2
+  show (NoSuchRate c1 c2 pos) =
+    showPos pos $
+      "No conversion rate defined to convert " ++ c1 ++ " -> " ++ c2
 
 instance Exception NoSuchRate
 
-data InvalidAccountType = InvalidAccountType AccountGroupType AccountGroupType
+data InvalidAccountType =
+    InvalidAccountType AccountGroupType AccountGroupType SourcePos
   deriving (Typeable)
 
 instance Show InvalidAccountType where
-  show (InvalidAccountType t1 t2) = 
-    "Internal error:\n    Invalid account type: " ++ show t1 ++ " instead of " ++ show t2
+  show (InvalidAccountType t1 t2 pos) = 
+    showPos pos $
+      "Internal error:\n    Invalid account type: " ++ show t1 ++ " instead of " ++ show t2
 
 instance Exception InvalidAccountType
 
 data NoCorrespondingAccountFound =
-    NoCorrespondingAccountFound CQuery
+    NoCorrespondingAccountFound CQuery SourcePos
   deriving (Typeable)
 
 instance Show NoCorrespondingAccountFound where
-  show (NoCorrespondingAccountFound qry) =
-    "No corresponding account found by query: " ++ show qry
+  show (NoCorrespondingAccountFound qry pos) =
+    showPos pos $ "No corresponding account found by query: " ++ show qry
 
 instance Exception NoCorrespondingAccountFound
 
-data NoSuchTemplate = NoSuchTemplate String
+data NoSuchTemplate = NoSuchTemplate String SourcePos
   deriving (Typeable)
 
 instance Show NoSuchTemplate where
-  show (NoSuchTemplate name) = "No such template was defined: " ++ name
+  show (NoSuchTemplate name pos) =
+    showPos pos $ "No such template was defined: " ++ name
 
 instance Exception NoSuchTemplate
 
@@ -62,21 +71,23 @@ data InvalidCmdLine = InvalidCmdLine String
   deriving (Typeable)
 
 instance Show InvalidCmdLine where
-  show (InvalidCmdLine e) = "Invalid command line parameter: " ++ e
+  show (InvalidCmdLine e) =
+    "Invalid command line parameter: " ++ e
 
 instance Exception InvalidCmdLine
 
-data InvalidPath = InvalidPath Path [AccountPlan]
+data InvalidPath = InvalidPath Path [AccountPlan] SourcePos
   deriving (Typeable)
 
 instance Show InvalidPath where
-  show (InvalidPath path []) =
-    "No such account: " ++ intercalate "/" path
-  show (InvalidPath path list) =
-    "Ambigous account/group specification: " ++ 
-      intercalate "/" path ++
-      ". Matching are:\n" ++
-      unlines (map show list)
+  show (InvalidPath path [] pos) =
+    showPos pos $ "No such account: " ++ intercalate "/" path
+  show (InvalidPath path list pos) =
+    showPos pos $
+      "Ambigous account/group specification: " ++ 
+        intercalate "/" path ++
+        ". Matching are:\n" ++
+        unlines (map show list)
 
 instance Exception InvalidPath
 
@@ -85,6 +96,7 @@ wrapE :: (Monad m, Throws InternalError l)
       -> EMT l m a
 wrapE action = wrapException wrapFail $ wrapException wrapSome action
   where
-    wrapFail (FailException msg) = InternalError msg
-    wrapSome (SomeException e)   = InternalError (show e)
+    nowhere = newPos "<nowhere>" 0 0
+    wrapFail (FailException msg) = InternalError msg nowhere
+    wrapSome (SomeException e)   = InternalError (show e) nowhere
 

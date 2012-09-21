@@ -65,7 +65,7 @@ convert c' (x :# c)
   | otherwise = do
     rs <- gets lsRates
     case M.lookup (c, c') rs of
-      Nothing   -> throw (NoSuchRate c c')
+      Nothing   -> throwP (NoSuchRate c c')
       Just rate -> return $ (x *. rate) :# c'
 
 convert' :: Currency -> Amount -> Ledger l Amount
@@ -148,21 +148,21 @@ getAccountPlanItem :: Throws InvalidPath l
 getAccountPlanItem path = do
   plan <- gets lsAccountPlan
   case search' plan path of
-    [] -> throw (InvalidPath path [])
+    [] -> throwP (InvalidPath path [])
     [a] -> return a
-    as -> throw (InvalidPath path as)
+    as -> throwP (InvalidPath path as)
 
 accountAsCredit :: (Throws InvalidAccountType l)
                 => AnyAccount
                 -> Ledger l (FreeOr Credit Account)
-accountAsCredit (WDebit  _ _) = throw $ InvalidAccountType AGDebit AGCredit
+accountAsCredit (WDebit  _ _) = throwP $ InvalidAccountType AGDebit AGCredit
 accountAsCredit (WCredit _ a) = return $ Right a
 accountAsCredit (WFree   _ a) = return $ Left a
 
 accountAsDebit :: (Throws InvalidAccountType l)
                 => AnyAccount
                 -> Ledger l (FreeOr Debit Account)
-accountAsDebit (WCredit _ _) = throw $ InvalidAccountType AGCredit AGDebit
+accountAsDebit (WCredit _ _) = throwP $ InvalidAccountType AGCredit AGDebit
 accountAsDebit (WDebit  _ a) = return $ Right a
 accountAsDebit (WFree   _ a) = return $ Left a
 
@@ -309,7 +309,7 @@ lookupCorrespondingAccount attrs source accounts value currencies mbCorr = do
   let mbAccount = runCQuery qry plan
       mbByMap = lookupAMap plan amap qry accounts
   case mbCorr `mplus` mbByMap `mplus` mbAccount of
-    Nothing -> throw (NoCorrespondingAccountFound qry)
+    Nothing -> throwP (NoCorrespondingAccountFound qry)
     Just acc -> return acc
 
 fillEntry :: (Throws NoSuchRate l,

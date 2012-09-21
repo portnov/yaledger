@@ -54,6 +54,7 @@ pRecords = do
 
 ext :: Parser a -> Parser (Ext a)
 ext p = do
+  pos <- getPosition
   char '@'
   space
   st <- getState
@@ -65,7 +66,7 @@ ext p = do
                  Nothing -> attrs
                  Just s -> M.insert "description" (Exactly s) attrs
   content <- p
-  return $ Ext date attrs' content
+  return $ Ext date pos attrs' content
 
 pRecord :: Parser (Ext Record)
 pRecord = try (ext pTemplate)

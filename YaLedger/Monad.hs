@@ -11,6 +11,7 @@ import Control.Monad.Loc
 import Data.Dates
 import qualified Data.Map as M
 import Data.IORef
+import Text.Parsec.Pos
 
 import YaLedger.Types
 import YaLedger.Exceptions
@@ -21,13 +22,15 @@ newtype LedgerMonad a = LedgerMonad (StateT LedgerState IO a)
 type Ledger l a = EMT l LedgerMonad a
 
 data LedgerState = LedgerState {
-  lsStartDate :: DateTime,
-  lsDefaultCurrency :: Currency,
-  lsAccountPlan :: AccountPlan,
-  lsAccountMap :: AccountMap,
-  lsTemplates :: M.Map String (Attributes, Transaction Param),
-  lsRules :: [(String, Attributes, Rule)],
-  lsRates :: Rates }
+    lsStartDate :: DateTime,
+    lsDefaultCurrency :: Currency,
+    lsAccountPlan :: AccountPlan,
+    lsAccountMap :: AccountMap,
+    lsTemplates :: M.Map String (Attributes, Transaction Param),
+    lsRules :: [(String, Attributes, Rule)],
+    lsRates :: Rates,
+    lsPosition :: SourcePos
+  }
   deriving (Eq, Show)
 
 instance MonadState LedgerState (EMT l LedgerMonad) where
@@ -44,7 +47,9 @@ emptyLedgerState plan amap = do
              lsAccountMap = amap,
              lsTemplates = M.empty,
              lsRules = [],
-             lsRates = M.empty }
+             lsRates = M.empty,
+             lsPosition = newPos "<nowhere>" 0 0
+           }
 
 wrapIO :: (MonadIO m, Throws InternalError l)
        => IO a
@@ -55,6 +60,14 @@ type EHandler e = [String] -> e -> Ledger NoExceptions ()
 
 handler loc e =
   wrapIO (putStrLn $ showExceptionWithTrace loc e)
+
+throwP e = do
+  pos <- gets lsPosition
+  throw (e pos)
+
+setPos :: SourcePos -> Ledger l ()
+setPos pos =
+  modify $ \st -> st {lsPosition = pos}
 
 message :: Throws InternalError l => String -> Ledger l ()
 message str =
@@ -78,4 +91,3 @@ appendIOList iolist x = wrapIO $ modifyIORef iolist (x:)
 
 readIOList :: (MonadIO m, Throws InternalError l) => IOList a -> EMT l m [a]
 readIOList iolist = wrapIO (readIORef iolist)
-

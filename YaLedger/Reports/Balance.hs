@@ -23,6 +23,7 @@ sumGroup :: (Throws InternalError l,
          -> [Amount]
          -> Ledger l Amount
 sumGroup ag ams = do
+  setPos $ newPos ("accounts group " ++ agName ag) 0 0
   let c = agCurrency ag
   ams' <- mapM (convert c) ams
   let res = sum [x | x :# _ <- ams']

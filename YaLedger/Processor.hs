@@ -37,33 +37,34 @@ processEntry :: (Throws NoSuchRate l,
                  Throws NoSuchTemplate l,
                  Throws InternalError l)
                => DateTime
+               -> SourcePos
                -> Attributes
                -> Entry Amount Unchecked
                -> Ledger l ()
-processEntry date attrs uentry = do
+processEntry date pos attrs uentry = do
   entry@(CEntry dt cr rd) <- checkEntry attrs uentry
   message $ show date ++ ":\nEntry:\n" ++ show entry
   forM dt $ \p -> do
       let account = debitPostingAccount p
-      debit  account (Ext date attrs p)
-      appendIOList (accountEntries account) (Ext date attrs entry)
+      debit  account (Ext date pos attrs p)
+      appendIOList (accountEntries account) (Ext date pos attrs entry)
       runRules date attrs p processTransaction
   forM cr $ \p -> do
       let account = creditPostingAccount p
-      credit account (Ext date attrs p)
-      appendIOList (accountEntries account) (Ext date attrs entry)
+      credit account (Ext date pos attrs p)
+      appendIOList (accountEntries account) (Ext date pos attrs entry)
       runRules date attrs p processTransaction
   case rd of
     OneCurrency -> return ()
     CreditDifference p -> do
         let account = creditPostingAccount p
-        credit (creditPostingAccount p) (Ext date attrs p)
-        appendIOList (accountEntries account) (Ext date attrs entry)
+        credit (creditPostingAccount p) (Ext date pos attrs p)
+        appendIOList (accountEntries account) (Ext date pos attrs entry)
         runRules date attrs p processTransaction
     DebitDifference  p -> do
         let account = debitPostingAccount p
-        debit  (debitPostingAccount  p) (Ext date attrs p)
-        appendIOList (accountEntries account) (Ext date attrs entry)
+        debit  (debitPostingAccount  p) (Ext date pos attrs p)
+        appendIOList (accountEntries account) (Ext date pos attrs entry)
         runRules date attrs p processTransaction
   return ()
 
@@ -94,25 +95,25 @@ processRecord = do
   case rec of
     Nothing -> return []
 
-    Just (Ext date attrs (Transaction tran)) ->
-      return [ Ext date attrs tran ]
+    Just (Ext date pos attrs (Transaction tran)) ->
+      return [ Ext date pos attrs tran ]
 
-    Just (Ext _ attrs (Template name tran)) -> do
+    Just (Ext _ _ attrs (Template name tran)) -> do
       lift $ modify $ \st -> st {lsTemplates = M.insert name (attrs, tran) (lsTemplates st)}
       return []
 
-    Just (Ext _ attrs (RuleR name cond tran)) -> do
+    Just (Ext _ _ attrs (RuleR name cond tran)) -> do
       lift $ modify $ \st -> st {lsRules = (name, attrs, When cond tran):lsRules st}
       return []
 
-    Just (Ext date attrs (Periodic name interval tran)) -> do
+    Just (Ext date pos attrs (Periodic name interval tran)) -> do
       mbNext <- getNextP (periodic name . getContent)
                          (isStop name   . getContent)
       let prune = case getDate <$> mbNext of
                     Just dateX -> takeWhile (\x -> getDate x < dateX)
                     Nothing    -> id
       let listFrom start =
-              Ext start attrs tran: listFrom (start `addInterval` interval)
+              Ext start pos attrs tran: listFrom (start `addInterval` interval)
       let result = prune $ listFrom date
       lift $ message $ "Periodic " ++ name ++ ": " ++ show (length result)
       return result
@@ -155,16 +156,23 @@ processTransaction :: (Throws NoSuchRate l,
                        Throws InternalError l)
                    => Ext (Transaction Amount)
                    -> Ledger l ()
-processTransaction (Ext date attrs (TEntry p)) = do
-    processEntry date attrs p
-processTransaction (Ext date attrs (TReconciliate acc x)) = do
+processTransaction (Ext date pos attrs (TEntry p)) = do
+    setPos pos
+    processEntry date pos attrs p
+processTransaction (Ext date pos attrs (TReconciliate acc x)) = do
+    setPos pos
     entry <- reconciliate date acc x
-    processEntry date (M.insert "category" (Exactly "reconciliation") attrs) entry
-processTransaction (Ext _ _ (TSetRate c1 c2 x)) = do
+    processEntry date
+                 pos
+                 (M.insert "category" (Exactly "reconciliation") attrs)
+                 entry
+processTransaction (Ext _ pos _ (TSetRate c1 c2 x)) = do
+    setPos pos
     modify $ \st -> st {lsRates = M.insert (c1, c2) x (lsRates st)}
-processTransaction (Ext date attrs (TCallTemplate name args)) = do
+processTransaction (Ext date pos attrs (TCallTemplate name args)) = do
+    setPos pos
     (tplAttrs, template) <- getTemplate name
     tran <- fillTemplate template args
-    processTransaction (Ext date (attrs `M.union` tplAttrs) tran)
+    processTransaction (Ext date pos (attrs `M.union` tplAttrs) tran)
 processTransaction x = fail $ show x
 

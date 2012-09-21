@@ -1,12 +1,29 @@
 {-# LANGUAGE EmptyDataDecls, GADTs, FlexibleContexts, FlexibleInstances, UndecidableInstances, TypeSynonymInstances, DeriveDataTypeable, RecordWildCards, ScopedTypeVariables, MultiParamTypeClasses #-}
 
-module YaLedger.Types.Common where
+module YaLedger.Types.Common
+  (Checked, Unchecked,
+   Credit, Debit, Free,
+   IOList,
+   Currency, Rates,
+   AccountID, GroupID,
+   FreeOr,
+   Ext (..),
+   HasAmount (..), Named (..),
+   HasCurrency (..), HasID (..),
+   Amount (..), Param (..),
+   AccountGroupType (..),
+   AccountGroupData (..),
+   SourcePos,
+   sourceLine, sourceColumn, sourceName,
+   newPos
+  ) where
 
 import Data.Decimal
 import Data.IORef
 import qualified Data.Map as M
 import Data.Dates
 import Text.Printf
+import Text.Parsec.Pos
 
 import YaLedger.Tree
 import YaLedger.Attributes
@@ -32,6 +49,7 @@ type FreeOr t f = Either (f Free) (f t)
 
 data Ext a = Ext {
     getDate :: DateTime,
+    getLocation :: SourcePos,
     getAttributes :: Attributes,
     getContent :: a }
   deriving (Eq, Show)

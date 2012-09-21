@@ -7,6 +7,7 @@ module YaLedger.Main
    defaultMain
   ) where
 
+import Control.Applicative ((<$>))
 import Control.Monad.Exception
 import Control.Monad.Exception.Base
 import Data.Maybe
@@ -17,7 +18,7 @@ import System.Environment
 import System.FilePath
 import System.FilePath.Glob
 import System.Console.GetOpt
-import Text.Parsec
+import Text.Parsec hiding (try)
 
 import YaLedger.Types
 import YaLedger.Exceptions
@@ -116,18 +117,22 @@ defaultMain list = do
                           (query options)
                           (files options) fn params
 
+try action =
+  (Right <$> action) `catchWithSrcLoc` (\l e -> return (Left (l, e)))
+
 run planPath mapPath qry inputPath (Report report) params = do
   plan <- readPlan planPath
   amap <- readAMap plan mapPath
   records <- readTrans plan inputPath
   runLedger plan amap $ runEMT $ do
-      processRecords (filter (checkQuery qry) records)
-        `catchWithSrcLoc`
-          (handler :: EHandler SomeException)
-      x <- runGenerator report params
-             `catchWithSrcLoc`
-               (\loc (e :: InvalidCmdLine) -> do
-                     wrapIO (putStrLn $ showExceptionWithTrace loc e)
-                     return (return ()))
-      x
+      t <- try $ processRecords (filter (checkQuery qry) records)
+      case t of
+        Left (l, e :: SomeException) -> wrapIO $ putStrLn $ showExceptionWithTrace l e
+        Right _ -> do
+              x <- runGenerator report params
+                     `catchWithSrcLoc`
+                       (\loc (e :: InvalidCmdLine) -> do
+                             wrapIO (putStrLn $ showExceptionWithTrace loc e)
+                             return (return ()))
+              x
 
