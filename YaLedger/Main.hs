@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, OverlappingInstances, ScopedTypeVariables #-}
+{-# LANGUAGE OverlappingInstances, ScopedTypeVariables #-}
 module YaLedger.Main
   (module YaLedger.Types,
    module YaLedger.Types.Reports,
@@ -10,17 +10,22 @@ module YaLedger.Main
 import Control.Monad.Exception
 import Control.Monad.Exception.Base
 import Data.Maybe
+import qualified Data.Map as M
 import Data.Generics
+import Data.Dates
 import System.Environment
 import System.FilePath
 import System.FilePath.Glob
 import System.Console.GetOpt
+import Text.Parsec
 
 import YaLedger.Types
 import YaLedger.Exceptions
 import YaLedger.Types.Reports
 import YaLedger.Monad
 import YaLedger.Parser
+import YaLedger.Parser.Common (pAttribute)
+import YaLedger.Kernel
 import YaLedger.Processor
 import YaLedger.Reports.Balance
 
@@ -29,19 +34,28 @@ data Options =
       accountPlan :: FilePath,
       accountMap :: FilePath,
       files :: FilePath,
+      query :: Query,
       reportParams :: [String] }
   | Help
-  deriving (Eq, Show, Data, Typeable)
+  deriving (Eq, Show)
+
+parsePair :: String -> Either ParseError (String, AttributeValue)
+parsePair str = runParser pAttribute () str str
 
 parseCmdLine :: IO Options
 parseCmdLine = do
   argv <- getArgs
   home <- getEnv "HOME"
+  now <-  getCurrentDateTime
   let configDir = home </> ".config" </> "yaledger"
       defaultOptions = Options {
         accountPlan = configDir </> "default.accounts",
         accountMap  = configDir </> "default.map",
         files = home </> ".yaledger",
+        query = Query {
+                  qStart = Nothing,
+                  qEnd   = Just now,
+                  qAttributes = M.empty },
         reportParams = ["balance"] }
       planF file opts =
           opts {accountPlan = file}
@@ -49,12 +63,31 @@ parseCmdLine = do
           opts {accountMap = file}
       fileF file opts =
           opts {files = file}
+      startF s opts =
+          case parseDate now s of
+            Right date -> opts {query = (query opts) {qStart = Just date}}
+            Left err -> error $ show err
+      endF s opts =
+          case parseDate now s of
+            Right date -> opts {query = (query opts) {qEnd = Just date}}
+            Left err -> error $ show err
+      attrF v opts =
+          case parsePair v of
+            Right (name,value) ->
+              opts {query = (query opts) {
+                  qAttributes = M.insert name value (qAttributes (query opts))
+                  }
+                }
+            Left err -> error $ show err
       helpF _ = Help
   let header = "Usage: yaledger [OPTIONS] [REPORT] [REPORT PARAMS]"
   let options = [
        Option "P" ["plan"] (ReqArg planF "FILE") "Accounts plan file to use",
        Option "M" ["map"]  (ReqArg mapF  "FILE") "Accounts map file to use",
        Option "f" ["file"] (ReqArg fileF "FILE(s)") "Input file[s]",
+       Option "s" ["start"] (ReqArg startF "DATE") "Process only transactions after this date",
+       Option "e" ["end"]  (ReqArg endF "DATE") "Process only transactions before this date",
+       Option "a" ["attribute"] (ReqArg attrF "NAME=VALUE") "Process only transactions with this attribute",
        Option "h" ["help"] (NoArg helpF) "Show this help and exit" ]
   case getOpt RequireOrder options argv of
     (fns, params, []) -> do
@@ -71,7 +104,6 @@ parseCmdLine = do
 defaultMain :: [(String, Report)] -> IO ()
 defaultMain list = do
   options <- parseCmdLine
-  print options
   case options of
     Help -> return ()
     _ -> do
@@ -79,14 +111,17 @@ defaultMain list = do
              params = tail $ reportParams options
          case lookup report list of
            Nothing -> fail $ "No such report: " ++ report
-           Just fn -> run (accountPlan options) (accountMap options) (files options) fn params
+           Just fn -> run (accountPlan options)
+                          (accountMap options)
+                          (query options)
+                          (files options) fn params
 
-run planPath mapPath inputPath (Report report) params = do
+run planPath mapPath qry inputPath (Report report) params = do
   plan <- readPlan planPath
   amap <- readAMap plan mapPath
   records <- readTrans plan inputPath
   runLedger plan amap $ runEMT $ do
-      processRecords records
+      processRecords (filter (checkQuery qry) records)
         `catchWithSrcLoc`
           (handler :: EHandler SomeException)
       x <- runGenerator report params

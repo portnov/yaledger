@@ -80,13 +80,14 @@ pAttributeValue =
 
 
 pAttributes :: Monad m => ParsecT String st m Attributes
-pAttributes = M.fromList <$> try attribute `sepEndBy` semicolon
-  where
-    attribute = do
-      name <- identifier
-      reservedOp "="
-      value <- pAttributeValue
-      return (name, value)
+pAttributes = M.fromList <$> try pAttribute `sepEndBy` semicolon
+
+pAttribute :: Monad m => ParsecT String st m (String, AttributeValue)
+pAttribute = do
+  name <- identifier
+  reservedOp "="
+  value <- pAttributeValue
+  return (name, value)
 
 pPath :: Monad m => ParsecT String st m Path
 pPath = identifier `sepBy` reservedOp "/"
