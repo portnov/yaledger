@@ -16,7 +16,7 @@ instance Pretty String where
   prettyPrint s = s
 
 instance Pretty a => Pretty (Ext a) where
-  prettyPrint (Ext date attrs a) =
+  prettyPrint (Ext date _ attrs a) =
       printf "@ %s %s\n%s%s"
              (prettyPrint date)
              (maybe "" show $ M.lookup "description" attrs)

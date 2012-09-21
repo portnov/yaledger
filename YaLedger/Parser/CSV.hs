@@ -103,8 +103,8 @@ csv sep str = map parseRow $ lines str
   where
     parseRow = split sep
 
-parseCSV :: ParserConfig -> AccountPlan -> String -> IO [Ext Record]
-parseCSV pc plan str = mapM (convert pc plan) $ csv (pcSeparator pc) str
+parseCSV :: ParserConfig -> FilePath -> AccountPlan -> String -> IO [Ext Record]
+parseCSV pc path plan str = zipWithM (convert pc plan path) [1..] $ csv (pcSeparator pc) str
 
 field :: FieldConfig -> [String] -> String
 field (FixedValue str) _ = str
@@ -125,8 +125,8 @@ field fc row =
 
 readSum str = read $ filter (/= ' ') str
 
-convert :: ParserConfig -> AccountPlan -> [String] -> IO (Ext Record)
-convert pc plan row = do
+convert :: ParserConfig -> AccountPlan -> FilePath -> Int -> [String] -> IO (Ext Record)
+convert pc plan path rowN row = do
   let dateStr = field (pcDate pc) row
       currency = field (pcCurrency pc) row
       amountStr = field (pcAmount pc) row
@@ -171,7 +171,8 @@ convert pc plan row = do
                          Just acc -> cposting acc (amount :# currency)
                          Nothing  -> return []
                return $ UEntry posting corr Nothing []
-  return $ Ext date attrs (Transaction $ TEntry entry)
+  let pos = newPos path rowN 1
+  return $ Ext date pos attrs (Transaction $ TEntry entry)
 
 cposting :: AnyAccount -> Amount -> IO [Posting Amount Credit]
 cposting acc x =
@@ -191,5 +192,5 @@ loadCSV :: AccountPlan -> FilePath -> FilePath -> IO [Ext Record]
 loadCSV plan configPath csvPath = do
   config <- loadParserConfig configPath 
   csv <- readFile csvPath
-  parseCSV config plan csv
+  parseCSV config csvPath plan csv
 
