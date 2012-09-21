@@ -20,7 +20,7 @@ import YaLedger.Monad
 import YaLedger.Exceptions
 
 showE :: Ext (Entry Decimal Checked) -> [String]
-showE (Ext {getContent = (CEntry cr dt rd)}) = zipWith go cr' dt' ++ rdS
+showE (Ext {getContent = (CEntry dt cr rd)}) = zipWith go cr' dt' ++ rdS
   where
     rdS
       | rd == OneCurrency = []
@@ -30,8 +30,8 @@ showE (Ext {getContent = (CEntry cr dt rd)}) = zipWith go cr' dt' ++ rdS
     dt' = take m $ map Just dt ++ repeat Nothing
     go p1 p2 = printf " %s\t| %s\t |" (posting p1) (posting p2)
     posting Nothing = " "
-    posting (Just (DPosting acc x)) = getName acc ++ " " ++ show x
-    posting (Just (CPosting acc x)) = getName acc ++ " " ++ show x
+    posting (Just (DPosting acc x)) = getName acc ++ "\t" ++ show x
+    posting (Just (CPosting acc x)) = getName acc ++ "\t" ++ show x
 
 showEntries :: Amount -> [Ext (Entry Decimal Checked)] -> String
 showEntries totals list =
@@ -60,6 +60,6 @@ registry' qry mbPath = do
       res <- saldo qry acc
       wrapIO $ do
         putStrLn $ path ++ ":"
-        putStrLn $ showEntries res entries
+        putStrLn $ showEntries res (reverse entries)
         putStrLn ""
   

@@ -115,12 +115,16 @@ defaultMain list = do
          let report = head $ reportParams options
              params = tail $ reportParams options
          case lookupInit report list of
-           [] -> fail $ "No such report: " ++ report
+           [] -> putStrLn $ "No such report: " ++ report ++
+                            "\nSupported reports are: " ++
+                            unwords (map fst list)
            [fn] -> run (accountPlan options)
                        (accountMap options)
                        (query options)
                        (files options) fn params
-           _ -> fail $ "Ambigous report specification: " ++ report
+           _ -> putStrLn $ "Ambigous report specification: " ++ report ++
+                           "\nSupported reports are: " ++
+                           unwords (map fst list)
 
 try action =
   (Right <$> action) `catchWithSrcLoc` (\l e -> return (Left (l, e)))
