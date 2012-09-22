@@ -15,6 +15,7 @@ import Data.Dates
 
 import YaLedger.Types
 import YaLedger.Types.Reports
+import YaLedger.Strings
 import YaLedger.Kernel
 import YaLedger.Monad
 import YaLedger.Exceptions

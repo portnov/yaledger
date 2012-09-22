@@ -7,117 +7,98 @@ import Control.Monad
 import Data.Either
 import Data.List.Utils (split)
 
-data family ParentLink s x
-
-data Linked
-data NotLinked
-
-data instance ParentLink Linked a =
-    Root
-  | ParentLink a
-  deriving (Eq)
-
-instance Monad (ParentLink Linked) where
-  return x = ParentLink x
-  m >>= f =
-    case m of
-      Root -> Root
-      ParentLink x -> f x
-
-data instance ParentLink NotLinked a = NoLink
-  deriving (Eq)
+import YaLedger.Strings
 
 type Path = [String]
 
-data Tree s n a =
+data Tree n a =
     Branch {
-      nodeParent :: ParentLink s (Tree s n a),
       nodeName :: String,
       branchData :: n,
-      branchChildren :: Forest s n a}
+      branchChildren :: Forest n a}
   | Leaf {
-      nodeParent :: ParentLink s (Tree s n a),
       nodeName :: String,
       leafData :: a}
 
-instance (Eq n, Eq a) => Eq (Tree s n a) where
-  (Branch _ name n c) == (Branch _ name' n' c') =
+instance (Eq n, Eq a) => Eq (Tree n a) where
+  (Branch name n c) == (Branch name' n' c') =
     (name == name') && (n == n') && (c == c')
 
-  (Leaf _ name a) == (Leaf _ name' a') =
+  (Leaf name a) == (Leaf name' a') =
     (name == name') && (a == a')
 
   _ == _ = False
 
-instance (Show n, Show a) => Show (Tree s n a) where
-  show tree = go 0 False tree
-    where
-      go i b (Branch {nodeName = name, branchData = n, branchChildren = children}) =
-          (concat $ replicate i "│ ") ++ 
-          (glyph b) ++ name ++ ": " ++ show n ++ "\n" ++
-          (concatMap (go (i+1) False) $ init children) ++
-          (go (i+1) True $ last children)
-      go i b (Leaf {nodeName = name, leafData = a}) =
-          (concat $ replicate i "│ ") ++
-          (glyph b) ++ name ++ ": " ++ show a ++ "\n"
+showTree :: (Show n, Show a) => Tree n a -> [String]
+showTree tree =
+    zipS "" (alignMax ALeft $ struct 0 False tree)
+            (alignMax ALeft $ values tree)
+  where
+    struct i b (Branch {nodeName = name, branchData = n, branchChildren = children}) =
+        ((concat $ replicate i "│ ") ++ (glyph b) ++ name ++ ": "):
+         (concatMap (struct (i+1) False) $ init children) ++
+         (struct (i+1) True $ last children)
+    struct i b (Leaf {nodeName = name, leafData = a}) =
+        [(concat $ replicate i "│ ") ++
+         (glyph b) ++ name ++ ": "]
 
-      glyph True  = "╰—□ "
-      glyph False = "├—□ "
+    values (Branch {..}) = show branchData: concatMap values branchChildren
+    values (Leaf {..})   = [show leafData]
 
-type Forest s n a = [Tree s n a]
+    glyph True  = "╰—□ "
+    glyph False = "├—□ "
+
+instance (Show n, Show a) => Show (Tree n a) where
+  show tree = unlines $ showTree tree
+
+type Forest n a = [Tree n a]
 
 mkPath :: String -> Path
 mkPath str = split "/" str
 
-getChildren :: Tree s n a -> Forest s n a
+getChildren :: Tree n a -> Forest n a
 getChildren (Branch {branchChildren = children}) = children
 getChildren (Leaf {}) = []
 
-getData :: Tree s n a -> Either n a
+getData :: Tree n a -> Either n a
 getData (Branch {branchData = n}) = Left n
 getData (Leaf {leafData = a})     = Right a
 
-leafs :: Tree s n a -> [(Path, a)]
+leafs :: Tree n a -> [(Path, a)]
 leafs tree = go [] tree
   where
     go path (Branch {nodeName = name, branchChildren = children}) =
         concatMap (go (name:path)) children
     go path (Leaf {nodeName = name, leafData = x}) = [(name:path, x)]
 
-leaf :: String -> a -> Tree Linked n a
-leaf name x = Leaf Root name x
+leaf :: String -> a -> Tree n a
+leaf name x = Leaf name x
 
-branch :: String -> n -> Forest Linked n a -> Tree Linked n a
-branch name n list =
-  let result = Branch Root name n children
-      children = [c {nodeParent = ParentLink result} | c <- list]
-  in  result
+branch :: String -> n -> Forest n a -> Tree n a
+branch name n list = Branch name n list
 
-fold :: (n -> Forest Linked r a -> r) -> Tree Linked n a -> Tree Linked r a
-fold f tree =
-  let result = go Root tree
-      
-      go p (Leaf _ name a)       = Leaf p name a
-      go p (Branch _ name n lst) = Branch p name (f n children) children
+fold :: (n -> Forest r a -> r) -> Tree n a -> Tree r a
+fold f tree = go tree
+  where
+      go (Leaf name a)       = Leaf name a
+      go (Branch name n lst) = Branch name (f n children) children
         where
-          children = map (go $ ParentLink result) lst
+          children = map go lst
 
-  in  result
-
-mapTree  :: (n -> m) -> (a -> b) -> Tree s n a -> Tree NotLinked m b
+mapTree  :: (n -> m) -> (a -> b) -> Tree n a -> Tree m b
 mapTree bf lf tree = go tree
   where
-    go (Branch _ name n lst) = Branch NoLink name (bf n) (map go lst)
-    go (Leaf _ name a) = Leaf NoLink name (lf a)
+    go (Branch name n lst) = Branch name (bf n) (map go lst)
+    go (Leaf name a) = Leaf name (lf a)
 
-mapLeafsM :: (Monad m, Functor m) => (a -> m b) -> Tree s n a -> m (Tree NotLinked n b)
+mapLeafsM :: (Monad m, Functor m) => (a -> m b) -> Tree n a -> m (Tree n b)
 mapLeafsM f tree = go tree
   where
-      go (Leaf _ name a) = Leaf NoLink name <$> f a
-      go (Branch _ name n lst) = do
-          Branch NoLink name n <$> mapM go lst
+      go (Leaf name a) = Leaf name <$> f a
+      go (Branch name n lst) = do
+          Branch name n <$> mapM go lst
 
-forL :: (Monad m) => Tree s n a -> (String -> a -> m b) -> m ()
+forL :: (Monad m) => Tree n a -> (String -> a -> m b) -> m ()
 forL tree f = go "" tree
   where
     go path (Leaf {..}) = do
@@ -130,18 +111,18 @@ forL tree f = go "" tree
 mapTreeM :: (Monad m, Functor m)
          => (n -> [b] -> m b)
          -> (a -> m b)
-         -> Tree s n a
-         -> m (Tree NotLinked b b)
+         -> Tree n a
+         -> m (Tree b b)
 mapTreeM foldBranch fn tree = go tree
   where
-    go (Leaf _ name a) = Leaf NoLink name <$> fn a
-    go (Branch _ name n children) = do
+    go (Leaf name a) = Leaf name <$> fn a
+    go (Branch name n children) = do
       res <- mapM go children
       let res' = map getData res
       r <- foldBranch n (lefts res' ++ rights res')
-      return $ Branch NoLink name r res
+      return $ Branch name r res
 
-filterLeafs :: (a -> Bool) -> Tree s n a -> Tree s n a
+filterLeafs :: (a -> Bool) -> Tree n a -> Tree n a
 filterLeafs p tree = go tree
   where
     go br@(Branch {})=
@@ -151,10 +132,10 @@ filterLeafs p tree = go tree
       in br {branchChildren = leafs ++ branches'}
     go _ = error "Impossible: filterLeafs called on Leaf."
 
-search :: Tree s n a -> Path -> [Either n a]
+search :: Tree n a -> Path -> [Either n a]
 search tree path = map getData $ search' tree path
 
-search' :: Tree s n a -> Path -> Forest s n a
+search' :: Tree n a -> Path -> Forest n a
 search' tree [] = [tree]
 search' tree path = 
   let name = head path
@@ -165,34 +146,20 @@ search' tree path =
       bad'  = concatMap (\c -> search' c path)        bad
   in  good' ++ bad'
 
-lookupTree :: Path -> Tree s n a -> [a]
+lookupTree :: Path -> Tree n a -> [a]
 lookupTree path tree =
   rights $ search tree path
 
-lookupPath :: String -> Tree s n a -> [a]
+lookupPath :: String -> Tree n a -> [a]
 lookupPath path tree = lookupTree (mkPath path) tree
 
-lookupNode :: Path -> Tree s n a -> [Tree s n a]
+lookupNode :: Path -> Tree n a -> [Tree n a]
 lookupNode path tree = 
   case search' tree path of
     [Branch {branchChildren = lst}] -> lst
     _ -> []
 
-getAttribute :: (n -> Maybe r) -> (a -> Maybe r) -> Tree Linked n a -> Maybe r
-getAttribute checkBranch checkLeaf tree =
-  case getData tree of
-    Left n  -> case checkBranch n of
-                Nothing -> case nodeParent tree of
-                             Root -> Nothing
-                             ParentLink p -> getAttribute checkBranch checkLeaf p
-                Just val -> return val
-    Right a -> case checkLeaf a of
-                Nothing ->  case nodeParent tree of
-                             Root -> Nothing
-                             ParentLink p -> getAttribute checkBranch checkLeaf p
-                Just val -> return val
-
-changeLeaf :: Tree s n a -> Path -> (a -> a) -> Tree s n a
+changeLeaf :: Tree n a -> Path -> (a -> a) -> Tree n a
 changeLeaf tree path f =
     case search tree path of
       [Right _] -> changed tree path
@@ -207,7 +174,7 @@ changeLeaf tree path f =
         | otherwise = leaf
     changed leaf@(Leaf {}) _ = leaf
 
-testTree :: Tree Linked Char Int
+testTree :: Tree Char Int
 testTree = branch "root" 'R' $ [
   branch "2" 'A' $ [
     branch "3" 'B' [leaf "L1" 1, leaf "L2" 2, leaf "L3" 3],

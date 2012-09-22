@@ -217,7 +217,7 @@ accountAttributes (WCredit as _) = as
 accountAttributes (WDebit  as _) = as
 accountAttributes (WFree   as _) = as
 
-type AccountPlan = Tree Linked AccountGroupData AnyAccount
+type AccountPlan = Tree AccountGroupData AnyAccount
 
 data CQuery = CQuery {
   cqType :: PostingType,

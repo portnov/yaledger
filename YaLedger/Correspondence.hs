@@ -94,15 +94,15 @@ groupIDs :: AccountID         -- ^ Account ID
 groupIDs i tree = go [] i tree
   where
     go :: [GroupID] -> AccountID -> AccountPlan -> Maybe [GroupID]
-    go xs i (Branch _ _ ag children)
+    go xs i (Branch _ ag children)
       | i `inRange` agRange ag = do
-        let accs = [acc | Leaf _ _ acc <- children]
+        let accs = [acc | Leaf _ acc <- children]
         case filter (\a -> getID a == i) accs of
           [_] -> return (agID ag: xs)
-          _   -> let grps = [map (go (agID ag: agID ag': xs) i) grp | Branch _ _ ag' grp <- children]
+          _   -> let grps = [map (go (agID ag: agID ag': xs) i) grp | Branch _ ag' grp <- children]
                  in  msum $ concat grps
       | otherwise = Nothing
-    go xs i (Leaf _ _ acc)
+    go xs i (Leaf _ acc)
       | getID acc == i = Just xs
       | otherwise      = Nothing
 

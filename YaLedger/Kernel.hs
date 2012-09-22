@@ -132,17 +132,17 @@ sumPostings es = sum (map go es)
     go (DPosting _ x) = x
 
 accountByID :: AccountID -> AccountPlan -> Maybe AnyAccount
-accountByID i (Branch _ _ ag children)
+accountByID i (Branch _ ag children)
   | i `inRange` agRange ag = do
-      let accs = [acc | Leaf _ _ acc <- children]
+      let accs = [acc | Leaf _ acc <- children]
       case filter (\a -> getID a == i) accs of
         [x] -> return x
         _   -> do
-               let grps = [grp | Branch _ _ _ grp <- children]
+               let grps = [grp | Branch _ _ grp <- children]
                first (accountByID i) (concat grps)
   | otherwise = Nothing
 
-accountByID i (Leaf _ _ acc)
+accountByID i (Leaf _ acc)
   | getID acc == i = Just acc
   | otherwise      = Nothing
 
@@ -392,6 +392,6 @@ treeSaldo :: (Throws InternalError l,
               Throws NoSuchRate l)
           => Query
           -> AccountPlan
-          -> Ledger l (Tree NotLinked Amount Amount)
+          -> Ledger l (Tree Amount Amount)
 treeSaldo qry plan = mapTreeM sumGroup (saldo qry) plan
 
