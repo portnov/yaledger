@@ -269,13 +269,21 @@ pDebitPosting p = do
   return $ DPosting account amount
 
 pAmount :: Parser Amount
-pAmount = do
-  n <- number
-  c <- currency
-  return $ n :# c
+pAmount = try numberFirst <|> currencyFirst
+  where
+    numberFirst = do
+      n <- number
+      c <- currency
+      return $ n :# c
+
+    currencyFirst = do
+      c <- currency
+      n <- number
+      return $ n :# c
 
 currency :: Parser Currency
-currency = many $ noneOf " \r\n\t\")}->"
+currency =
+  (many $ noneOf " \r\n\t\")}->@0123456789.") <?> "Currency symbol"
 
 number :: Parser Decimal
 number = do

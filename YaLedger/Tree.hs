@@ -32,7 +32,7 @@ instance (Eq n, Eq a) => Eq (Tree n a) where
 showTree :: (Show n, Show a) => Tree n a -> [String]
 showTree tree =
     zipS "" (alignMax ALeft $ struct 0 False tree)
-            (alignMax ALeft $ values tree)
+            (alignMax ARight $ values tree)
   where
     struct i b (Branch {nodeName = name, branchData = n, branchChildren = children}) =
         ((concat $ replicate i "│ ") ++ (glyph b) ++ name ++ ": "):
