@@ -54,12 +54,12 @@ instance (Show n, Show a) => Show (Tree s n a) where
     where
       go i b (Branch {nodeName = name, branchData = n, branchChildren = children}) =
           (concat $ replicate i "│ ") ++ 
-          (glyph b) ++ name ++ ":\t" ++ show n ++ "\n" ++
+          (glyph b) ++ name ++ ": " ++ show n ++ "\n" ++
           (concatMap (go (i+1) False) $ init children) ++
           (go (i+1) True $ last children)
       go i b (Leaf {nodeName = name, leafData = a}) =
           (concat $ replicate i "│ ") ++
-          (glyph b) ++ name ++ ":\t" ++ show a ++ "\n"
+          (glyph b) ++ name ++ ": " ++ show a ++ "\n"
 
       glyph True  = "╰—□ "
       glyph False = "├—□ "
@@ -104,6 +104,12 @@ fold f tree =
 
   in  result
 
+mapTree  :: (n -> m) -> (a -> b) -> Tree s n a -> Tree NotLinked m b
+mapTree bf lf tree = go tree
+  where
+    go (Branch _ name n lst) = Branch NoLink name (bf n) (map go lst)
+    go (Leaf _ name a) = Leaf NoLink name (lf a)
+
 mapLeafsM :: (Monad m, Functor m) => (a -> m b) -> Tree s n a -> m (Tree NotLinked n b)
 mapLeafsM f tree = go tree
   where
@@ -134,6 +140,16 @@ mapTreeM foldBranch fn tree = go tree
       let res' = map getData res
       r <- foldBranch n (lefts res' ++ rights res')
       return $ Branch NoLink name r res
+
+filterLeafs :: (a -> Bool) -> Tree s n a -> Tree s n a
+filterLeafs p tree = go tree
+  where
+    go br@(Branch {})=
+      let leafs = [l | l@(Leaf {}) <- branchChildren br, p (leafData l)]
+          branches = map go [b | b@(Branch {}) <- branchChildren br]
+          branches' = filter (not . null . branchChildren) branches
+      in br {branchChildren = leafs ++ branches'}
+    go _ = error "Impossible: filterLeafs called on Leaf."
 
 search :: Tree s n a -> Path -> [Either n a]
 search tree path = map getData $ search' tree path

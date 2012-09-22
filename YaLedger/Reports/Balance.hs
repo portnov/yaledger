@@ -25,7 +25,7 @@ balance qry mbPath = (do
     plan <- case mbPath of
               Nothing   -> gets lsAccountPlan
               Just path -> getAccountPlanItem path
-    res <- mapTreeM sumGroup (saldo qry) plan
+    res <- treeSaldo qry plan
     wrapIO $ print res)
   `catchWithSrcLoc`
     (\l (e :: InvalidPath) -> handler l e)

@@ -58,6 +58,9 @@ instance CanDebit (FreeOr Debit Account) where
   debit (Left  a) p = debit a p
   debit (Right a) p = debit a p
 
+negateAmount :: Amount -> Amount
+negateAmount (x :# c) = (-x) :# c
+
 convert :: (Throws NoSuchRate l)
         => Currency -> Amount -> Ledger l Amount
 convert c' (x :# c)
@@ -384,4 +387,11 @@ sumGroup ag ams = do
   ams' <- mapM (convert c) ams
   let res = sum [x | x :# _ <- ams']
   return $ res :# c
+
+treeSaldo :: (Throws InternalError l,
+              Throws NoSuchRate l)
+          => Query
+          -> AccountPlan
+          -> Ledger l (Tree NotLinked Amount Amount)
+treeSaldo qry plan = mapTreeM sumGroup (saldo qry) plan
 

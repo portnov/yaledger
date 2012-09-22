@@ -39,7 +39,7 @@ registry' qry mbPath = do
     allEntries <- forM accounts $ \acc ->
                       readIOList (accountEntries acc)
     totals <- do
-              res <- mapTreeM sumGroup (saldo qry) plan
+              res <- treeSaldo qry plan
               case res of
                 Leaf {..}   -> return leafData
                 Branch {..} -> return branchData

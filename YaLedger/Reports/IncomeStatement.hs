@@ -1,8 +1,9 @@
-{-# LANGUAGE ScopedTypeVariables, FlexibleContexts, OverlappingInstances, GADTs #-}
+{-# LANGUAGE ScopedTypeVariables, FlexibleContexts, OverlappingInstances, GADTs, RecordWildCards #-}
 {-# OPTIONS_GHC -F -pgmF MonadLoc #-}
 
 module YaLedger.Reports.IncomeStatement where
 
+import Control.Applicative ((<$>))
 import Control.Monad
 import Control.Monad.State
 import Control.Monad.Exception
@@ -35,40 +36,34 @@ incomeStatement' qry mbPath = do
     plan <- case mbPath of
               Nothing   -> gets lsAccountPlan
               Just path -> getAccountPlanItem path
-    let accounts = leafs plan
-
-        isCredit (WCredit _ _) = True
+    let isCredit (WCredit _ _) = True
         isCredit _             = False
 
         isDebit (WDebit _ _) = True
         isDebit _            = False
 
-        incomes  = filter (isDebit  . snd) accounts
-        outcomes = filter (isCredit . snd) accounts
+        amount (Branch {..}) = branchData
+        amount (Leaf   {..}) = leafData
 
-    incomes'  <- mapM (saldo qry) $ map snd incomes
-    outcomes' <- mapM (saldo qry) $ map snd outcomes
+        incomes  = filterLeafs isDebit  plan
+        outcomes = filterLeafs isCredit plan
+
+    incomes'  <- mapTree negateAmount negateAmount <$> treeSaldo qry incomes
+    outcomes' <- treeSaldo qry outcomes
+
     defcur <- gets lsDefaultCurrency
-    incomesD  <- mapM (convert defcur) incomes'
-    outcomesD <- mapM (convert defcur) outcomes'
+    incomeD  :# _ <- convert defcur (amount incomes')
+    outcomeD :# _ <- convert defcur (amount outcomes')
 
-    let go f (path,acc) (x :# _) =
-            intercalate "/" (tail $ reverse path) ++
-            ": " ++ show (f x) ++ getCurrency acc
-        incomesS  = zipWith (go negate) incomes  incomes'
-        outcomesS = zipWith (go id)     outcomes outcomes'
-        incomeT  = sum [-x | x :# _ <- incomesD]
-        outcomeT = sum [x | x :# _ <- outcomesD]
-        incomeTS  = "TOTALS: " ++
-            show incomeT  ++ defcur
-        outcomeTS = "TOTALS: " ++
-            show outcomeT ++ defcur
-        m = max (length incomes) (length outcomes)
+    let incomesS  = lines (show incomes')
+        outcomesS = lines (show outcomes')
+        m = max (length incomesS) (length outcomesS)
         padE list = list ++ replicate (m - length list) ""
+        res = twoColumns "INCOMES" "OUTCOMES"
+                 (alignMax ALeft $ padE incomesS)
+                 (alignMax ALeft $ padE outcomesS)
+        sep = replicate (length $ head res) '='
+        footer = "    TOTALS: " ++ show (incomeD - outcomeD) ++ defcur
 
-    wrapIO $ putStrLn $ unlines $
-      twoColumns "INCOMES" "OUTCOMES"
-                 (alignMax ALeft $ padE incomesS ++ [incomeTS])
-                 (alignMax ALeft $ padE outcomesS ++ [outcomeTS])
-      ++ ["    TOTALS: " ++ show (incomeT - outcomeT) ++ defcur]
-
+    wrapIO $ putStrLn $ unlines (res ++ [sep, footer])
+      
