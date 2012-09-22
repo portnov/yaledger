@@ -31,19 +31,21 @@ instance (Eq n, Eq a) => Eq (Tree n a) where
 
 showTree :: (Show n, Show a) => Tree n a -> [String]
 showTree tree =
-    zipS "" (alignMax ALeft $ struct 0 False tree)
+    zipS "" (alignMax ALeft $ struct [True] tree)
             (alignMax ARight $ values tree)
   where
-    struct i b (Branch {nodeName = name, branchData = n, branchChildren = children}) =
-        ((concat $ replicate i "│ ") ++ (glyph b) ++ name ++ ": "):
-         (concatMap (struct (i+1) False) $ init children) ++
-         (struct (i+1) True $ last children)
-    struct i b (Leaf {nodeName = name, leafData = a}) =
-        [(concat $ replicate i "│ ") ++
-         (glyph b) ++ name ++ ": "]
+    struct (b:bs) (Branch {nodeName = name, branchData = n, branchChildren = children}) =
+        (concatMap bar (reverse bs) ++ glyph b ++ name ++ ": "):
+         (concatMap (struct (False:b:bs)) $ init children) ++
+         (struct (True:b:bs) $ last children)
+    struct (b:bs) (Leaf {nodeName = name, leafData = a}) =
+        [concatMap bar (reverse bs) ++ glyph b ++ name ++ ": "]
 
     values (Branch {..}) = show branchData: concatMap values branchChildren
     values (Leaf {..})   = [show leafData]
+
+    bar True  = "  "
+    bar False = "| "
 
     glyph True  = "╰—□ "
     glyph False = "├—□ "
