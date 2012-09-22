@@ -222,11 +222,6 @@ checkEntry :: (Throws NoSuchRate l,
 checkEntry attrs (UEntry dt cr mbCorr currs) = do
   defcur <- gets lsDefaultCurrency
   let currencies    = uniq $ map getCurrency cr ++ map getCurrency dt ++ [defcur]
-      nCurrencies   = length $ nub $ sort $
-                          map getCurrency cr ++
-                          map getCurrency dt ++
-                          map (getCurrency . creditPostingAccount) cr ++
-                          map (getCurrency . debitPostingAccount)  dt
       firstCurrency = head currencies
       accounts      = map (getID . creditPostingAccount) cr
                    ++ map (getID . debitPostingAccount) dt
@@ -261,17 +256,25 @@ checkEntry attrs (UEntry dt cr mbCorr currs) = do
                                  diff
                                  (currencies ++ currs)
                                  attrs firstCurrency
+  let nCurrencies = length $ nub $ sort $
+                          map getCurrency cr ++
+                          map getCurrency dt ++
+                          map (getCurrency . creditPostingAccount) crF ++
+                          map (getCurrency . debitPostingAccount)  dtF
   -- If there is more than 1 currency,
   -- then we should calculate rates difference.
   if traceS "currencies: " nCurrencies > 1
     then do
+         message $ "Credit: " ++ show (getAmount $ head crF) ++
+                   ", Debit: " ++ show (getAmount $ head crF)
          -- Convert all postings into default currency
          crD <- mapM (convertDecimal defcur) crF
          dtD <- mapM (convertDecimal defcur) dtF
+         message $ "crD: " ++ show crD ++ ", dtD: " ++ show dtD
 
          let diffD :: Decimal -- In default currency
              diffD = sum crD - sum dtD
-         rd <- if diffD == 0
+         rd <- if diffD == realFracToDecimal 10 (fromIntegral 0)
                  then return OneCurrency
                  else do
                       correspondence <- lookupCorrespondingAccount (M.insert "category" (Exactly "rates-difference") attrs)

@@ -42,6 +42,10 @@ instance HasCurrency (Posting Amount t) where
   getCurrency (DPosting _ (_ :# c)) = c
   getCurrency (CPosting _ (_ :# c)) = c
 
+instance HasCurrency (Posting Decimal t) where
+  getCurrency (DPosting acc _) = getCurrency acc
+  getCurrency (CPosting acc _) = getCurrency acc
+
 data PostingType =
     EDebit
   | ECredit
@@ -54,6 +58,10 @@ instance Show PostingType where
 instance HasAmount (Posting Amount t) where
   getAmount (DPosting _ x) = x
   getAmount (CPosting _ x) = x
+
+instance HasAmount (Posting Decimal t) where
+  getAmount (DPosting acc x) = x :# getCurrency acc
+  getAmount (CPosting acc x) = x :# getCurrency acc
 
 data RatesDifference =
     OneCurrency
