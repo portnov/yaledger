@@ -40,5 +40,4 @@ details' qry mbPath = do
       wrapIO $ do
         putStrLn $ path ++ ":"
         putStrLn $ showEntries res (reverse entries)
-        putStrLn ""
-  
+
