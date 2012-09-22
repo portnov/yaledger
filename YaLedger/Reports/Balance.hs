@@ -16,18 +16,7 @@ import YaLedger.Types.Reports
 import YaLedger.Kernel
 import YaLedger.Monad
 import YaLedger.Exceptions
-
-sumGroup :: (Throws InternalError l,
-             Throws NoSuchRate l)
-         => AccountGroupData
-         -> [Amount]
-         -> Ledger l Amount
-sumGroup ag ams = do
-  setPos $ newPos ("accounts group " ++ agName ag) 0 0
-  let c = agCurrency ag
-  ams' <- mapM (convert c) ams
-  let res = sum [x | x :# _ <- ams']
-  return $ res :# c
+import YaLedger.Reports.Common
 
 balance :: Query
         -> Maybe Path

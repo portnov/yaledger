@@ -31,8 +31,8 @@ instance Eq v => Eq (Posting v Credit) where
   (CPosting a1 x1) == (CPosting a2 x2) = (a1 == a2) && (x1 == x2)
 
 instance Show v => Show (Posting v t) where
-  show (DPosting acc x) = "debit "  ++ showFA acc ++ " by " ++ show x
-  show (CPosting acc x) = "credit " ++ showFA acc ++ " by " ++ show x
+  show (DPosting acc x) = "dr " ++ showFA acc ++ " " ++ show x
+  show (CPosting acc x) = "cr " ++ showFA acc ++ " " ++ show x
 
 showFA :: FreeOr t Account -> String
 showFA (Left a) = show a

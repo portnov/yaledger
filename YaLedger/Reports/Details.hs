@@ -1,14 +1,13 @@
-{-# LANGUAGE ScopedTypeVariables, FlexibleContexts, OverlappingInstances, GADTs, RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables, FlexibleContexts, OverlappingInstances, GADTs #-}
 {-# OPTIONS_GHC -F -pgmF MonadLoc #-}
 
-module YaLedger.Reports.Registry where
+module YaLedger.Reports.Details where
 
 import Control.Monad
 import Control.Monad.State
 import Control.Monad.Exception
 import Control.Monad.Exception.Base
 import Control.Monad.Loc
-import Data.List
 import qualified Data.Map as M
 import Data.Dates
 import Data.Decimal
@@ -21,9 +20,9 @@ import YaLedger.Monad
 import YaLedger.Exceptions
 import YaLedger.Reports.Common
 
-registry :: Query -> Maybe Path -> Ledger NoExceptions ()
-registry qry mbPath =
-    registry' qry mbPath
+details :: Query -> Maybe Path -> Ledger NoExceptions ()
+details qry mbPath =
+    details' qry mbPath
   `catchWithSrcLoc`
     (\l (e :: InternalError) -> handler l e)
   `catchWithSrcLoc`
@@ -31,17 +30,15 @@ registry qry mbPath =
   `catchWithSrcLoc`
     (\l (e :: NoSuchRate) -> handler l e)
 
-registry' qry mbPath = do
+details' qry mbPath = do
     plan <- case mbPath of
               Nothing   -> gets lsAccountPlan
               Just path -> getAccountPlanItem path
-    let accounts = map snd $ leafs plan
-    allEntries <- forM accounts $ \acc ->
-                      readIOList (accountEntries acc)
-    totals <- do
-              res <- mapTreeM sumGroup (saldo qry) plan
-              case res of
-                Leaf {..}   -> return leafData
-                Branch {..} -> return branchData
-    wrapIO $ putStrLn $ showEntries totals (nub $ sort $ concat allEntries)
+    forL plan $ \path acc -> do
+      entries <- readIOList (accountEntries acc)
+      res <- saldo qry acc
+      wrapIO $ do
+        putStrLn $ path ++ ":"
+        putStrLn $ showEntries res (reverse entries)
+        putStrLn ""
   
