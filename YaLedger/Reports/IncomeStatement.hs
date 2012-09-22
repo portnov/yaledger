@@ -52,7 +52,7 @@ incomeStatement' qry mbPath = do
     incomes'  <- mapTree negateAmount negateAmount <$> treeSaldo qry incomes
     outcomes' <- treeSaldo qry outcomes
 
-    defcur <- gets lsDefaultCurrency
+    let defcur = getCurrency (amount incomes')
     incomeD  :# _ <- convert defcur (amount incomes')
     outcomeD :# _ <- convert defcur (amount outcomes')
 
