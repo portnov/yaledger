@@ -49,7 +49,9 @@ twoColumns h1 h2 l1 l2 =
       m2 = maximum (map length (h2:l2))
       s1 = replicate m1 '='
       s2 = replicate m2 '='
-  in  zipS (h1:s1:l1) (h2:s2:l2)
+      h1' = align m1 ACenter h1
+      h2' = align m2 ACenter h2
+  in  zipS (h1':s1:l1) (h2':s2:l2)
 
 columns :: [(String, [String])] -> [String]
 columns list =
