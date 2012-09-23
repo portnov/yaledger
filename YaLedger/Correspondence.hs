@@ -25,16 +25,14 @@ match attrs qry =
   let check (name, value) = case M.lookup name attrs of
                               Nothing -> name `elem` nonsignificantAttributes
                               Just av  -> matchAV value av
-      t = showA attrs ++ " `match` " ++ showA qry ++ " = "
-  in  traceS t $ all check $ M.assocs qry
+  in  all check $ M.assocs qry
 
 matchAll :: Attributes -> Attributes -> Bool
 matchAll attrs qry =
-  let t = showA attrs ++ " `matchAll` " ++ showA qry ++ " = "
-      check (name, value) = case M.lookup name qry of
+  let check (name, value) = case M.lookup name qry of
                               Nothing -> name `elem` ["source", "rule"]
                               Just av  -> matchAV value av
-  in  traceS t $ all check (M.assocs attrs) && all (`elem` M.keys attrs) (M.keys qry)
+  in  all check (M.assocs attrs) && all (`elem` M.keys attrs) (M.keys qry)
 
 additionalAttributes :: Attributes -> AnyAccount -> Int
 additionalAttributes as a = 
@@ -80,7 +78,7 @@ filterPlan (CQuery {..}) (Leaf {..}) =
 runCQuery :: CQuery -> AccountPlan -> Maybe AnyAccount
 runCQuery qry plan =
   case filterPlan qry plan of
-    []  -> trace ("CQ: " ++ show qry) Nothing
+    []  -> Nothing
     [x] -> Just x
     list -> Just $ head $ filterByAddAttributes (cqAttributes qry) list
 
@@ -138,7 +136,6 @@ lookupAMap plan amap qry is = listToMaybe $ catMaybes $ concat [map (good i) ama
     good _ (AMAttributes as :=> ToAttributes as')
       | cqAttributes qry `matchAll` as =
             let attrs = as' `M.union` cqAttributes qry
-                t = show qry ++ " -> " ++ showA attrs
-            in  runCQuery (qry {cqAttributes = trace t attrs}) plan
+            in  runCQuery (qry {cqAttributes = attrs}) plan
       | otherwise = Nothing
 

@@ -43,7 +43,8 @@ processEntry :: (Throws NoSuchRate l,
                -> Ledger l ()
 processEntry date pos attrs uentry = do
   entry@(CEntry dt cr rd) <- checkEntry attrs uentry
-  message $ show date ++ ":\nEntry:\n" ++ show entry
+  message $ show date ++ ":\n" ++ show entry
+  message $ showA attrs
   forM dt $ \p -> do
       let account = debitPostingAccount p
       debit  account (Ext date pos attrs p)

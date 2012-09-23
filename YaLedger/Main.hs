@@ -58,11 +58,10 @@ parseCmdLine = do
   argv <- getArgs
   now <-  getCurrentDateTime
   configDir <- getUserConfigDir "yaledger"
-  dataDir <- getUserDataDir "yaledger"
   let defaultOptions = Options {
         accountPlan = configDir </> "default.accounts",
         accountMap  = configDir </> "default.map",
-        files = [dataDir </> "default.yaledger"],
+        files = [],
         query = Query {
                   qStart = Nothing,
                   qEnd   = Just now,
@@ -129,12 +128,16 @@ lookupInit key list = [v | (k,v) <- list, key `isPrefixOf` k]
 
 defaultMain :: [(String, Report)] -> IO ()
 defaultMain list = do
+  dataDir <- getUserDataDir "yaledger"
   options <- parseCmdLine
   case options of
     Help -> return ()
     _ -> do
          let report = head $ reportParams options
              params = tail $ reportParams options
+             inputPaths = if null (files options)
+                            then [dataDir </> "default.yaledger"]
+                            else files options
          case lookupInit report list of
            [] -> putStrLn $ "No such report: " ++ report ++
                             "\nSupported reports are: " ++
