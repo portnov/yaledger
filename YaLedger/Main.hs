@@ -16,6 +16,7 @@ import Data.List
 import Data.Generics
 import Data.Dates
 import System.Environment
+import System.Environment.XDG.BaseDir
 import System.FilePath
 import System.FilePath.Glob
 import System.Console.GetOpt
@@ -47,13 +48,13 @@ parsePair str = runParser pAttribute () str str
 parseCmdLine :: IO Options
 parseCmdLine = do
   argv <- getArgs
-  home <- getEnv "HOME"
   now <-  getCurrentDateTime
-  let configDir = home </> ".config" </> "yaledger"
-      defaultOptions = Options {
+  configDir <- getUserConfigDir "yaledger"
+  dataDir <- getUserDataDir "yaledger"
+  let defaultOptions = Options {
         accountPlan = configDir </> "default.accounts",
         accountMap  = configDir </> "default.map",
-        files = home </> ".yaledger",
+        files = dataDir </> "default.yaledger",
         query = Query {
                   qStart = Nothing,
                   qEnd   = Just now,
