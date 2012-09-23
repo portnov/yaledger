@@ -29,6 +29,7 @@ data LedgerState = LedgerState {
     lsTemplates :: M.Map String (Attributes, Transaction Param),
     lsRules :: [(String, Attributes, Rule)],
     lsRates :: Rates,
+    lsLoadedRecords :: [Ext Record],
     lsPosition :: SourcePos
   }
   deriving (Eq, Show)
@@ -37,8 +38,8 @@ instance MonadState LedgerState (EMT l LedgerMonad) where
   get = lift get
   put s = lift (put s)
 
-emptyLedgerState :: AccountPlan -> AccountMap -> IO LedgerState
-emptyLedgerState plan amap = do
+emptyLedgerState :: AccountPlan -> AccountMap -> [Ext Record] -> IO LedgerState
+emptyLedgerState plan amap records = do
   now <- getCurrentDateTime
   return $ LedgerState {
              lsStartDate = now,
@@ -48,6 +49,7 @@ emptyLedgerState plan amap = do
              lsTemplates = M.empty,
              lsRules = [],
              lsRates = M.empty,
+             lsLoadedRecords = records,
              lsPosition = newPos "<nowhere>" 0 0
            }
 
@@ -73,10 +75,10 @@ message :: Throws InternalError l => String -> Ledger l ()
 message str =
   wrapIO $ putStrLn $ ">> " ++ str
 
-runLedger :: AccountPlan -> AccountMap -> LedgerMonad a -> IO a
-runLedger plan amap action = do
+runLedger :: AccountPlan -> AccountMap -> [Ext Record] -> LedgerMonad a -> IO a
+runLedger plan amap records action = do
   let LedgerMonad emt = action
-  st <- emptyLedgerState plan amap
+  st <- emptyLedgerState plan amap records
   -- Use currency of root accounts group as default currency
   (res, _) <- runStateT emt (st {lsDefaultCurrency = agCurrency $ branchData plan})
   return res

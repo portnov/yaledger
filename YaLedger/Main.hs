@@ -158,7 +158,7 @@ run planPath mapPath configs qry inputPaths (Report report) params = do
   plan <- readPlan planPath
   amap <- readAMap plan mapPath
   records <- parseInputFiles configs plan inputPaths
-  runLedger plan amap $ runEMT $ do
+  runLedger plan amap records $ runEMT $ do
       t <- try $ processRecords (filter (checkQuery qry) records)
       case t of
         Left (l, e :: SomeException) -> wrapIO $ putStrLn $ showExceptionWithTrace l e
