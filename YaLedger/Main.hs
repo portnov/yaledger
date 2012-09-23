@@ -27,6 +27,7 @@ import YaLedger.Exceptions
 import YaLedger.Types.Reports
 import YaLedger.Monad
 import YaLedger.Parser
+import YaLedger.Parser.CSV
 import YaLedger.Parser.Common (pAttribute)
 import YaLedger.Kernel
 import YaLedger.Processor
@@ -36,14 +37,21 @@ data Options =
     Options {
       accountPlan :: FilePath,
       accountMap :: FilePath,
-      files :: FilePath,
+      files :: [FilePath],
       query :: Query,
+      parserConfigs :: [(String, FilePath)],
       reportParams :: [String] }
   | Help
   deriving (Eq, Show)
 
 parsePair :: String -> Either ParseError (String, AttributeValue)
 parsePair str = runParser pAttribute () str str
+
+parseParserConfig :: String -> Maybe (String, FilePath)
+parseParserConfig str =
+  case span (/= '=') str of
+    (key, '=':value) -> Just (key, value)
+    _ -> Nothing
 
 parseCmdLine :: IO Options
 parseCmdLine = do
@@ -54,18 +62,19 @@ parseCmdLine = do
   let defaultOptions = Options {
         accountPlan = configDir </> "default.accounts",
         accountMap  = configDir </> "default.map",
-        files = dataDir </> "default.yaledger",
+        files = [dataDir </> "default.yaledger"],
         query = Query {
                   qStart = Nothing,
                   qEnd   = Just now,
                   qAttributes = M.empty },
+        parserConfigs = [],
         reportParams = ["balance"] }
       planF file opts =
           opts {accountPlan = file}
       mapF file opts =
           opts {accountMap = file}
       fileF file opts =
-          opts {files = file}
+          opts {files = file: files opts}
       startF s opts =
           case parseDate now s of
             Right date -> opts {query = (query opts) {qStart = Just date}}
@@ -82,6 +91,14 @@ parseCmdLine = do
                   }
                 }
             Left err -> error $ show err
+      pConfigF str opts =
+          case parseParserConfig str of
+            Just (name,value) -> opts {
+                                   parserConfigs = (name,value):parserConfigs opts
+                                 }
+            Nothing -> error $ "Invalid parser config file specification: "
+                               ++ str
+                               ++ " (required: PARSER=CONFIGFILE)."
       helpF _ = Help
   let header = "Usage: yaledger [OPTIONS] [REPORT] [REPORT PARAMS]"
   let options = [
@@ -90,7 +107,10 @@ parseCmdLine = do
        Option "f" ["file"] (ReqArg fileF "FILE(s)") "Input file[s]",
        Option "s" ["start"] (ReqArg startF "DATE") "Process only transactions after this date",
        Option "e" ["end"]  (ReqArg endF "DATE") "Process only transactions before this date",
-       Option "a" ["attribute"] (ReqArg attrF "NAME=VALUE") "Process only transactions with this attribute",
+       Option "a" ["attribute"]
+                           (ReqArg attrF "NAME=VALUE") "Process only transactions with this attribute",
+       Option "c" ["parser-config"]
+                           (ReqArg pConfigF "PARSER=CONFIGFILE") "Use specified config file for this parser",
        Option "h" ["help"] (NoArg helpF) "Show this help and exit" ]
   case getOpt RequireOrder options argv of
     (fns, params, []) -> do
@@ -121,6 +141,7 @@ defaultMain list = do
                             unwords (map fst list)
            [fn] -> run (accountPlan options)
                        (accountMap options)
+                       (parserConfigs options)
                        (query options)
                        (files options) fn params
            _ -> putStrLn $ "Ambigous report specification: " ++ report ++
@@ -130,10 +151,10 @@ defaultMain list = do
 try action =
   (Right <$> action) `catchWithSrcLoc` (\l e -> return (Left (l, e)))
 
-run planPath mapPath qry inputPath (Report report) params = do
+run planPath mapPath configs qry inputPaths (Report report) params = do
   plan <- readPlan planPath
   amap <- readAMap plan mapPath
-  records <- readTrans plan inputPath
+  records <- parseInputFiles configs plan inputPaths
   runLedger plan amap $ runEMT $ do
       t <- try $ processRecords (filter (checkQuery qry) records)
       case t of

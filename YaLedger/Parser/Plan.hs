@@ -1,7 +1,7 @@
 
 module YaLedger.Parser.Plan where
 
-import Control.Applicative
+import Control.Applicative ((<$>))
 import Control.Monad.Trans
 import Data.Maybe
 import Data.IORef
@@ -115,13 +115,12 @@ pAccountGroup = do
               groupCurrency = currency,
               groupType = tp }
   putState st'
-  accs <- pAccount `sepEndBy` semicolon
-  groups <- pAccountGroup `sepEndBy` semicolon
+  children <- (try (mkLeaf <$> pAccount) <|> pAccountGroup) `sepEndBy` semicolon
   reserved "}"
   st1 <- getState
   let range = (lastAID st, lastAID st1)
   putState $ st {lastAID = lastAID st1, lastGID = lastGID st1}
-  return $ branch name (agData range) (map mkLeaf accs ++ groups)
+  return $ branch name (agData range) children
 
 mkLeaf :: AnyAccount -> AccountPlan
 mkLeaf acc = leaf (getName acc) acc

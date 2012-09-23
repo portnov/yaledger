@@ -12,10 +12,11 @@ import Data.Yaml
 import Data.String.Utils
 import Data.Dates.Formats hiding (Fixed)
 import Text.Regex.PCRE
+import System.FilePath
+import System.Environment.XDG.BaseDir
 
 import YaLedger.Types
 import YaLedger.Tree
-import YaLedger.Parser
 
 data FieldConfig =
     FieldConfig {
@@ -93,9 +94,14 @@ getOther obj = do
 
 loadParserConfig :: FilePath -> IO ParserConfig
 loadParserConfig path = do
-  str <- B.readFile path
+  fullPath <- case head path of
+                '/' -> return path
+                _ -> do
+                     configDir <- getUserConfigDir "yaledger"
+                     return (configDir </> path)
+  str <- B.readFile fullPath
   case decode str of
-    Nothing -> fail $ "Cannot parse config file " ++ path
+    Nothing -> fail $ "Cannot parse config file " ++ fullPath
     Just pc -> return pc
 
 csv :: String -> String -> [[String]]
@@ -188,8 +194,8 @@ dposting acc x =
     WFree   _ a -> return [DPosting (Left  a) x]
     WCredit  _ _ -> fail $ "Invalid account type: credit instead of debit"
 
-loadCSV :: AccountPlan -> FilePath -> FilePath -> IO [Ext Record]
-loadCSV plan configPath csvPath = do
+loadCSV :: FilePath -> AccountPlan -> FilePath -> IO [Ext Record]
+loadCSV configPath plan csvPath = do
   config <- loadParserConfig configPath 
   csv <- readFile csvPath
   parseCSV config csvPath plan csv
