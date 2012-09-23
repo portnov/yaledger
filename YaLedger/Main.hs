@@ -31,18 +31,8 @@ import YaLedger.Parser.CSV
 import YaLedger.Parser.Common (pAttribute)
 import YaLedger.Kernel
 import YaLedger.Processor
+import YaLedger.Config
 import YaLedger.Reports.Balance
-
-data Options =
-    Options {
-      accountPlan :: FilePath,
-      accountMap :: FilePath,
-      files :: [FilePath],
-      query :: Query,
-      parserConfigs :: [(String, FilePath)],
-      reportParams :: [String] }
-  | Help
-  deriving (Eq, Show)
 
 parsePair :: String -> Either ParseError (String, AttributeValue)
 parsePair str = runParser pAttribute () str str
@@ -57,31 +47,26 @@ parseCmdLine :: IO Options
 parseCmdLine = do
   argv <- getArgs
   now <-  getCurrentDateTime
-  configDir <- getUserConfigDir "yaledger"
-  let defaultOptions = Options {
-        accountPlan = configDir </> "default.accounts",
-        accountMap  = configDir </> "default.map",
-        files = [],
-        query = Query {
-                  qStart = Nothing,
-                  qEnd   = Just now,
-                  qAttributes = M.empty },
-        parserConfigs = [],
-        reportParams = ["balance"] }
-      planF file opts =
-          opts {accountPlan = file}
+  defaultOptions <- loadConfig
+  let planF file opts =
+          opts {accountPlan = Just file}
+
       mapF file opts =
-          opts {accountMap = file}
+          opts {accountMap = Just file}
+
       fileF file opts =
           opts {files = file: files opts}
+
       startF s opts =
           case parseDate now s of
             Right date -> opts {query = (query opts) {qStart = Just date}}
             Left err -> error $ show err
+
       endF s opts =
           case parseDate now s of
             Right date -> opts {query = (query opts) {qEnd = Just date}}
             Left err -> error $ show err
+
       attrF v opts =
           case parsePair v of
             Right (name,value) ->
@@ -90,6 +75,7 @@ parseCmdLine = do
                   }
                 }
             Left err -> error $ show err
+
       pConfigF str opts =
           case parseParserConfig str of
             Just (name,value) -> opts {
@@ -154,7 +140,7 @@ defaultMain list = do
 try action =
   (Right <$> action) `catchWithSrcLoc` (\l e -> return (Left (l, e)))
 
-run planPath mapPath configs qry inputPaths (Report report) params = do
+run (Just planPath) (Just mapPath) configs qry inputPaths (Report report) params = do
   plan <- readPlan planPath
   amap <- readAMap plan mapPath
   records <- parseInputFiles configs plan inputPaths
@@ -169,4 +155,5 @@ run planPath mapPath configs qry inputPaths (Report report) params = do
                              wrapIO (putStrLn $ showExceptionWithTrace loc e)
                              return (return ()))
               x
+run _ _ _ _ _ _ _ = error "Impossible: no plan or map file."
 

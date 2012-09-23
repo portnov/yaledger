@@ -189,17 +189,16 @@ pInterval = try (go Days "day")
 
 pEntry :: Parser v -> Parser (Transaction v)
 pEntry p = do
-  es <- try (try (Left <$> pCreditPosting p) <|> (try (Right <$> pDebitPosting p))) `sepEndBy1` (newline <?> "N1")
-  corr <- optionMaybe $ try $ do
+  es <- many1 (try (Left <$> pCreditPosting p) <|> (try (Right <$> pDebitPosting p)))
+  corr <- optionMaybe $ do
             spaces
-            x <- identifier <?> "I1"
-            optional newline
+            x <- pPath <?> "corresponding account path"
             return x
   let cr = lefts es
       dt = rights es
   account <- case corr of
                Nothing -> return Nothing
-               Just path -> Just <$> getAccount accountPlan (mkPath path)
+               Just path -> Just <$> getAccount accountPlan path
   return $ TEntry $ UEntry dt cr account []
 
 pCall :: Parser (Transaction v)
@@ -252,6 +251,7 @@ pCreditPosting p = do
                _ -> fail $ printf "Invalid account type: %s: debit instead of credit." (intercalate "/" accPath)
   spaces
   amount <- p
+  optional newline
   return $ CPosting account amount
 
 pDebitPosting :: Parser v -> Parser (Posting v Debit)
@@ -266,6 +266,7 @@ pDebitPosting p = do
                _ -> fail $ printf "Invalid account type: %s: credit instead of debit." (intercalate "/" accPath)
   spaces
   amount <- p
+  optional newline
   return $ DPosting account amount
 
 pAmount :: Parser Amount

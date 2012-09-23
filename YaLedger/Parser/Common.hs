@@ -78,7 +78,6 @@ pAttributeValue =
 
     list = stringLit `sepBy1` comma
 
-
 pAttributes :: Monad m => ParsecT String st m Attributes
 pAttributes = M.fromList <$> try pAttribute `sepEndBy` semicolon
 
@@ -90,7 +89,7 @@ pAttribute = do
   return (name, value)
 
 pPath :: Monad m => ParsecT String st m Path
-pPath = identifier `sepBy` reservedOp "/"
+pPath = try identifier `sepBy1` reservedOp "/"
 
 getAccount :: Monad m => (st -> AccountPlan) -> Path -> ParsecT String st m AnyAccount
 getAccount accountPlan path = do
