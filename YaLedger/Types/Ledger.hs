@@ -63,6 +63,10 @@ instance HasAmount (Posting Decimal t) where
   getAmount (DPosting acc x) = x :# getCurrency acc
   getAmount (CPosting acc x) = x :# getCurrency acc
 
+instance (HasAmount a, HasAmount b) => HasAmount (Either a b) where
+  getAmount (Left x)  = getAmount x
+  getAmount (Right x) = getAmount x
+
 data RatesDifference =
     OneCurrency
   | CreditDifference (Posting Decimal Credit)

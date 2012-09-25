@@ -8,12 +8,14 @@ import YaLedger.Reports.Plan
 import YaLedger.Reports.Balance
 import YaLedger.Reports.Details
 import YaLedger.Reports.Registry
+import YaLedger.Reports.Postings
 import YaLedger.Reports.IncomeStatement
 
 main :: IO ()
 main =
   defaultMain [("balance",  Report balance),
                ("registry", Report registry),
+               ("postings", Report postings),
                ("details",  Report details),
                ("plan",     Report showPlan),
                ("cat",      Report cat),
