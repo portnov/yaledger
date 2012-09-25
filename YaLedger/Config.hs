@@ -13,6 +13,7 @@ import Data.Dates
 import System.FilePath
 import System.Directory
 import System.Environment.XDG.BaseDir
+import System.Environment.XDG.UserDir
 import Text.Parsec
 
 import YaLedger.Types.Transactions
@@ -103,7 +104,8 @@ getDefaultOptions :: IO Options
 getDefaultOptions = do
   now <-  getCurrentDateTime
   configDir <- getUserConfigDir "yaledger"
-  inputFile <- getUserDataFile "yaledger" "default.yaledger"
+  documents <- getUserDir "DOCUMENTS"
+  let inputFile = documents </> "yaledger" </> "default.yaledger"
   return $ Options {
         accountPlan = Just (configDir </> "default.accounts"),
         accountMap  = Just (configDir </> "default.map"),
