@@ -22,18 +22,26 @@ import YaLedger.Pretty
 import YaLedger.Exceptions
 import YaLedger.Reports.Common
 
-postings :: Query -> AnyAccount -> Ledger NoExceptions ()
-postings _ acc = do
-    postings' acc
+postings :: Query -> Maybe Path -> Ledger NoExceptions ()
+postings _ mbPath = do
+    postings' mbPath
   `catchWithSrcLoc`
     (\l (e :: InternalError) -> handler l e)
+  `catchWithSrcLoc`
+    (\l (e :: InvalidPath) -> handler l e)
 
-postings' acc = do
-  credit <- readIOList =<< creditPostings acc
-  debit  <- readIOList =<< debitPostings  acc
-  let postings = sort (map left credit ++ map right debit)
-      res = unlines $ showPostings postings
-  wrapIO $ putStrLn res
+postings' mbPath = do
+  plan <- case mbPath of
+            Nothing   -> gets lsAccountPlan
+            Just path -> getAccountPlanItem path
+  forL plan $ \path acc -> do
+      credit <- readIOList =<< creditPostings acc
+      debit  <- readIOList =<< debitPostings  acc
+      let postings = sort (map left credit ++ map right debit)
+          res = unlines $ showPostings postings
+      wrapIO $ do
+        putStrLn $ path ++ ":"
+        putStrLn res
 
 left :: Ext (Posting Decimal Credit) -> Ext (Either (Posting Decimal Credit) (Posting Decimal Debit))
 left (Ext date pos attrs posting) = Ext date pos attrs (Left posting)
@@ -42,6 +50,7 @@ right :: Ext (Posting Decimal Debit) -> Ext (Either (Posting Decimal Credit) (Po
 right (Ext date pos attrs posting) = Ext date pos attrs (Right posting)
 
 showPostings :: [Ext (Either (Posting Decimal Credit) (Posting Decimal Debit))] -> [String]
+showPostings [] = ["No postings."]
 showPostings list =
     let dates = map (prettyPrint . getDate) list
         amounts = map getAmountS list
