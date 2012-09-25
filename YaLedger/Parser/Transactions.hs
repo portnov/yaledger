@@ -251,7 +251,7 @@ pCreditPosting p = do
                _ -> fail $ printf "Invalid account type: %s: debit instead of credit." (intercalate "/" accPath)
   spaces
   amount <- p
-  optional newline
+  many newline
   return $ CPosting account amount
 
 pDebitPosting :: Parser v -> Parser (Posting v Debit)
@@ -266,7 +266,7 @@ pDebitPosting p = do
                _ -> fail $ printf "Invalid account type: %s: credit instead of debit." (intercalate "/" accPath)
   spaces
   amount <- p
-  optional newline
+  many newline
   return $ DPosting account amount
 
 pAmount :: Parser Amount
