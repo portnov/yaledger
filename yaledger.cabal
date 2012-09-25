@@ -70,5 +70,11 @@ executable yaledger
                        text ==0.11.*,
                        unordered-containers ==0.2.*,
                        bytestring ==0.9.*, yaml ==0.8.*,
-                       xdg-basedir >= 0.2.1
+                       xdg-basedir >= 0.2.1,
+                       xdg-userdirs >= 0.1.0.0
+
+Source-repository head
+  type: git
+  location: git://redmine.iportnov.ru/yaledger.git
+
 
