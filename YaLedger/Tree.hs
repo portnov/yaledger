@@ -4,6 +4,7 @@ module YaLedger.Tree where
 
 import Control.Applicative
 import Control.Monad
+import Data.Maybe
 import Data.Either
 import Data.List.Utils (split)
 
@@ -87,6 +88,7 @@ fold f tree = go tree
         where
           children = map go lst
 
+-- | Apply pure functions to all nodes of tree.
 mapTree  :: (n -> m) -> (a -> b) -> Tree n a -> Tree m b
 mapTree bf lf tree = go tree
   where
@@ -100,6 +102,7 @@ mapLeafsM f tree = go tree
       go (Branch name n lst) = do
           Branch name n <$> mapM go lst
 
+-- | Similar to 'forM_', but iterates on all leafs of tree.
 forL :: (Monad m) => Tree n a -> (String -> a -> m b) -> m ()
 forL tree f = go "" tree
   where
@@ -110,6 +113,7 @@ forL tree f = go "" tree
         forM_ branchChildren $ \tree ->
           go (path ++ "/" ++ nodeName) tree
 
+-- | Apply monadic functions to branches and leafs of tree.
 mapTreeM :: (Monad m, Functor m)
          => (n -> [b] -> m b)
          -> (a -> m b)
@@ -132,11 +136,13 @@ filterLeafs p tree = go tree
           branches = map go [b | b@(Branch {}) <- branchChildren br]
           branches' = filter (not . null . branchChildren) branches
       in br {branchChildren = leafs ++ branches'}
-    go _ = error "Impossible: filterLeafs called on Leaf."
+    go l@(Leaf {})
+      | p (leafData l) = l
+      | otherwise = error "filterLeafs called on bad Leaf."
 
-search :: Tree n a -> Path -> [Either n a]
-search tree path = map getData $ search' tree path
-
+-- | Search all sub-trees matching with given part of path.
+-- For example, \/A\/B\/C\/D can be reached as
+-- `D', `C\/D', 'A\/D', 'A\/C\/D', and so on.
 search' :: Tree n a -> Path -> Forest n a
 search' tree [] = [tree]
 search' tree path = 
@@ -148,10 +154,31 @@ search' tree path =
       bad'  = concatMap (\c -> search' c path)        bad
   in  good' ++ bad'
 
+-- | Search leaf or branch by given part of path.
+-- See 'search\''.
+search :: Tree n a -> Path -> [Either n a]
+search tree path = map getData $ search' tree path
+
+-- | Search a sub-tree by exact path
+searchExactly :: Tree n a -> Path -> Maybe (Tree n a)
+searchExactly tree [] = Just tree
+searchExactly tree [name]
+  | name == nodeName tree = Just tree
+  | otherwise = Nothing
+searchExactly (Leaf {}) _ = Nothing
+searchExactly b@(Branch {}) (p:ps) =
+  let ch = filter ((p ==) . nodeName) (branchChildren b)
+  in  case catMaybes [searchExactly x ps | x <- ch] of
+        [x] -> Just x
+        _   -> Nothing
+
+-- | Look up for a leaf by part of path.
 lookupTree :: Path -> Tree n a -> [a]
 lookupTree path tree =
   rights $ search tree path
 
+-- | Similar to 'lookupPath', but with String
+-- instead of Path.
 lookupPath :: String -> Tree n a -> [a]
 lookupPath path tree = lookupTree (mkPath path) tree
 
@@ -161,6 +188,8 @@ lookupNode path tree =
     [Branch {branchChildren = lst}] -> lst
     _ -> []
 
+-- | Change one leaf (specified with partial path) using
+-- pure function. NB: node specification should be unambigous.
 changeLeaf :: Tree n a -> Path -> (a -> a) -> Tree n a
 changeLeaf tree path f =
     case search tree path of

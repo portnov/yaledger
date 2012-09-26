@@ -155,6 +155,15 @@ getAccountPlanItem path = do
     [a] -> return a
     as -> throwP (InvalidPath path as)
 
+getAccount :: (Throws NotAnAccount l,
+               Throws InvalidPath l)
+           => Path -> Ledger l AnyAccount
+getAccount path = do
+  x <- getAccountPlanItem path
+  case x of
+    Leaf {} -> return (leafData x)
+    _ -> throwP (NotAnAccount path)
+
 accountAsCredit :: (Throws InvalidAccountType l)
                 => AnyAccount
                 -> Ledger l (FreeOr Credit Account)

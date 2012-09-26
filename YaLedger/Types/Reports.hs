@@ -13,6 +13,7 @@ import YaLedger.Exceptions
 import YaLedger.Types.Ledger
 import YaLedger.Types.Transactions
 import YaLedger.Monad
+import YaLedger.Kernel (getAccount)
 
 class ReportGenerator a r where
   runGenerator :: (Throws InvalidCmdLine l,
@@ -62,9 +63,11 @@ instance ReportParameter DateTime where
 instance ReportParameter AnyAccount where
   parseParameter s = do
     let path = mkPath s
-    plan <- gets lsAccountPlan 
-    case lookupTree path plan of
-      [] -> throw $ InvalidCmdLine $ "No such account: " ++ s
-      [x] -> return x
-      _ -> throw $ InvalidCmdLine $ "Ambigous account specification: " ++ s
+    getAccount path
+      `catchWithSrcLoc`
+        (\l (e :: NotAnAccount) ->
+             rethrow l (InvalidCmdLine $ show e))
+      `catchWithSrcLoc`
+        (\l (e :: InvalidPath) ->
+             rethrow l (InvalidCmdLine $ show e))
 

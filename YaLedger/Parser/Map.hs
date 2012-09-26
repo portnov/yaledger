@@ -52,13 +52,10 @@ pGroup = do
   reserved "group"
   spaces
   path <- pPath
-  st <- getState
-  case search (accountPlan st) path of
-    [] -> fail $ "No such account group: " ++ intercalate "/" path
-    [Left ag] -> return (agID ag)
-    xs ->  fail $ printf "Ambigous accounts group specification: %s (%d matching elements)."
-                        (intercalate "/" path)
-                        (length xs)
+  x <- getAccountPlanItem accountPlan path
+  case x of
+    Branch {branchData = ag} -> return (agID ag)
+    _ -> fail $ "This is an account, not accounts group:" ++ intercalate "/" path
 
 pFromAttributes :: Parser Attributes
 pFromAttributes = do

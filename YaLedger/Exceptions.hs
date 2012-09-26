@@ -91,6 +91,17 @@ instance Show InvalidPath where
 
 instance Exception InvalidPath
 
+data NotAnAccount = NotAnAccount Path SourcePos
+  deriving (Typeable)
+
+instance Show NotAnAccount where
+  show (NotAnAccount p pos) =
+    showPos pos $ 
+      "This is accounts group, not an account: " ++
+      intercalate "/" p
+
+instance Exception NotAnAccount
+
 wrapE :: (Monad m, Throws InternalError l)
       => EMT (Caught SomeException (Caught FailException l)) m a
       -> EMT l m a
