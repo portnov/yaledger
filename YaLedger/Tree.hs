@@ -166,7 +166,7 @@ search' tree path =
       | otherwise = concat [go (nodeName tree: q) (click b) c [name] | c <- getChildren tree]
     go q b tree (p:ps)
       | nodeName tree == p = concat [go (p:q) b c ps | c <- getChildren tree]
-      | otherwise = concat [go (nodeName tree:q) (click b) c ps | c <- getChildren tree]
+      | otherwise = concat [go (nodeName tree:q) (click b) c (p:ps) | c <- getChildren tree]
 
 -- | Search leaf or branch by given part of path.
 -- See 'search\''.
