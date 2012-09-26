@@ -6,9 +6,12 @@ import Control.Applicative
 import Control.Monad
 import Data.Maybe
 import Data.Either
+import Data.List
 import Data.List.Utils (split)
 
 import YaLedger.Strings
+
+import Debug.Trace
 
 type Path = [String]
 
@@ -145,14 +148,25 @@ filterLeafs p tree = go tree
 -- `D', `C\/D', 'A\/D', 'A\/C\/D', and so on.
 search' :: Tree n a -> Path -> Forest n a
 search' tree [] = [tree]
-search' tree path = 
-  let name = head path
-      ch = getChildren tree
-      good = filter ((name ==) . nodeName) ch
-      bad  = filter ((name /=) . nodeName) ch
-      good' = concatMap (\c -> search' c (tail path)) good
-      bad'  = concatMap (\c -> search' c path)        bad
-  in  good' ++ bad'
+search' tree path =
+    let allVariants = go [] True tree path
+    in case filter (\(x,_,_) -> x) allVariants of
+         [] -> let paths = [p | (_,p,_) <- allVariants]
+               in trace ("E: " ++ (unlines $ map (intercalate "/") paths))
+                    [x | (_,_,x) <- allVariants]
+         [(_,p,x)] -> trace ("T: " ++ intercalate "/" p) [x]
+         _ -> error $ "Internal error: search': ambigous exact path: " ++ intercalate "/" path
+  where
+    click _ = False
+
+    go :: Path -> Bool -> Tree n a -> Path -> [(Bool, Path, Tree n a)]
+    go q b tree [] = [(b, (nodeName tree: q), tree)]
+    go q b tree [name]
+      | nodeName tree == name = [(b, (name: q), tree)]
+      | otherwise = concat [go (nodeName tree: q) (click b) c [name] | c <- getChildren tree]
+    go q b tree (p:ps)
+      | nodeName tree == p = concat [go (p:q) b c ps | c <- getChildren tree]
+      | otherwise = concat [go (nodeName tree:q) (click b) c ps | c <- getChildren tree]
 
 -- | Search leaf or branch by given part of path.
 -- See 'search\''.
@@ -161,16 +175,14 @@ search tree path = map getData $ search' tree path
 
 -- | Search a sub-tree by exact path
 searchExactly :: Tree n a -> Path -> Maybe (Tree n a)
-searchExactly tree [] = Just tree
-searchExactly tree [name]
-  | name == nodeName tree = Just tree
+searchExactly tree [] = trace ("z: " ++ nodeName tree) (Just tree)
+searchExactly tree (p:ps)
+  | nodeName tree == p =
+    case catMaybes [searchExactly c ps | c <- getChildren tree] of
+      [] -> Nothing
+      [x] -> Just x
+      _ -> error "Internal error: searchExactly: ambigous."
   | otherwise = Nothing
-searchExactly (Leaf {}) _ = Nothing
-searchExactly b@(Branch {}) (p:ps) =
-  let ch = filter ((p ==) . nodeName) (branchChildren b)
-  in  case catMaybes [searchExactly x ps | x <- ch] of
-        [x] -> Just x
-        _   -> Nothing
 
 -- | Look up for a leaf by part of path.
 lookupTree :: Path -> Tree n a -> [a]

@@ -9,6 +9,8 @@ import Control.Failure
 import YaLedger.Types
 import YaLedger.Exceptions
 
+import Debug.Trace
+
 getAccountPlanItem :: (Monad m,
                        Failure InvalidPath m)
                    => (m SourcePos)
