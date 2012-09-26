@@ -1,7 +1,8 @@
-
 module YaLedger.Parser.Map where
 
 import Control.Applicative ((<$>))
+import Control.Monad.State
+import Control.Failure
 import Data.Maybe
 import Data.List
 import Text.Parsec
@@ -9,6 +10,7 @@ import Text.Printf
 
 import YaLedger.Types
 import YaLedger.Tree
+import YaLedger.Kernel.Common
 import YaLedger.Parser.Common
 
 data PState = PState {
@@ -34,7 +36,7 @@ pMapEntry = do
 pToAccountPlan :: Parser AMTo
 pToAccountPlan = do
   tgtPath <- pPath
-  ToAccountPlan <$> getAccountPlanItem accountPlan tgtPath
+  ToAccountPlan <$> getAccountPlanItem getPosition (accountPlan <$> getState) tgtPath
 
 pToAttributes :: Parser AMTo
 pToAttributes =
@@ -45,14 +47,14 @@ pAccount = do
   reserved "account"
   spaces
   path <- pPath
-  getID <$> getAccount accountPlan path
+  getID <$> getAccount getPosition (accountPlan <$> getState) path
 
 pGroup :: Parser GroupID
 pGroup = do
   reserved "group"
   spaces
   path <- pPath
-  x <- getAccountPlanItem accountPlan path
+  x <- getAccountPlanItem getPosition (accountPlan <$> getState) path
   case x of
     Branch {branchData = ag} -> return (agID ag)
     _ -> fail $ "This is an account, not accounts group:" ++ intercalate "/" path

@@ -1,7 +1,22 @@
 {-# LANGUAGE GADTs, RecordWildCards, ScopedTypeVariables, FlexibleContexts, FlexibleInstances #-}
 {-# OPTIONS_GHC -F -pgmF MonadLoc #-}
 
-module YaLedger.Kernel where
+module YaLedger.Kernel
+  (module YaLedger.Kernel.Common,
+   CanCredit (..), CanDebit (..),
+   negateAmount,
+   convert, convert', convertPosting,
+   convertPosting', convertDecimal,
+   checkQuery,
+   creditPostings, debitPostings,
+   accountByID,
+   sumGroup, sumPostings,
+   accountAsCredit,
+   accountAsDebit,
+   checkEntry,
+   reconciliate,
+   saldo, treeSaldo
+  ) where
 
 import Prelude hiding (catch)
 import Control.Applicative ((<$>))
@@ -21,6 +36,7 @@ import YaLedger.Types
 import YaLedger.Monad
 import YaLedger.Exceptions
 import YaLedger.Correspondence
+import YaLedger.Kernel.Common
 
 class CanCredit a where
   credit :: (Throws InternalError l)
@@ -145,24 +161,6 @@ accountByID i (Branch _ ag children)
 accountByID i (Leaf _ acc)
   | getID acc == i = Just acc
   | otherwise      = Nothing
-
-getAccountPlanItem :: Throws InvalidPath l
-                   => Path -> Ledger l AccountPlan
-getAccountPlanItem path = do
-  plan <- gets lsAccountPlan
-  case search' plan path of
-    [] -> throwP (InvalidPath path [])
-    [a] -> return a
-    as -> throwP (InvalidPath path as)
-
-getAccount :: (Throws NotAnAccount l,
-               Throws InvalidPath l)
-           => Path -> Ledger l AnyAccount
-getAccount path = do
-  x <- getAccountPlanItem path
-  case x of
-    Leaf {} -> return (leafData x)
-    _ -> throwP (NotAnAccount path)
 
 accountAsCredit :: (Throws InvalidAccountType l)
                 => AnyAccount

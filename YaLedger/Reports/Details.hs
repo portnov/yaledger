@@ -33,7 +33,7 @@ details qry mbPath =
 details' qry mbPath = do
     plan <- case mbPath of
               Nothing   -> gets lsAccountPlan
-              Just path -> getAccountPlanItem path
+              Just path -> getAccountPlanItem (gets lsPosition) (gets lsAccountPlan) path
     forL plan $ \path acc -> do
       entries <- readIOList (accountEntries acc)
       res <- saldo qry acc

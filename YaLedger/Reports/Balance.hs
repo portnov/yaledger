@@ -24,7 +24,7 @@ balance :: Query
 balance qry mbPath = (do
     plan <- case mbPath of
               Nothing   -> gets lsAccountPlan
-              Just path -> getAccountPlanItem path
+              Just path -> getAccountPlanItem (gets lsPosition) (gets lsAccountPlan) path
     res <- treeSaldo qry plan
     wrapIO $ print res)
   `catchWithSrcLoc`

@@ -30,5 +30,5 @@ showPlan' :: (Throws InvalidPath l,
 showPlan' mbPath = do
   plan <- case mbPath of
             Nothing   -> gets lsAccountPlan
-            Just path -> getAccountPlanItem path
+            Just path -> getAccountPlanItem (gets lsPosition) (gets lsAccountPlan) path
   wrapIO $ putStrLn $ show plan

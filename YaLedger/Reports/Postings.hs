@@ -33,7 +33,7 @@ postings _ mbPath = do
 postings' mbPath = do
   plan <- case mbPath of
             Nothing   -> gets lsAccountPlan
-            Just path -> getAccountPlanItem path
+            Just path -> getAccountPlanItem (gets lsPosition) (gets lsAccountPlan) path
   forL plan $ \path acc -> do
       credit <- readIOList =<< creditPostings acc
       debit  <- readIOList =<< debitPostings  acc

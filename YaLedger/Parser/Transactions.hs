@@ -14,6 +14,7 @@ import Text.Printf
 import YaLedger.Types
 import YaLedger.Tree
 import YaLedger.Templates
+import YaLedger.Kernel.Common
 import YaLedger.Parser.Common
 
 import Debug.Trace
@@ -147,7 +148,7 @@ pCondition = do
 pRuleObject :: Parser (Either AccountID GroupID)
 pRuleObject = do
   path <- pPath
-  item <- getAccountPlanItem accountPlan path
+  item <- getAccountPlanItem getPosition (accountPlan <$> getState) path
   case item of
     Leaf {..}   -> return $ Left  (getID leafData)
     Branch {..} -> return $ Right (getID branchData)
@@ -198,7 +199,7 @@ pEntry p = do
       dt = rights es
   account <- case corr of
                Nothing -> return Nothing
-               Just path -> Just <$> getAccount accountPlan path
+               Just path -> Just <$> getAccount getPosition (accountPlan <$> getState) path
   return $ TEntry $ UEntry dt cr account []
 
 pCall :: Parser (Transaction v)
@@ -219,7 +220,7 @@ pReconciliate p = do
   reserved "reconciliate"
   spaces
   path <- pPath
-  account <- getAccount accountPlan path 
+  account <- getAccount getPosition (accountPlan <$> getState) path 
   spaces
   x <- p
   return $ TReconciliate account x
@@ -244,7 +245,7 @@ pCreditPosting p = do
   spaces
   reserved "cr"
   accPath <- pPath
-  acc <- getAccount accountPlan accPath
+  acc <- getAccount getPosition (accountPlan <$> getState) accPath
   account <- case acc of
                WFree   _ acc -> return $ Left acc
                WCredit _ acc -> return $ Right acc
@@ -259,7 +260,7 @@ pDebitPosting p = do
   spaces
   reserved "dr"
   accPath <- pPath
-  acc <- getAccount accountPlan accPath
+  acc <- getAccount getPosition (accountPlan <$> getState) accPath
   account <- case acc of
                WFree   _ acc -> return $ Left acc
                WDebit _ acc -> return $ Right acc

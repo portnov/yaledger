@@ -34,7 +34,7 @@ registry qry mbPath =
 registry' qry mbPath = do
     plan <- case mbPath of
               Nothing   -> gets lsAccountPlan
-              Just path -> getAccountPlanItem path
+              Just path -> getAccountPlanItem (gets lsPosition) (gets lsAccountPlan) path
     let accounts = map snd $ leafs plan
     allEntries <- forM accounts $ \acc ->
                       readIOList (accountEntries acc)

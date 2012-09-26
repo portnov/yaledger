@@ -36,7 +36,7 @@ incomeStatement qry mbPath =
 incomeStatement' qry mbPath = do
     plan <- case mbPath of
               Nothing   -> gets lsAccountPlan
-              Just path -> getAccountPlanItem path
+              Just path -> getAccountPlanItem (gets lsPosition) (gets lsAccountPlan) path
     let isCredit (WCredit _ _) = True
         isCredit _             = False
 

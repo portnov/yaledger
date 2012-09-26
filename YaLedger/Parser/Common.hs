@@ -1,8 +1,11 @@
-{-# LANGUAGE NoMonomorphismRestriction, FlexibleContexts #-}
+{-# LANGUAGE NoMonomorphismRestriction, FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 
 module YaLedger.Parser.Common where
 
 import Control.Applicative ((<$>))
+import Control.Failure
+import Control.Exception hiding (try)
+import Data.Functor.Identity
 import Data.Maybe
 import Data.List
 import qualified Data.Map as M
@@ -14,6 +17,9 @@ import Text.Printf
 import YaLedger.Types
 
 import Debug.Trace
+
+instance Exception e => Failure e Identity where
+  failure e = fail $ show e
 
 language :: (Stream s m Char, Monad m) => GenLanguageDef s u m
 language    = P.LanguageDef
@@ -90,24 +96,4 @@ pAttribute = do
 
 pPath :: Monad m => ParsecT String st m Path
 pPath = try identifier `sepBy1` reservedOp "/"
-
-getAccount :: Monad m => (st -> AccountPlan) -> Path -> ParsecT String st m AnyAccount
-getAccount accountPlan path = do
-  st <- getState
-  case lookupTree path (accountPlan st) of
-    [] -> fail $ "No such account: " ++ intercalate "/" path
-    [a] -> return a
-    as -> fail $ printf "Ambigous account specification: %s (%d matching accounts)."
-                        (intercalate "/" path)
-                        (length as)
-
-getAccountPlanItem :: Monad m => (st -> AccountPlan) -> Path -> ParsecT String st m AccountPlan
-getAccountPlanItem accountPlan path = do
-  st <- getState
-  case search' (accountPlan st) path of
-    [] -> fail $ "No such account plan item: " ++ intercalate "/" path
-    [a] -> return a
-    as -> fail $ printf "Ambigous account plan item specification: %s (%d matching items)."
-                        (intercalate "/" path)
-                        (length as)
 

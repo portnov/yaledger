@@ -13,7 +13,7 @@ import YaLedger.Exceptions
 import YaLedger.Types.Ledger
 import YaLedger.Types.Transactions
 import YaLedger.Monad
-import YaLedger.Kernel (getAccount)
+import YaLedger.Kernel.Common
 
 class ReportGenerator a r where
   runGenerator :: (Throws InvalidCmdLine l,
@@ -63,7 +63,7 @@ instance ReportParameter DateTime where
 instance ReportParameter AnyAccount where
   parseParameter s = do
     let path = mkPath s
-    getAccount path
+    getAccount (gets lsPosition) (gets lsAccountPlan) path
       `catchWithSrcLoc`
         (\l (e :: NotAnAccount) ->
              rethrow l (InvalidCmdLine $ show e))
