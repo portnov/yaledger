@@ -137,7 +137,7 @@ defaultMain list = do
                            "\nSupported reports are: " ++
                            unwords (map fst list)
 
-try action =
+tryE action =
   (Right <$> action) `catchWithSrcLoc` (\l e -> return (Left (l, e)))
 
 run (Just planPath) (Just mapPath) configs qry inputPaths (Report report) params = do
@@ -145,7 +145,7 @@ run (Just planPath) (Just mapPath) configs qry inputPaths (Report report) params
   amap <- readAMap plan mapPath
   records <- parseInputFiles configs plan inputPaths
   runLedger plan amap records $ runEMT $ do
-      t <- try $ processRecords (filter (checkQuery qry) records)
+      t <- tryE $ processRecords (filter (checkQuery qry) records)
       case t of
         Left (l, e :: SomeException) -> wrapIO $ putStrLn $ showExceptionWithTrace l e
         Right _ -> do

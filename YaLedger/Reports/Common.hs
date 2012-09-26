@@ -17,6 +17,8 @@ showE (Ext {getDate = date, getContent = (CEntry dt cr rd)}) =
     rdS
       | rd == OneCurrency = []
       | otherwise = [show rd]
+
+    posting :: Posting Decimal t -> String
     posting (DPosting acc x) = getName acc ++ ": " ++ show (roundTo 4 x) ++ getCurrency acc
     posting (CPosting acc x) = getName acc ++ ": " ++ show (roundTo 4 x) ++ getCurrency acc
 
