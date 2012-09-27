@@ -87,7 +87,7 @@ parseCmdLine = do
       helpF _ = Help
   let header = "Usage: yaledger [OPTIONS] [REPORT] [REPORT PARAMS]"
   let options = [
-       Option "P" ["coa"] (ReqArg coaF "FILE") "Chart of accounts file to use",
+       Option "C" ["coa"] (ReqArg coaF "FILE") "Chart of accounts file to use",
        Option "M" ["map"]  (ReqArg mapF  "FILE") "Accounts map file to use",
        Option "f" ["file"] (ReqArg fileF "FILE(s)") "Input file[s]",
        Option "s" ["start"] (ReqArg startF "DATE") "Process only transactions after this date",

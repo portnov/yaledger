@@ -31,6 +31,6 @@ data AMTo =
   deriving (Eq)
 
 instance Show AMTo where
-  show (ToCoA p) = "account plan item:\n" ++ show p
+  show (ToCoA p) = "CoA item:\n" ++ show p
   show (ToAttributes as) = "attributes " ++ showA as
 

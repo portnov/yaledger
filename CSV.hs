@@ -12,8 +12,8 @@ import YaLedger.Parser.CSV
 
 main = do
   [config, path] <- getArgs
-  plan <- readPlan "test.accounts"
-  records <- loadCSV plan config path
+  coa <- readCoA "test.accounts"
+  records <- loadCSV config coa path
   forM_ records $ \rec ->
     putStrLn $ prettyPrint rec
 
