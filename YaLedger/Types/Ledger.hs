@@ -2,6 +2,8 @@
 
 module YaLedger.Types.Ledger where
 
+import qualified Data.Map as M
+import Data.Either
 import Data.Decimal
 import Data.List
 import Text.Printf
@@ -33,6 +35,14 @@ instance Eq v => Eq (Posting v Credit) where
 instance Show v => Show (Posting v t) where
   show (DPosting acc x) = "dr " ++ showFA acc ++ " " ++ show x
   show (CPosting acc x) = "cr " ++ showFA acc ++ " " ++ show x
+
+postingValue :: Posting v t -> v
+postingValue (DPosting {..}) = debitPostingAmount
+postingValue (CPosting {..}) = creditPostingAmount
+
+postingAccount :: Posting v t -> AnyAccount
+postingAccount (DPosting {..}) = either (WFree M.empty) (WDebit M.empty) debitPostingAccount
+postingAccount (CPosting {..}) = either (WFree M.empty) (WCredit M.empty) creditPostingAccount
 
 showFA :: FreeOr t Account -> String
 showFA (Left a) = show a
@@ -118,12 +128,24 @@ instance Show v => Show (Entry v t) where
 
 type History f t = IOList (Ext (f t))
 
+data Balance c =
+  Balance {
+    causedBy :: Maybe (Entry Decimal c),
+    balanceValue :: Decimal
+  }
+
+instance Show (Balance c) where
+  show b = show (balanceValue b)
+
+zeroBalance :: Balance Checked
+zeroBalance = Balance Nothing 0
+
 data Account t where
   CAccount :: {
     creditAccountName     :: String,
     creditAccountID       :: AccountID,
     creditAccountCurrency :: Currency,
-    creditAccountEntries  :: History (Entry Decimal) Checked,
+    creditAccountBalances :: History Balance Checked,
     creditAccountPostings :: History (Posting Decimal) Credit
   } -> Account Credit
 
@@ -131,7 +153,7 @@ data Account t where
     debitAccountName     :: String,
     debitAccountID       :: AccountID,
     debitAccountCurrency :: Currency,
-    debitAccountEntries  :: History (Entry Decimal) Checked,
+    debitAccountBalances :: History Balance Checked,
     debitAccountPostings :: History (Posting Decimal) Debit
   } -> Account Debit
 
@@ -139,27 +161,27 @@ data Account t where
     freeAccountName           :: String,
     freeAccountID             :: AccountID,
     freeAccountCurrency       :: Currency,
-    freeAccountEntries        :: History (Entry Decimal) Checked,
+    freeAccountBalances       :: History Balance Checked,
     freeAccountCreditPostings :: History (Posting Decimal) Credit,
     freeAccountDebitPostings  :: History (Posting Decimal) Debit
   } -> Account Free
 
-class HasEntries a where
-  accountEntries :: a -> History (Entry Decimal) Checked
+class HasBalances a where
+  accountBalances :: a -> History Balance Checked
 
-instance HasEntries (Account t) where
-  accountEntries (CAccount {..}) = creditAccountEntries
-  accountEntries (DAccount {..}) = debitAccountEntries
-  accountEntries (FAccount {..}) = freeAccountEntries
+instance HasBalances (Account t) where
+  accountBalances (CAccount {..}) = creditAccountBalances
+  accountBalances (DAccount {..}) = debitAccountBalances
+  accountBalances (FAccount {..}) = freeAccountBalances
 
-instance HasEntries (FreeOr t Account) where
-  accountEntries (Left a)  = accountEntries a
-  accountEntries (Right a) = accountEntries a
+instance HasBalances (FreeOr t Account) where
+  accountBalances (Left a)  = accountBalances a
+  accountBalances (Right a) = accountBalances a
 
-instance HasEntries AnyAccount where
-  accountEntries (WCredit _ a) = accountEntries a
-  accountEntries (WDebit  _ a) = accountEntries a
-  accountEntries (WFree   _ a) = accountEntries a
+instance HasBalances AnyAccount where
+  accountBalances (WCredit _ a) = accountBalances a
+  accountBalances (WDebit  _ a) = accountBalances a
+  accountBalances (WFree   _ a) = accountBalances a
 
 instance HasID (Account t) where
   getID (CAccount {..}) = creditAccountID

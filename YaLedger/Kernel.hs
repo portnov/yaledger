@@ -50,21 +50,44 @@ class CanDebit a where
         -> Ext (Posting Decimal Debit)
         -> Ledger l ()
 
+balancePlus :: forall l t.
+               (Throws InternalError l, Sign t)
+            => Ext (Posting Decimal t)
+            -> History Balance Checked
+            -> Ledger l ()
+balancePlus p history = do
+  let s = fromIntegral (sign (undefined :: t))
+      value = s * postingValue (getContent p)
+      update e@(Ext {getContent = b}) =
+          Ext {
+            getDate       = getDate p,
+            getLocation   = getLocation p,
+            getAttributes = getAttributes p,
+            getContent    = b {balanceValue = balanceValue b + value}
+          }
+  let zero = Ext (getDate p) (getLocation p) (getAttributes p) zeroBalance
+  plusIOList zero update history
+  message $ "balancePlus: " ++ show (getDate p) ++ ": " ++ show (getContent p)
+
 instance CanDebit (Account Debit) where
   debit (DAccount {..}) p = do
       appendIOList debitAccountPostings p
+      balancePlus p debitAccountBalances
 
 instance CanDebit (Account Free) where
   debit (FAccount {..}) p = do
       appendIOList freeAccountDebitPostings p
+      balancePlus p freeAccountBalances
 
 instance CanCredit (Account Credit) where
   credit (CAccount {..}) p = do
       appendIOList creditAccountPostings p
+      balancePlus p creditAccountBalances
 
 instance CanCredit (Account Free) where
   credit (FAccount {..}) p = do
       appendIOList freeAccountCreditPostings p
+      balancePlus p freeAccountBalances
 
 instance CanCredit (FreeOr Credit Account) where
   credit (Left  a) p = credit a p

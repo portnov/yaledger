@@ -48,24 +48,24 @@ processEntry date pos attrs uentry = do
   forM dt $ \p -> do
       let account = debitPostingAccount p
       debit  account (Ext date pos attrs p)
-      appendIOList (accountEntries account) (Ext date pos attrs entry)
+      modifyLastItem (\b -> b {causedBy = Just entry}) (accountBalances account)
       runRules date attrs p processTransaction
   forM cr $ \p -> do
       let account = creditPostingAccount p
       credit account (Ext date pos attrs p)
-      appendIOList (accountEntries account) (Ext date pos attrs entry)
+      modifyLastItem (\b -> b {causedBy = Just entry}) (accountBalances account)
       runRules date attrs p processTransaction
   case rd of
     OneCurrency -> return ()
     CreditDifference p -> do
         let account = creditPostingAccount p
         credit (creditPostingAccount p) (Ext date pos attrs p)
-        appendIOList (accountEntries account) (Ext date pos attrs entry)
+        modifyLastItem (\b -> b {causedBy = Just entry}) (accountBalances account)
         runRules date attrs p processTransaction
     DebitDifference  p -> do
         let account = debitPostingAccount p
         debit  (debitPostingAccount  p) (Ext date pos attrs p)
-        appendIOList (accountEntries account) (Ext date pos attrs entry)
+        modifyLastItem (\b -> b {causedBy = Just entry}) (accountBalances account)
         runRules date attrs p processTransaction
   return ()
 

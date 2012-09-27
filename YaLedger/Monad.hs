@@ -88,8 +88,30 @@ runLedger plan amap records action = do
 newIOList :: (MonadIO m, Throws InternalError l) => EMT l m (IOList a)
 newIOList = wrapIO $ newIORef []
 
+readIOList :: (MonadIO m, Throws InternalError l) => IOList a -> EMT l m [a]
+readIOList iolist = wrapIO (readIORef iolist)
+
 appendIOList :: (MonadIO m, Throws InternalError l) => IOList a -> a -> EMT l m ()
 appendIOList iolist x = wrapIO $ modifyIORef iolist (x:)
 
-readIOList :: (MonadIO m, Throws InternalError l) => IOList a -> EMT l m [a]
-readIOList iolist = wrapIO (readIORef iolist)
+plusIOList :: (MonadIO m, Throws InternalError l)
+           => a
+           -> (a -> a)
+           -> IOList a
+           -> EMT l m ()
+plusIOList def fn iolist = do
+  wrapIO $ modifyIORef iolist $ \list ->
+    case list of
+      [] -> [def]
+      (x:xs) -> fn x: x: xs
+
+modifyLastItem ::  (MonadIO m, Throws InternalError l)
+               => (a -> a)
+               -> IOList (Ext a)
+               -> EMT l m ()
+modifyLastItem fn iolist = do
+  wrapIO $ modifyIORef iolist $ \list ->
+    case list of
+      [] -> []
+      (x:xs) -> (x {getContent = fn (getContent x)}): xs
+

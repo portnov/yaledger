@@ -3,11 +3,13 @@
 
 module YaLedger.Reports.Details where
 
+import Control.Applicative ((<$>))
 import Control.Monad
 import Control.Monad.State
 import Control.Monad.Exception
 import Control.Monad.Exception.Base
 import Control.Monad.Loc
+import Data.Maybe
 import qualified Data.Map as M
 import Data.Dates
 import Data.Decimal
@@ -35,7 +37,7 @@ details' qry mbPath = do
               Nothing   -> gets lsAccountPlan
               Just path -> getAccountPlanItem (gets lsPosition) (gets lsAccountPlan) path
     forL plan $ \path acc -> do
-      entries <- readIOList (accountEntries acc)
+      entries <- getEntries acc
       res <- saldo qry acc
       wrapIO $ do
         putStrLn $ path ++ ":"

@@ -36,8 +36,7 @@ registry' qry mbPath = do
               Nothing   -> gets lsAccountPlan
               Just path -> getAccountPlanItem (gets lsPosition) (gets lsAccountPlan) path
     let accounts = map snd $ leafs plan
-    allEntries <- forM accounts $ \acc ->
-                      readIOList (accountEntries acc)
+    allEntries <- forM accounts getEntries
     totals <- do
               res <- treeSaldo qry plan
               case res of

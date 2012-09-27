@@ -2,6 +2,7 @@
 
 module YaLedger.Types.Common
   (Checked, Unchecked,
+   Sign (..),
    Credit, Debit, Free,
    IOList,
    Currency, Rates,
@@ -34,6 +35,15 @@ data Unchecked
 data Credit
 data Debit
 data Free
+
+class Sign t where
+  sign :: t -> Int
+
+instance Sign Credit where
+  sign _ = 1
+
+instance Sign Debit where
+  sign _ = -1
 
 type IOList a = IORef [a]
 

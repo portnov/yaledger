@@ -1,12 +1,19 @@
-{-# LANGUAGE GADTs #-}
+{-# LANGUAGE GADTs, FlexibleContexts #-}
+{- # OPTIONS_GHC -F -pgmF MonadLoc #-}
 
 module YaLedger.Reports.Common where
 
+import Control.Applicative ((<$>))
+import Control.Monad.Exception
+import Control.Monad.Loc
+import Data.Maybe
 import Data.Decimal
 
 import YaLedger.Types
 import YaLedger.Strings
 import YaLedger.Pretty
+import YaLedger.Monad
+import YaLedger.Exceptions
 
 showE :: Ext (Entry Decimal Checked) -> [[String]]
 showE (Ext {getDate = date, getContent = (CEntry dt cr rd)}) =
@@ -28,4 +35,17 @@ showEntries totals list =
       footer = ["    TOTALS: " ++ show totals]
   in  unlines $
           grid ["DATE", "CREDIT", "DEBIT", "RATES DIFF."] l ++ footer
+
+
+causedByExt :: Ext (Balance Checked) -> Maybe (Ext (Entry Decimal Checked))
+causedByExt (Ext date pos attrs p) =
+  Ext date pos attrs <$> causedBy p
+
+getEntries :: (Throws InternalError l,
+               HasBalances a)
+           => a
+           -> Ledger l [Ext (Entry Decimal Checked)]
+getEntries acc = do
+  balances <- readIOList (accountBalances acc)
+  return $ mapMaybe causedByExt balances
 
