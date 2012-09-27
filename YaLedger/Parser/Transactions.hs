@@ -47,6 +47,17 @@ getNParams name = do
     Nothing -> fail $ "Template was not defined (yet?): " ++ name
     Just n  -> return n
 
+pDateTime' :: DateTime -> Parser DateTime
+pDateTime' now = do
+  date <- pDate now
+  x <- optionMaybe $ do
+         comma
+         spaces
+         pTime
+  case x of
+    Nothing -> return date
+    Just t  -> return (date `addTime` t)
+
 pRecords :: Parser [Ext Record]
 pRecords = do
   rs <- pRecord `sepEndBy1` (many newline <?> "N2")
@@ -59,7 +70,7 @@ ext p = do
   char '@'
   space
   st <- getState
-  date <- try $ pDate (currentDate st)
+  date <- try $ pDateTime' (currentDate st)
   descr <- optionMaybe $ many1 $ noneOf "\n\r"
   newline
   attrs <- option M.empty $ braces $ pAttributes
