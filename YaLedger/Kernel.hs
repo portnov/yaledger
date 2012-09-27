@@ -65,7 +65,7 @@ balancePlus p history = do
             getAttributes = getAttributes p,
             getContent    = b {balanceValue = balanceValue b + value}
           }
-  let zero = Ext (getDate p) (getLocation p) (getAttributes p) zeroBalance
+  let zero = Ext (getDate p) (getLocation p) (getAttributes p) (Balance Nothing value)
   plusIOList zero update history
   message $ "balancePlus: " ++ show (getDate p) ++ ": " ++ show (getContent p)
 

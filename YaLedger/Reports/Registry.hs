@@ -35,12 +35,17 @@ registry' qry mbPath = do
     coa <- case mbPath of
               Nothing   -> gets lsCoA
               Just path -> getCoAItem (gets lsPosition) (gets lsCoA) path
-    let accounts = map snd $ leafs coa
-    allEntries <- forM accounts getEntries
     totals <- do
               res <- treeSaldo qry coa
               case res of
                 Leaf {..}   -> return leafData
                 Branch {..} -> return branchData
-    wrapIO $ putStrLn $ showEntries totals (nub $ sort $ concat allEntries)
+    case coa of
+      Leaf {leafData = account} -> do
+          balances <- readIOList (accountBalances account)
+          wrapIO $ putStrLn $ showEntriesBalances totals (nub $ sort balances)
+      Branch {} -> do
+          let accounts = map snd $ leafs coa
+          allEntries <- forM accounts getEntries
+          wrapIO $ putStrLn $ showEntries totals (nub $ sort $ concat allEntries)
   

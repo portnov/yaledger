@@ -1,4 +1,4 @@
-{-# LANGUAGE EmptyDataDecls, GADTs, FlexibleContexts, FlexibleInstances, UndecidableInstances, TypeSynonymInstances, DeriveDataTypeable, RecordWildCards, ScopedTypeVariables, MultiParamTypeClasses #-}
+{-# LANGUAGE EmptyDataDecls, GADTs, FlexibleContexts, FlexibleInstances, UndecidableInstances, TypeSynonymInstances, DeriveDataTypeable, RecordWildCards, ScopedTypeVariables, MultiParamTypeClasses, StandaloneDeriving #-}
 
 module YaLedger.Types.Ledger where
 
@@ -133,6 +133,8 @@ data Balance c =
     causedBy :: Maybe (Entry Decimal c),
     balanceValue :: Decimal
   }
+
+deriving instance Eq (Entry Decimal c) => Eq (Balance c)
 
 instance Show (Balance c) where
   show b = show (balanceValue b)

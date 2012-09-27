@@ -25,9 +25,23 @@ showE (Ext {getDate = date, getContent = (CEntry dt cr rd)}) =
       | rd == OneCurrency = []
       | otherwise = [show rd]
 
-    posting :: Posting Decimal t -> String
-    posting (DPosting acc x) = getName acc ++ ": " ++ show (roundTo 4 x) ++ getCurrency acc
-    posting (CPosting acc x) = getName acc ++ ": " ++ show (roundTo 4 x) ++ getCurrency acc
+showB :: Currency -> Ext (Balance Checked) -> [[String]]
+showB currency (Ext {getDate = date, getContent = balance}) =
+  let bd = balanceValue balance
+      dt :: [Posting Decimal Debit]
+      cr :: [Posting Decimal Credit]
+      (dt, cr) = case causedBy balance of
+                   Nothing -> ([], [])
+                   Just (CEntry dt cr _) -> (dt, cr)
+      m = max (length cr) (length dt)
+      padding = replicate (m-1) ""
+  in  [prettyPrint date: padding,
+       map posting cr, map posting dt,
+       padding ++ [show bd ++ currency]]
+
+posting :: Posting Decimal t -> String
+posting (DPosting acc x) = getName acc ++ ": " ++ show (roundTo 4 x) ++ getCurrency acc
+posting (CPosting acc x) = getName acc ++ ": " ++ show (roundTo 4 x) ++ getCurrency acc
 
 showEntries :: Amount -> [Ext (Entry Decimal Checked)] -> String
 showEntries totals list =
@@ -36,6 +50,12 @@ showEntries totals list =
   in  unlines $
           grid ["DATE", "CREDIT", "DEBIT", "RATES DIFF."] l ++ footer
 
+showEntriesBalances :: Amount -> [Ext (Balance Checked)] -> String
+showEntriesBalances totals list =
+  let l = map (showB $ getCurrency totals) list
+      footer = ["    TOTALS: " ++ show totals]
+  in  unlines $
+          grid ["DATE", "CREDIT", "DEBIT", "BALANCE B/D"] l ++ footer
 
 causedByExt :: Ext (Balance Checked) -> Maybe (Ext (Entry Decimal Checked))
 causedByExt (Ext date pos attrs p) =
