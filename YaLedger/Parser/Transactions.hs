@@ -245,7 +245,7 @@ pCreditPosting p = do
   spaces
   reserved "cr"
   accPath <- pPath
-  acc <- getAccount getPosition (accountPlan <$> getState) accPath
+  acc <- getAccountT AGCredit getPosition (accountPlan <$> getState) accPath
   account <- case acc of
                WFree   _ acc -> return $ Left acc
                WCredit _ acc -> return $ Right acc
@@ -260,7 +260,7 @@ pDebitPosting p = do
   spaces
   reserved "dr"
   accPath <- pPath
-  acc <- getAccount getPosition (accountPlan <$> getState) accPath
+  acc <- getAccountT AGDebit getPosition (accountPlan <$> getState) accPath
   account <- case acc of
                WFree   _ acc -> return $ Left acc
                WDebit _ acc -> return $ Right acc
