@@ -59,13 +59,13 @@ first fn (x:xs) =
       Just y  -> Just y
       Nothing -> first fn xs
 
-filterPlan :: CQuery -> AccountPlan -> [AnyAccount]
-filterPlan qry@(CQuery {..}) (Branch {..}) =
+filterCoA :: CQuery -> ChartOfAccounts -> [AnyAccount]
+filterCoA qry@(CQuery {..}) (Branch {..}) =
     if (cqType `matchT` agType branchData) || (agType branchData == AGFree)
-      then concatMap (filterPlan qry) branchChildren
+      then concatMap (filterCoA qry) branchChildren
       else []
 
-filterPlan (CQuery {..}) (Leaf {..}) =
+filterCoA (CQuery {..}) (Leaf {..}) =
     if (getID leafData `notElem` cqExcept) &&
        ((cqType `matchT` accountType leafData) ||
         (accountType leafData == AGFree))
@@ -75,9 +75,9 @@ filterPlan (CQuery {..}) (Leaf {..}) =
              else []
       else []
 
-runCQuery :: CQuery -> AccountPlan -> Maybe AnyAccount
-runCQuery qry plan =
-  case filterPlan qry plan of
+runCQuery :: CQuery -> ChartOfAccounts -> Maybe AnyAccount
+runCQuery qry coa =
+  case filterCoA qry coa of
     []  -> Nothing
     [x] -> Just x
     list -> Just $ head $ filterByAddAttributes (cqAttributes qry) list
@@ -87,11 +87,11 @@ inRange i (m, n) = (m < i) && (i <= n)
 
 -- | List of groups IDs of all account's parent groups
 groupIDs :: AccountID         -- ^ Account ID
-         -> AccountPlan
+         -> ChartOfAccounts
          -> Maybe [GroupID] -- ^ Groups IDs
 groupIDs i tree = go [] i tree
   where
-    go :: [GroupID] -> AccountID -> AccountPlan -> Maybe [GroupID]
+    go :: [GroupID] -> AccountID -> ChartOfAccounts -> Maybe [GroupID]
     go xs i (Branch _ ag children)
       | i `inRange` agRange ag = do
         let accs = [acc | Leaf _ acc <- children]
@@ -105,37 +105,37 @@ groupIDs i tree = go [] i tree
       | otherwise      = Nothing
 
 -- | Lookup for corresponding account by account map
-lookupAMap :: AccountPlan
+lookupAMap :: ChartOfAccounts
            -> AccountMap
            -> CQuery
            -> [AccountID]       -- ^ Account IDs
            -> Maybe AnyAccount
-lookupAMap plan amap qry is = listToMaybe $ catMaybes $ concat [map (good i) amap | i <- is]
+lookupAMap coa amap qry is = listToMaybe $ catMaybes $ concat [map (good i) amap | i <- is]
   where
     good :: AccountID -> AMEntry -> Maybe AnyAccount
-    good i (AMAccount j :=> ToAccountPlan r)
+    good i (AMAccount j :=> ToCoA r)
       | i == j    = runCQuery qry r
       | otherwise = Nothing
     good i (AMAccount j :=> ToAttributes as)
-      | i == j    = runCQuery (qry {cqAttributes = as `M.union` cqAttributes qry}) plan
+      | i == j    = runCQuery (qry {cqAttributes = as `M.union` cqAttributes qry}) coa
       | otherwise = Nothing
-    good i (AMGroup g :=> ToAccountPlan r) =
-      let gids = fromMaybe [] $ groupIDs i plan
+    good i (AMGroup g :=> ToCoA r) =
+      let gids = fromMaybe [] $ groupIDs i coa
       in  if g `elem` gids
             then runCQuery qry r
             else Nothing
     good i (AMGroup g :=> ToAttributes as) =
-      let gids = fromMaybe [] $ groupIDs i plan
+      let gids = fromMaybe [] $ groupIDs i coa
           qry' = qry {cqAttributes = as `M.union` cqAttributes qry}
       in  if g `elem` gids
-            then runCQuery qry' plan
+            then runCQuery qry' coa
             else Nothing
-    good _ (AMAttributes as :=> ToAccountPlan r)
+    good _ (AMAttributes as :=> ToCoA r)
       | cqAttributes qry `matchAll` as = runCQuery qry r
       | otherwise = Nothing
     good _ (AMAttributes as :=> ToAttributes as')
       | cqAttributes qry `matchAll` as =
             let attrs = as' `M.union` cqAttributes qry
-            in  runCQuery (qry {cqAttributes = attrs}) plan
+            in  runCQuery (qry {cqAttributes = attrs}) coa
       | otherwise = Nothing
 

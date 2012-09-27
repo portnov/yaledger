@@ -63,7 +63,7 @@ instance ReportParameter DateTime where
 instance ReportParameter AnyAccount where
   parseParameter s = do
     let path = mkPath s
-    getAccount (gets lsPosition) (gets lsAccountPlan) path
+    getAccount (gets lsPosition) (gets lsCoA) path
       `catchWithSrcLoc`
         (\l (e :: NotAnAccount) ->
              rethrow l (InvalidCmdLine $ show e))

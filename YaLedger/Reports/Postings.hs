@@ -31,10 +31,10 @@ postings _ mbPath = do
     (\l (e :: InvalidPath) -> handler l e)
 
 postings' mbPath = do
-  plan <- case mbPath of
-            Nothing   -> gets lsAccountPlan
-            Just path -> getAccountPlanItem (gets lsPosition) (gets lsAccountPlan) path
-  forL plan $ \path acc -> do
+  coa <- case mbPath of
+            Nothing   -> gets lsCoA
+            Just path -> getCoAItem (gets lsPosition) (gets lsCoA) path
+  forL coa $ \path acc -> do
       credit <- readIOList =<< creditPostings acc
       debit  <- readIOList =<< debitPostings  acc
       let postings = sort (map left credit ++ map right debit)

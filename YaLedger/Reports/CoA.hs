@@ -1,7 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables, FlexibleContexts, OverlappingInstances, GADTs, RecordWildCards #-}
 {-# OPTIONS_GHC -F -pgmF MonadLoc #-}
 
-module YaLedger.Reports.Plan where
+module YaLedger.Reports.CoA where
 
 import Control.Monad.State
 import Control.Monad.Exception
@@ -16,19 +16,20 @@ import YaLedger.Monad
 import YaLedger.Exceptions
 import YaLedger.Reports.Common
 
-showPlan :: Query -> Maybe Path -> Ledger NoExceptions ()
-showPlan _ mbPath = showPlan' mbPath
+showCoA :: Query -> Maybe Path -> Ledger NoExceptions ()
+showCoA _ mbPath = showCoA' mbPath
   `catchWithSrcLoc`
     (\l (e :: InternalError) -> handler l e)
   `catchWithSrcLoc`
     (\l (e :: InvalidPath) -> handler l e)
 
-showPlan' :: (Throws InvalidPath l,
+showCoA' :: (Throws InvalidPath l,
               Throws InternalError l)
           => Maybe Path
           -> Ledger l ()
-showPlan' mbPath = do
-  plan <- case mbPath of
-            Nothing   -> gets lsAccountPlan
-            Just path -> getAccountPlanItem (gets lsPosition) (gets lsAccountPlan) path
-  wrapIO $ putStrLn $ show plan
+showCoA' mbPath = do
+  coa <- case mbPath of
+            Nothing   -> gets lsCoA
+            Just path -> getCoAItem (gets lsPosition) (gets lsCoA) path
+  wrapIO $ putStrLn $ show coa
+

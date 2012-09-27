@@ -14,7 +14,7 @@ import YaLedger.Kernel.Common
 import YaLedger.Parser.Common
 
 data PState = PState {
-    accountPlan :: AccountPlan }
+    getCoA :: ChartOfAccounts }
   deriving (Eq, Show)
 
 type Parser a = Parsec String PState a
@@ -30,13 +30,13 @@ pMapEntry = do
   spaces
   reservedOp "->"
   spaces
-  target <- try pToAttributes <|> pToAccountPlan
+  target <- try pToAttributes <|> pToCoA
   return $ ptr :=> target
 
-pToAccountPlan :: Parser AMTo
-pToAccountPlan = do
+pToCoA :: Parser AMTo
+pToCoA = do
   tgtPath <- pPath
-  ToAccountPlan <$> getAccountPlanItem getPosition (accountPlan <$> getState) tgtPath
+  ToCoA <$> getCoAItem getPosition (getCoA <$> getState) tgtPath
 
 pToAttributes :: Parser AMTo
 pToAttributes =
@@ -47,14 +47,14 @@ pAccount = do
   reserved "account"
   spaces
   path <- pPath
-  getID <$> getAccount getPosition (accountPlan <$> getState) path
+  getID <$> getAccount getPosition (getCoA <$> getState) path
 
 pGroup :: Parser GroupID
 pGroup = do
   reserved "group"
   spaces
   path <- pPath
-  x <- getAccountPlanItem getPosition (accountPlan <$> getState) path
+  x <- getCoAItem getPosition (getCoA <$> getState) path
   case x of
     Branch {branchData = ag} -> return (agID ag)
     _ -> fail $ "This is an account, not accounts group:" ++ intercalate "/" path

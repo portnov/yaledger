@@ -170,7 +170,7 @@ sumPostings es = sum (map go es)
     go (CPosting _ x) = x
     go (DPosting _ x) = x
 
-accountByID :: AccountID -> AccountPlan -> Maybe AnyAccount
+accountByID :: AccountID -> ChartOfAccounts -> Maybe AnyAccount
 accountByID i (Branch _ ag children)
   | i `inRange` agRange ag = do
       let accs = [acc | Leaf _ acc <- children]
@@ -201,8 +201,8 @@ accountAsDebit (WFree   _ a) = return $ Left a
 
 accountByIDM :: AccountID -> Ledger l AnyAccount
 accountByIDM aid = do
-  plan <- gets lsAccountPlan
-  case accountByID aid plan of
+  coa <- gets lsCoA
+  case accountByID aid coa of
    Nothing -> fail $ "Internal error: no such account: " ++ show aid
    Just acc -> return acc
 
@@ -332,7 +332,7 @@ lookupCorrespondingAccount :: (Throws NoCorrespondingAccountFound l)
                            -> Maybe AnyAccount
                            -> Ledger l AnyAccount
 lookupCorrespondingAccount attrs source accounts value currencies mbCorr = do
-  plan <- gets lsAccountPlan
+  coa <- gets lsCoA
   amap <- gets lsAccountMap
   let qry = CQuery {
                cqType = if value < 0
@@ -342,8 +342,8 @@ lookupCorrespondingAccount attrs source accounts value currencies mbCorr = do
                cqExcept = accounts,
                cqAttributes = M.insert "source" (Exactly source) attrs
              }
-  let mbAccount = runCQuery qry plan
-      mbByMap = lookupAMap plan amap qry accounts
+  let mbAccount = runCQuery qry coa
+      mbByMap = lookupAMap coa amap qry accounts
   case mbCorr `mplus` mbByMap `mplus` mbAccount of
     Nothing -> throwP (NoCorrespondingAccountFound qry)
     Just acc -> return acc
@@ -424,7 +424,7 @@ sumGroup ag ams = do
 treeSaldo :: (Throws InternalError l,
               Throws NoSuchRate l)
           => Query
-          -> AccountPlan
+          -> ChartOfAccounts
           -> Ledger l (Tree Amount Amount)
-treeSaldo qry plan = mapTreeM sumGroup (saldo qry) plan
+treeSaldo qry coa = mapTreeM sumGroup (saldo qry) coa
 

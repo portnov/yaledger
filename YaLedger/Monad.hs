@@ -24,7 +24,7 @@ type Ledger l a = EMT l LedgerMonad a
 data LedgerState = LedgerState {
     lsStartDate :: DateTime,
     lsDefaultCurrency :: Currency,
-    lsAccountPlan :: AccountPlan,
+    lsCoA :: ChartOfAccounts,
     lsAccountMap :: AccountMap,
     lsTemplates :: M.Map String (Attributes, Transaction Param),
     lsRules :: [(String, Attributes, Rule)],
@@ -38,13 +38,13 @@ instance MonadState LedgerState (EMT l LedgerMonad) where
   get = lift get
   put s = lift (put s)
 
-emptyLedgerState :: AccountPlan -> AccountMap -> [Ext Record] -> IO LedgerState
-emptyLedgerState plan amap records = do
+emptyLedgerState :: ChartOfAccounts -> AccountMap -> [Ext Record] -> IO LedgerState
+emptyLedgerState coa amap records = do
   now <- getCurrentDateTime
   return $ LedgerState {
              lsStartDate = now,
              lsDefaultCurrency = "",
-             lsAccountPlan = plan,
+             lsCoA = coa,
              lsAccountMap = amap,
              lsTemplates = M.empty,
              lsRules = [],
@@ -75,12 +75,12 @@ message :: Throws InternalError l => String -> Ledger l ()
 message str =
   wrapIO $ putStrLn $ ">> " ++ str
 
-runLedger :: AccountPlan -> AccountMap -> [Ext Record] -> LedgerMonad a -> IO a
-runLedger plan amap records action = do
+runLedger :: ChartOfAccounts -> AccountMap -> [Ext Record] -> LedgerMonad a -> IO a
+runLedger coa amap records action = do
   let LedgerMonad emt = action
-  st <- emptyLedgerState plan amap records
+  st <- emptyLedgerState coa amap records
   -- Use currency of root accounts group as default currency
-  (res, _) <- runStateT emt (st {lsDefaultCurrency = agCurrency $ branchData plan})
+  (res, _) <- runStateT emt (st {lsDefaultCurrency = agCurrency $ branchData coa})
   return res
 
 -- * IOList

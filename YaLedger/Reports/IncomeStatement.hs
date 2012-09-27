@@ -34,9 +34,9 @@ incomeStatement qry mbPath =
     (\l (e :: NoSuchRate) -> handler l e)
 
 incomeStatement' qry mbPath = do
-    plan <- case mbPath of
-              Nothing   -> gets lsAccountPlan
-              Just path -> getAccountPlanItem (gets lsPosition) (gets lsAccountPlan) path
+    coa <- case mbPath of
+              Nothing   -> gets lsCoA
+              Just path -> getCoAItem (gets lsPosition) (gets lsCoA) path
     let isCredit (WCredit _ _) = True
         isCredit _             = False
 
@@ -46,8 +46,8 @@ incomeStatement' qry mbPath = do
         amount (Branch {..}) = branchData
         amount (Leaf   {..}) = leafData
 
-        incomes  = filterLeafs isDebit  plan
-        outcomes = filterLeafs isCredit plan
+        incomes  = filterLeafs isDebit  coa
+        outcomes = filterLeafs isCredit coa
 
     incomes'  <- mapTree negateAmount negateAmount <$> treeSaldo qry incomes
     outcomes' <- treeSaldo qry outcomes

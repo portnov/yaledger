@@ -109,8 +109,8 @@ csv sep str = map parseRow $ lines str
   where
     parseRow = split sep
 
-parseCSV :: ParserConfig -> FilePath -> AccountPlan -> String -> IO [Ext Record]
-parseCSV pc path plan str = zipWithM (convert pc plan path) [1..] $ csv (pcSeparator pc) str
+parseCSV :: ParserConfig -> FilePath -> ChartOfAccounts -> String -> IO [Ext Record]
+parseCSV pc path coa str = zipWithM (convert pc coa path) [1..] $ csv (pcSeparator pc) str
 
 field :: FieldConfig -> [String] -> String
 field (FixedValue str) _ = str
@@ -131,8 +131,8 @@ field fc row =
 
 readSum str = read $ filter (/= ' ') str
 
-convert :: ParserConfig -> AccountPlan -> FilePath -> Int -> [String] -> IO (Ext Record)
-convert pc plan path rowN row = do
+convert :: ParserConfig -> ChartOfAccounts -> FilePath -> Int -> [String] -> IO (Ext Record)
+convert pc coa path rowN row = do
   let dateStr = field (pcDate pc) row
       currency = field (pcCurrency pc) row
       amountStr = field (pcAmount pc) row
@@ -145,7 +145,7 @@ convert pc plan path rowN row = do
       attrs = M.fromList [p | p@(n,v) <- as, v /= Exactly ""]
 
       lookupAccount path =
-         case lookupTree (mkPath path) plan of
+         case lookupTree (mkPath path) coa of
            [] -> fail $ "No such account: " ++ path
            [a] -> return a
            as -> fail "Ambigous account specification"
@@ -194,9 +194,9 @@ dposting acc x =
     WFree   _ a -> return [DPosting (Left  a) x]
     WCredit  _ _ -> fail $ "Invalid account type: credit instead of debit"
 
-loadCSV :: FilePath -> AccountPlan -> FilePath -> IO [Ext Record]
-loadCSV configPath plan csvPath = do
+loadCSV :: FilePath -> ChartOfAccounts -> FilePath -> IO [Ext Record]
+loadCSV configPath coa csvPath = do
   config <- loadParserConfig configPath 
   csv <- readFile csvPath
-  parseCSV config csvPath plan csv
+  parseCSV config csvPath coa csv
 

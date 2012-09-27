@@ -26,9 +26,9 @@ matchC (CPosting acc x) cond = check ECredit acc x cond
 matchC (DPosting acc x) cond = check EDebit  acc x cond
 
 check t acc x (Condition {..}) = do
-  plan <- gets lsAccountPlan
+  coa <- gets lsCoA
   let accID = getID acc
-  let grps = fromMaybe [] $ groupIDs accID plan
+  let grps = fromMaybe [] $ groupIDs accID coa
       action = maybe [ECredit, EDebit] (\x -> [x]) cAction
   if (t `elem` action) &&
      ((accID `elem` cAccounts) ||

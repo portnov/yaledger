@@ -48,8 +48,8 @@ parseCmdLine = do
   argv <- getArgs
   now <-  getCurrentDateTime
   defaultOptions <- loadConfig
-  let planF file opts =
-          opts {accountPlan = Just file}
+  let coaF file opts =
+          opts {chartOfAccounts = Just file}
 
       mapF file opts =
           opts {accountMap = Just file}
@@ -87,7 +87,7 @@ parseCmdLine = do
       helpF _ = Help
   let header = "Usage: yaledger [OPTIONS] [REPORT] [REPORT PARAMS]"
   let options = [
-       Option "P" ["plan"] (ReqArg planF "FILE") "Accounts plan file to use",
+       Option "P" ["coa"] (ReqArg coaF "FILE") "Chart of accounts file to use",
        Option "M" ["map"]  (ReqArg mapF  "FILE") "Accounts map file to use",
        Option "f" ["file"] (ReqArg fileF "FILE(s)") "Input file[s]",
        Option "s" ["start"] (ReqArg startF "DATE") "Process only transactions after this date",
@@ -128,7 +128,7 @@ defaultMain list = do
            [] -> putStrLn $ "No such report: " ++ report ++
                             "\nSupported reports are: " ++
                             unwords (map fst list)
-           [fn] -> run (accountPlan options)
+           [fn] -> run (chartOfAccounts options)
                        (accountMap options)
                        (parserConfigs options)
                        (query options)
@@ -140,11 +140,11 @@ defaultMain list = do
 tryE action =
   (Right <$> action) `catchWithSrcLoc` (\l e -> return (Left (l, e)))
 
-run (Just planPath) (Just mapPath) configs qry inputPaths (Report report) params = do
-  plan <- readPlan planPath
-  amap <- readAMap plan mapPath
-  records <- parseInputFiles configs plan inputPaths
-  runLedger plan amap records $ runEMT $ do
+run (Just coaPath) (Just mapPath) configs qry inputPaths (Report report) params = do
+  coa <- readCoA coaPath
+  amap <- readAMap coa mapPath
+  records <- parseInputFiles configs coa inputPaths
+  runLedger coa amap records $ runEMT $ do
       t <- tryE $ processRecords (filter (checkQuery qry) records)
       case t of
         Left (l, e :: SomeException) -> wrapIO $ putStrLn $ showExceptionWithTrace l e
@@ -155,5 +155,5 @@ run (Just planPath) (Just mapPath) configs qry inputPaths (Report report) params
                              wrapIO (putStrLn $ showExceptionWithTrace loc e)
                              return (return ()))
               x
-run _ _ _ _ _ _ _ = error "Impossible: no plan or map file."
+run _ _ _ _ _ _ _ = error "Impossible: no coa or map file."
 

@@ -1,5 +1,5 @@
 
-module YaLedger.Parser.Plan where
+module YaLedger.Parser.CoA where
 
 import Control.Applicative ((<$>))
 import Control.Monad.Trans
@@ -93,7 +93,7 @@ pAccount = do
   currency <- lookupCurrency attrs
   account tp name aid currency attrs
 
-pAccountGroup :: Parser AccountPlan 
+pAccountGroup :: Parser ChartOfAccounts 
 pAccountGroup = do
   st <- getState
   symbol "group"
@@ -122,6 +122,6 @@ pAccountGroup = do
   putState $ st {lastAID = lastAID st1, lastGID = lastGID st1}
   return $ branch name (agData range) children
 
-mkLeaf :: AnyAccount -> AccountPlan
+mkLeaf :: AnyAccount -> ChartOfAccounts
 mkLeaf acc = leaf (getName acc) acc
 

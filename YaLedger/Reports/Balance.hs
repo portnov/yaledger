@@ -22,10 +22,10 @@ balance :: Query
         -> Maybe Path
         -> Ledger NoExceptions ()
 balance qry mbPath = (do
-    plan <- case mbPath of
-              Nothing   -> gets lsAccountPlan
-              Just path -> getAccountPlanItem (gets lsPosition) (gets lsAccountPlan) path
-    res <- treeSaldo qry plan
+    coa <- case mbPath of
+              Nothing   -> gets lsCoA
+              Just path -> getCoAItem (gets lsPosition) (gets lsCoA) path
+    res <- treeSaldo qry coa
     wrapIO $ print res)
   `catchWithSrcLoc`
     (\l (e :: InvalidPath) -> handler l e)

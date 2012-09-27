@@ -26,11 +26,11 @@ instance Show AMFrom where
   show (AMAttributes as) = "attributes " ++ showA as
 
 data AMTo =
-    ToAccountPlan AccountPlan
+    ToCoA ChartOfAccounts
   | ToAttributes Attributes
   deriving (Eq)
 
 instance Show AMTo where
-  show (ToAccountPlan p) = "account plan item:\n" ++ show p
+  show (ToCoA p) = "account plan item:\n" ++ show p
   show (ToAttributes as) = "attributes " ++ showA as
 

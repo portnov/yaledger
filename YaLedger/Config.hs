@@ -22,7 +22,7 @@ import YaLedger.Parser.Common (pAttributeValue)
 
 data Options =
     Options {
-      accountPlan :: Maybe FilePath,
+      chartOfAccounts :: Maybe FilePath,
       accountMap :: Maybe FilePath,
       files :: [FilePath],
       query :: Query,
@@ -37,7 +37,7 @@ instance Monoid Options where
   mappend o Help = o
   mappend o1 o2 =
     Options {
-      accountPlan = accountPlan o1 `mappend` accountPlan o2,
+      chartOfAccounts = chartOfAccounts o1 `mappend` chartOfAccounts o2,
       accountMap  = accountMap  o1 `mappend` accountMap o2,
       files = if null (files o2) then files o1 else files o2,
       query = query o1 `mappend` query o2,
@@ -55,7 +55,7 @@ instance Monoid Query where
 instance FromJSON Options where
   parseJSON (Object v) =
     Options
-      <$> v .:? "accounts-plan"
+      <$> v .:? "chart-of-accounts"
       <*> v .:? "accounts-map"
       <*> v .:?  "files" .!= []
       <*> v .:? "query" .!= Query Nothing Nothing M.empty
@@ -107,7 +107,7 @@ getDefaultOptions = do
   documents <- getUserDir "DOCUMENTS"
   let inputFile = documents </> "yaledger" </> "default.yaledger"
   return $ Options {
-        accountPlan = Just (configDir </> "default.accounts"),
+        chartOfAccounts = Just (configDir </> "default.accounts"),
         accountMap  = Just (configDir </> "default.map"),
         files = [inputFile],
         query = Query {

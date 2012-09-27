@@ -33,10 +33,10 @@ details qry mbPath =
     (\l (e :: NoSuchRate) -> handler l e)
 
 details' qry mbPath = do
-    plan <- case mbPath of
-              Nothing   -> gets lsAccountPlan
-              Just path -> getAccountPlanItem (gets lsPosition) (gets lsAccountPlan) path
-    forL plan $ \path acc -> do
+    coa <- case mbPath of
+              Nothing   -> gets lsCoA
+              Just path -> getCoAItem (gets lsPosition) (gets lsCoA) path
+    forL coa $ \path acc -> do
       entries <- getEntries acc
       res <- saldo qry acc
       wrapIO $ do

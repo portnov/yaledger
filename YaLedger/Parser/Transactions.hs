@@ -20,18 +20,18 @@ import YaLedger.Parser.Common
 import Debug.Trace
 
 data PState = PState {
-  accountPlan :: AccountPlan,
+  getCoA :: ChartOfAccounts,
   currentDate :: DateTime,
   templates :: M.Map String Int -- ^ Number of parameters
   }
 
 type Parser a = Parsec String PState a
 
-emptyPState :: AccountPlan -> IO PState
-emptyPState plan = do
+emptyPState :: ChartOfAccounts -> IO PState
+emptyPState coa = do
   now <- getCurrentDateTime
   return $ PState {
-             accountPlan = plan,
+             getCoA = coa,
              currentDate = now,
              templates = M.empty }
 
@@ -148,7 +148,7 @@ pCondition = do
 pRuleObject :: Parser (Either AccountID GroupID)
 pRuleObject = do
   path <- pPath
-  item <- getAccountPlanItem getPosition (accountPlan <$> getState) path
+  item <- getCoAItem getPosition (getCoA <$> getState) path
   case item of
     Leaf {..}   -> return $ Left  (getID leafData)
     Branch {..} -> return $ Right (getID branchData)
@@ -199,7 +199,7 @@ pEntry p = do
       dt = rights es
   account <- case corr of
                Nothing -> return Nothing
-               Just path -> Just <$> getAccount getPosition (accountPlan <$> getState) path
+               Just path -> Just <$> getAccount getPosition (getCoA <$> getState) path
   return $ TEntry $ UEntry dt cr account []
 
 pCall :: Parser (Transaction v)
@@ -220,7 +220,7 @@ pReconciliate p = do
   reserved "reconciliate"
   spaces
   path <- pPath
-  account <- getAccount getPosition (accountPlan <$> getState) path 
+  account <- getAccount getPosition (getCoA <$> getState) path 
   spaces
   x <- p
   return $ TReconciliate account x
@@ -245,7 +245,7 @@ pCreditPosting p = do
   spaces
   reserved "cr"
   accPath <- pPath
-  acc <- getAccountT AGCredit getPosition (accountPlan <$> getState) accPath
+  acc <- getAccountT AGCredit getPosition (getCoA <$> getState) accPath
   account <- case acc of
                WFree   _ acc -> return $ Left acc
                WCredit _ acc -> return $ Right acc
@@ -260,7 +260,7 @@ pDebitPosting p = do
   spaces
   reserved "dr"
   accPath <- pPath
-  acc <- getAccountT AGDebit getPosition (accountPlan <$> getState) accPath
+  acc <- getAccountT AGDebit getPosition (getCoA <$> getState) accPath
   account <- case acc of
                WFree   _ acc -> return $ Left acc
                WDebit _ acc -> return $ Right acc

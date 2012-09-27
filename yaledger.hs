@@ -4,7 +4,7 @@ module Main where
 import YaLedger.Types.Reports
 import YaLedger.Main
 import YaLedger.Reports.Cat
-import YaLedger.Reports.Plan
+import YaLedger.Reports.CoA
 import YaLedger.Reports.Balance
 import YaLedger.Reports.Details
 import YaLedger.Reports.Registry
@@ -17,6 +17,6 @@ main =
                ("registry", Report registry),
                ("postings", Report postings),
                ("details",  Report details),
-               ("plan",     Report showPlan),
+               ("accounts", Report showCoA),
                ("cat",      Report cat),
                ("incomestatement", Report incomeStatement)]

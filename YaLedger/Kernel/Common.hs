@@ -1,5 +1,6 @@
 {-# LANGUAGE GADTs, RecordWildCards, ScopedTypeVariables, FlexibleContexts, FlexibleInstances #-}
-
+-- | This module contains kernel functions, which do not
+-- require Ledger monad.
 module YaLedger.Kernel.Common where
 
 import Control.Applicative ((<$>))
@@ -11,8 +12,9 @@ import YaLedger.Exceptions
 
 import Debug.Trace
 
-filterByAccountType :: AccountGroupType -> [AccountPlan] -> [AccountPlan]
-filterByAccountType t plans = filter (check t) plans
+-- | Filter list of CoA items by account type
+filterByAccountType :: AccountGroupType -> [ChartOfAccounts] -> [ChartOfAccounts]
+filterByAccountType t coas = filter (check t) coas
   where
     check AGCredit (Leaf {leafData = WCredit _ _}) = True
     check AGCredit (Leaf {leafData = WFree   _ _}) = True
@@ -22,31 +24,31 @@ filterByAccountType t plans = filter (check t) plans
     check t b@(Branch {}) = agType (branchData b) == t
     check _ _ = False
 
-getAccountPlanItem :: (Monad m,
-                       Failure InvalidPath m)
-                   => (m SourcePos)
-                   -> (m AccountPlan)
-                   -> Path
-                   -> m AccountPlan
-getAccountPlanItem getPos fn path = do
-  plan <- fn
+getCoAItem :: (Monad m,
+               Failure InvalidPath m)
+           => (m SourcePos)
+           -> (m ChartOfAccounts)
+           -> Path
+           -> m ChartOfAccounts
+getCoAItem getPos fn path = do
+  coa <- fn
   pos <- getPos
-  case search' plan path of
+  case search' coa path of
     [] -> failure (InvalidPath path [] pos)
     [a] -> return a
     as -> failure (InvalidPath path as pos)
 
-getAccountPlanItemT :: (Monad m,
-                       Failure InvalidPath m)
-                   => AccountGroupType
-                   -> (m SourcePos)
-                   -> (m AccountPlan)
-                   -> Path
-                   -> m AccountPlan
-getAccountPlanItemT t getPos fn path = do
-  plan <- fn
+getCoAItemT :: (Monad m,
+                Failure InvalidPath m)
+            => AccountGroupType
+            -> (m SourcePos)
+            -> (m ChartOfAccounts)
+            -> Path
+            -> m ChartOfAccounts
+getCoAItemT t getPos fn path = do
+  coa <- fn
   pos <- getPos
-  case search' plan path of
+  case search' coa path of
     [] -> failure (InvalidPath path [] pos)
     [a] -> return a
     as -> case filterByAccountType t as of
@@ -58,11 +60,11 @@ getAccount :: (Monad m,
                Failure InvalidPath m,
                Failure NotAnAccount m)
            => (m SourcePos)
-           -> (m AccountPlan)
+           -> (m ChartOfAccounts)
            -> Path
            -> m AnyAccount
 getAccount getPos fn path = do
-  x <- getAccountPlanItem getPos fn path
+  x <- getCoAItem getPos fn path
   pos <- getPos
   case x of
     Leaf {} -> return (leafData x)
@@ -73,14 +75,13 @@ getAccountT :: (Monad m,
                Failure NotAnAccount m)
            => AccountGroupType
            -> (m SourcePos)
-           -> (m AccountPlan)
+           -> (m ChartOfAccounts)
            -> Path
            -> m AnyAccount
 getAccountT t getPos fn path = do
-  x <- getAccountPlanItemT t getPos fn path
+  x <- getCoAItemT t getPos fn path
   pos <- getPos
   case x of
     Leaf {} -> return (leafData x)
     _ -> failure (NotAnAccount path pos)
-
 

@@ -32,13 +32,13 @@ registry qry mbPath =
     (\l (e :: NoSuchRate) -> handler l e)
 
 registry' qry mbPath = do
-    plan <- case mbPath of
-              Nothing   -> gets lsAccountPlan
-              Just path -> getAccountPlanItem (gets lsPosition) (gets lsAccountPlan) path
-    let accounts = map snd $ leafs plan
+    coa <- case mbPath of
+              Nothing   -> gets lsCoA
+              Just path -> getCoAItem (gets lsPosition) (gets lsCoA) path
+    let accounts = map snd $ leafs coa
     allEntries <- forM accounts getEntries
     totals <- do
-              res <- treeSaldo qry plan
+              res <- treeSaldo qry coa
               case res of
                 Leaf {..}   -> return leafData
                 Branch {..} -> return branchData

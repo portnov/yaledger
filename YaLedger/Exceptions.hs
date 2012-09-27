@@ -76,7 +76,7 @@ instance Show InvalidCmdLine where
 
 instance Exception InvalidCmdLine
 
-data InvalidPath = InvalidPath Path [AccountPlan] SourcePos
+data InvalidPath = InvalidPath Path [ChartOfAccounts] SourcePos
   deriving (Typeable)
 
 instance Show InvalidPath where
