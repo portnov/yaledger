@@ -1,5 +1,5 @@
 {-# LANGUAGE GADTs, RecordWildCards, ScopedTypeVariables, FlexibleContexts, FlexibleInstances #-}
-{- # OPTIONS_GHC -F -pgmF MonadLoc #-}
+{- OPTIONS_GHC -F -pgmF MonadLoc -}
 
 module YaLedger.Processor where
 

@@ -1,5 +1,5 @@
 {-# LANGUAGE GADTs, RecordWildCards, ScopedTypeVariables, FlexibleContexts, FlexibleInstances #-}
-{- # OPTIONS_GHC -F -pgmF MonadLoc #-}
+{-# OPTIONS_GHC -F -pgmF MonadLoc #-}
 
 module YaLedger.Kernel
   (module YaLedger.Kernel.Common,
@@ -292,11 +292,11 @@ convertDecimal to (CPosting acc a) = do
 
 -- | Check an entry:
 --
--- * Enshure that credit == debit; if no, add needed postings.
+--  * Enshure that credit == debit; if no, add needed postings.
 --
--- * Convert amounts in each posting to it's account currency.
+--  * Convert amounts in each posting to it's account currency.
 --
--- * Calculate exchange rate difference.
+--  * Calculate exchange rate difference.
 --
 checkEntry :: (Throws NoSuchRate l,
                Throws NoCorrespondingAccountFound l,

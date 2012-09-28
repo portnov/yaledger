@@ -154,7 +154,6 @@ noChecks = BalanceChecks Nothing Nothing Nothing
 
 -- | Generic account type.
 data Account t where
-  -- | Credit account
   CAccount :: {
     creditAccountName     :: String,
     creditAccountID       :: AccountID,
@@ -165,7 +164,6 @@ data Account t where
     creditAccountPostings :: History (Posting Decimal) Credit
   } -> Account Credit
 
-  -- | Debit account
   DAccount :: {
     debitAccountName     :: String,
     debitAccountID       :: AccountID,
@@ -175,7 +173,6 @@ data Account t where
     debitAccountPostings :: History (Posting Decimal) Debit
   } -> Account Debit
 
-  -- | Free (credit \/ debit) account
   FAccount :: {
     freeAccountName           :: String,
     freeAccountID             :: AccountID,
@@ -186,7 +183,7 @@ data Account t where
     freeAccountBalances       :: History Balance Checked,
     freeAccountCreditPostings :: History (Posting Decimal) Credit,
     freeAccountDebitPostings  :: History (Posting Decimal) Debit
-  } -> Account Free
+  } -> Account Free 
 
 class HasBalances a where
   accountBalances :: a -> History Balance Checked
