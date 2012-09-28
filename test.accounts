@@ -46,9 +46,16 @@ group Root {
       rule = "testRule";
     };
     account Z5 {
+      redirect;
       info = 70;
-      warning = 30;
-      error = 0;
+      warning = 10;
+    };
+    account Z6 {
+      redirect;
+      redirectedFrom = *;
+    };
+    account Z7 {
+      redirectedFrom = *;
     };
   };
   group активы {

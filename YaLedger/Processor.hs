@@ -64,11 +64,11 @@ processEntry date pos attrs uentry = do
         credit (creditPostingAccount p) (Ext date pos attrs p)
         modifyLastItem (\b -> b {causedBy = Just entry}) (accountBalances account)
         runRules date attrs p processTransaction
-    DebitDifference  p -> do
-        let account = debitPostingAccount p
-        debit  (debitPostingAccount  p) (Ext date pos attrs p)
-        modifyLastItem (\b -> b {causedBy = Just entry}) (accountBalances account)
-        runRules date attrs p processTransaction
+    DebitDifference  ps -> forM_ ps $ \ p -> do
+          let account = debitPostingAccount p
+          debit  (debitPostingAccount  p) (Ext date pos attrs p)
+          modifyLastItem (\b -> b {causedBy = Just entry}) (accountBalances account)
+          runRules date attrs p processTransaction
   return ()
 
 getNext :: Monad m => StateT [a] m (Maybe a)

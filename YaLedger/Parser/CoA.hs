@@ -29,20 +29,20 @@ emptyPState = PState {
 
 type Parser a = ParsecT String PState IO a
 
-account :: AccountGroupType -> String -> Integer -> Currency -> BalanceChecks -> Attributes -> Parser AnyAccount
-account AGDebit  name aid c checks attrs = do
+account :: AccountGroupType -> String -> Integer -> Currency -> Bool -> BalanceChecks -> Attributes -> Parser AnyAccount
+account AGDebit  name aid c _ checks attrs = do
     empty1 <- lift $ newIORef []
     empty2 <- lift $ newIORef []
     return $ WDebit  attrs $ DAccount name aid c checks empty1 empty2
-account AGCredit name aid c checks attrs = do
+account AGCredit name aid c _ checks attrs = do
     empty1 <- lift $ newIORef []
     empty2 <- lift $ newIORef []
     return $ WCredit attrs $ CAccount name aid c checks empty1 empty2
-account AGFree   name aid c checks attrs = do
+account AGFree   name aid c redirect checks attrs = do
     empty1 <- lift $ newIORef []
     empty2 <- lift $ newIORef []
     empty3 <- lift $ newIORef []
-    return $ WFree   attrs $ FAccount name aid c checks empty1 empty2 empty3
+    return $ WFree   attrs $ FAccount name aid c redirect checks empty1 empty2 empty3
 
 newAID :: Parser Integer
 newAID = do
@@ -89,18 +89,22 @@ pAccount = do
   symbol "account"
   name <- identifier
   tp <- pAGType (groupType st)
-  (checks, attrs) <- option (noChecks, M.empty) $ braces $ pAllAttributes
+  (redirect, checks, attrs) <- option (False, noChecks, M.empty) $ braces $ pAllAttributes
   aid <- newAID
   currency <- lookupCurrency attrs
-  account tp name aid currency checks attrs
+  account tp name aid currency redirect checks attrs
 
-pAllAttributes :: Parser (BalanceChecks, Attributes)
+pAllAttributes :: Parser (Bool, BalanceChecks, Attributes)
 pAllAttributes = do
+  redirect <- option False $ do
+                reserved "redirect"
+                semicolon
+                return True
   infoC    <- optionMaybe (bcheck "info")
   warningC <- optionMaybe (bcheck "warning")
   errorC   <- optionMaybe (bcheck "error")
   attrs <- pAttributes
-  return (BalanceChecks infoC warningC errorC, attrs)
+  return (redirect, BalanceChecks infoC warningC errorC, attrs)
 
 bcheck :: String -> Parser Decimal
 bcheck kind = do

@@ -80,7 +80,7 @@ instance (HasAmount a, HasAmount b) => HasAmount (Either a b) where
 data RatesDifference =
     OneCurrency
   | CreditDifference (Posting Decimal Credit)
-  | DebitDifference (Posting Decimal Debit)
+  | DebitDifference [Posting Decimal Debit]
   deriving (Eq)
 
 instance Show RatesDifference where
@@ -180,6 +180,8 @@ data Account t where
     freeAccountName           :: String,
     freeAccountID             :: AccountID,
     freeAccountCurrency       :: Currency,
+    -- | Whenever to partially redirect debits when balance is too small.
+    freeAccountRedirect       :: Bool,
     freeAccountChecks         :: BalanceChecks,
     freeAccountBalances       :: History Balance Checked,
     freeAccountCreditPostings :: History (Posting Decimal) Credit,

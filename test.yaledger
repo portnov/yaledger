@@ -92,6 +92,10 @@ stop testPeriodic
   dr Z5 30$
 
 @ 2012/09/22
-  dr Z5 19.99$
+  cr Z6 10$
+
+@ 2012/09/23
+  cr X1 40$
+  Z5
 
 

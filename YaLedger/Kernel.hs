@@ -1,5 +1,5 @@
 {-# LANGUAGE GADTs, RecordWildCards, ScopedTypeVariables, FlexibleContexts, FlexibleInstances #-}
-{-# OPTIONS_GHC -F -pgmF MonadLoc #-}
+{- # OPTIONS_GHC -F -pgmF MonadLoc #-}
 
 module YaLedger.Kernel
   (module YaLedger.Kernel.Common,
@@ -332,7 +332,7 @@ checkEntry attrs (UEntry dt cr mbCorr currs) = do
                                    cqExcept     = accounts,
                                    cqAttributes = M.insert "source" (Exactly source) attrs }
                        -- Fill credit / debit entry parts
-                       fillEntry qry dt' cr' mbCorr diff firstCurrency
+                       fillEntry qry dt' cr' mbCorr (diff :# firstCurrency)
   let nCurrencies = length $ nub $ sort $
                           map getCurrency cr ++
                           map getCurrency dt ++
@@ -362,29 +362,85 @@ checkEntry attrs (UEntry dt cr mbCorr currs) = do
                                   cqCurrencies = [defcur],
                                   cqExcept     = accounts,
                                   cqAttributes = attrs' }
-                      correspondence <- lookupCorrespondingAccount qry Nothing
-                      if diffD < 0
-                        then do
-                             account <- accountAsCredit correspondence
-                             return $ CreditDifference $ CPosting account (-diffD)
-                        else do
-                             account <- accountAsDebit correspondence
-                             return $ DebitDifference $ DPosting account diffD
+                      correspondence <- lookupCorrespondingAccount qry (diffD :# defcur) Nothing
+                      case correspondence of
+                        Right oneAccount -> do
+                          if diffD < 0
+                            then do
+                                 account <- accountAsCredit oneAccount
+                                 return $ CreditDifference $ CPosting account (-diffD)
+                            else do
+                                 account <- accountAsDebit oneAccount
+                                 return $ DebitDifference [ DPosting account diffD ]
+                        Left debitPostings -> do
+                          postings <- mapM convertPosting' debitPostings
+                          return $ DebitDifference postings
          return $ CEntry dtF crF rd
     else return $ CEntry dtF crF OneCurrency
 
-lookupCorrespondingAccount :: (Throws NoCorrespondingAccountFound l)
+lookupCorrespondingAccount :: (Throws NoCorrespondingAccountFound l,
+                               Throws NoSuchRate l,
+                               Throws InternalError l,
+                               Throws InvalidAccountType l)
                            => CQuery 
+                           -> Amount
                            -> Maybe AnyAccount
-                           -> Ledger l AnyAccount
-lookupCorrespondingAccount qry mbCorr = do
+                           -> Ledger l (Either [Posting Amount Debit] AnyAccount)
+lookupCorrespondingAccount qry amount@(value :# currency) mbCorr = do
   coa <- gets lsCoA
   amap <- gets lsAccountMap
   let mbAccount = runCQuery qry coa
       mbByMap = lookupAMap coa amap qry (cqExcept qry)
   case mbCorr `mplus` mbByMap `mplus` mbAccount of
     Nothing -> throwP (NoCorrespondingAccountFound qry)
-    Just acc -> return acc
+    Just acc ->
+      case cqType qry of
+        ECredit -> return (Right acc)
+        EDebit ->
+          -- Check if we should redirect part of debit
+          case acc of
+            -- Debit redirect has sence only for free accounts
+            WFree _ account ->
+              if not (freeAccountRedirect account)
+                then return (Right acc)
+                else do
+                     let accountCurrency = getCurrency account
+                     toDebit :# _ <- convert accountCurrency amount
+                     currentBalance <- getCurrentBalance account
+                     -- toDebit and currentBalance are both in currency of
+                     -- found account.
+                     let firstPosting = DPosting (Left account) (currentBalance :# accountCurrency)
+                     if toDebit <= currentBalance
+                       then return $ Left [firstPosting]
+                       else do
+                            let toRedirect = toDebit - currentBalance
+                            let qry' = CQuery {
+                                         -- Search for debit (or free) account
+                                         cqType = EDebit,
+                                         -- If possible, use account with same currency
+                                         cqCurrencies = (accountCurrency: cqCurrencies qry),
+                                         -- Do not use same account or one of
+                                         -- account that already are used in this entry
+                                         cqExcept     = (getID account: cqExcept qry),
+                                         cqAttributes = M.insert "redirectedFrom"
+                                                          (Exactly $ getName account)
+                                                          (cqAttributes qry)
+                                       }
+                            nextHop <- lookupCorrespondingAccount qry'
+                                           (toRedirect :# accountCurrency)
+                                           Nothing
+                            case nextHop of
+                              Right hop -> do
+                                -- We can debit `hop' acccount by toRedirect
+                                let lastCurrency = getCurrency hop
+                                lastDebit :# _ <- convert lastCurrency (toRedirect :# accountCurrency)
+                                hop' <- accountAsDebit hop
+                                let last  = DPosting hop' (lastDebit :# lastCurrency)
+                                return $ Left [firstPosting, last]
+                              Left postings -> 
+                                return $ Left (firstPosting: postings)
+            _ -> return (Right acc)
+            
 
 fillEntry :: (Throws NoSuchRate l,
               Throws NoCorrespondingAccountFound l,
@@ -394,26 +450,30 @@ fillEntry :: (Throws NoSuchRate l,
            -> [Posting Decimal Debit]
            -> [Posting Decimal Credit]
            -> Maybe AnyAccount
-           -> Decimal
-           -> Currency
+           -> Amount
            -> Ledger l ([Posting Decimal Debit], [Posting Decimal Credit])
-fillEntry qry dt cr mbCorr value currency = do
-  correspondence <- lookupCorrespondingAccount qry mbCorr
-  if value < 0
-     then do
-          account <- accountAsCredit correspondence
-          -- Convert value into currency of found account
-          value' :# _ <- convert (getCurrency account) (value :# currency)
-          let e = CPosting account (-value')
-          -- Will fill rates difference later
-          return (dt, e:cr)
-     else do
-          account <- accountAsDebit correspondence
-          -- Convert value into currency of found account
-          value' :# _ <- convert (getCurrency account) (value :# currency)
-          let e = DPosting account value'
-          -- Will fill rates difference later
-          return (e:dt, cr)
+fillEntry qry dt cr mbCorr amount@(value :# _) = do
+  correspondence <- lookupCorrespondingAccount qry amount mbCorr
+  case correspondence of
+    Right oneAccount -> do
+      if value < 0
+         then do
+              account <- accountAsCredit oneAccount
+              -- Convert value into currency of found account
+              value' :# _ <- convert (getCurrency account) amount
+              let e = CPosting account (-value')
+              -- Will fill rates difference later
+              return (dt, e:cr)
+         else do
+              account <- accountAsDebit oneAccount
+              -- Convert value into currency of found account
+              value' :# _ <- convert (getCurrency account) amount
+              let e = DPosting account value'
+              -- Will fill rates difference later
+              return (e:dt, cr)
+    Left debitPostings -> do
+      postings <- mapM convertPosting' debitPostings
+      return (dt ++ postings, cr)
 
 reconciliate :: (Throws NoSuchRate l,
                  Throws InvalidAccountType l,
