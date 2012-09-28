@@ -216,10 +216,7 @@ saldo query account = do
   return $ (cr - dt) :# c
 
 sumPostings :: [Posting Decimal t] -> Decimal
-sumPostings es = sum (map go es)
-  where
-    go (CPosting _ x) = x
-    go (DPosting _ x) = x
+sumPostings es = sum (map postingValue es)
 
 accountByID :: AccountID -> ChartOfAccounts -> Maybe AnyAccount
 accountByID i (Branch _ ag children)
