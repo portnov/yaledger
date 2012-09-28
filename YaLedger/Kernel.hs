@@ -290,12 +290,20 @@ convertDecimal to (CPosting acc a) = do
   x :# _ <- convert to (a :# getCurrency acc)
   return x
 
+-- | Check an entry:
+--
+-- * Enshure that credit == debit; if no, add needed postings.
+--
+-- * Convert amounts in each posting to it's account currency.
+--
+-- * Calculate exchange rate difference.
+--
 checkEntry :: (Throws NoSuchRate l,
                Throws NoCorrespondingAccountFound l,
                Throws InvalidAccountType l,
                Throws InternalError l)
-             => Attributes
-             -> Entry Amount Unchecked
+             => Attributes               -- ^ Transaction attributes
+             -> Entry Amount Unchecked   -- ^ Unchecked entry
              -> Ledger l (Entry Decimal Checked)
 checkEntry attrs (UEntry dt cr mbCorr currs) = do
   defcur <- gets lsDefaultCurrency
@@ -362,7 +370,7 @@ checkEntry attrs (UEntry dt cr mbCorr currs) = do
                                   cqCurrencies = [defcur],
                                   cqExcept     = accounts,
                                   cqAttributes = attrs' }
-                      correspondence <- lookupCorrespondingAccount qry (diffD :# defcur) Nothing
+                      correspondence <- lookupCorrespondence qry (diffD :# defcur) Nothing
                       case correspondence of
                         Right oneAccount -> do
                           if diffD < 0
@@ -378,15 +386,24 @@ checkEntry attrs (UEntry dt cr mbCorr currs) = do
          return $ CEntry dtF crF rd
     else return $ CEntry dtF crF OneCurrency
 
-lookupCorrespondingAccount :: (Throws NoCorrespondingAccountFound l,
-                               Throws NoSuchRate l,
-                               Throws InternalError l,
-                               Throws InvalidAccountType l)
-                           => CQuery 
-                           -> Amount
-                           -> Maybe AnyAccount
-                           -> Ledger l (Either [Posting Amount Debit] AnyAccount)
-lookupCorrespondingAccount qry amount@(value :# currency) mbCorr = do
+-- | Lookup for correspondent account(s).
+-- If needed amount could be wrote off from one corresponding account,
+-- return that account. Otherwise, return list of debit postings
+-- (with different amounts and accounts).
+--
+-- For example, if there is account `A1' with debit redirect set up,
+-- and it's current balance is $100, but we need to debit it by $500,
+-- then it will return at least two postings: debit A1 by $100,
+-- debit A2 by $400, where A2 is some another account.
+lookupCorrespondence :: (Throws NoCorrespondingAccountFound l,
+                         Throws NoSuchRate l,
+                         Throws InternalError l,
+                         Throws InvalidAccountType l)
+                     => CQuery              -- ^ Query to search for account
+                     -> Amount              -- ^ Amount of credit \/ debit
+                     -> Maybe AnyAccount    -- ^ User-specified corresponding account
+                     -> Ledger l (Either [Posting Amount Debit] AnyAccount)
+lookupCorrespondence qry amount@(value :# currency) mbCorr = do
   coa <- gets lsCoA
   amap <- gets lsAccountMap
   let mbAccount = runCQuery qry coa
@@ -426,7 +443,7 @@ lookupCorrespondingAccount qry amount@(value :# currency) mbCorr = do
                                                           (Exactly $ getName account)
                                                           (cqAttributes qry)
                                        }
-                            nextHop <- lookupCorrespondingAccount qry'
+                            nextHop <- lookupCorrespondence qry'
                                            (toRedirect :# accountCurrency)
                                            Nothing
                             case nextHop of
@@ -439,21 +456,24 @@ lookupCorrespondingAccount qry amount@(value :# currency) mbCorr = do
                                 return $ Left [firstPosting, last]
                               Left postings -> 
                                 return $ Left (firstPosting: postings)
+            -- For other account types, just return found account.
             _ -> return (Right acc)
             
 
+-- | Fill in debit and credit parts of entry, so that
+-- credit - debit == 0.
 fillEntry :: (Throws NoSuchRate l,
               Throws NoCorrespondingAccountFound l,
               Throws InvalidAccountType l,
               Throws InternalError l)
-           => CQuery
-           -> [Posting Decimal Debit]
-           -> [Posting Decimal Credit]
-           -> Maybe AnyAccount
-           -> Amount
+           => CQuery                    -- ^ Query to search for corresponding account
+           -> [Posting Decimal Debit]   -- ^ Debit postings
+           -> [Posting Decimal Credit]  -- ^ Credit postings
+           -> Maybe AnyAccount          -- ^ User-specified corresponding account
+           -> Amount                    -- ^ Difference (credit - debit)
            -> Ledger l ([Posting Decimal Debit], [Posting Decimal Credit])
 fillEntry qry dt cr mbCorr amount@(value :# _) = do
-  correspondence <- lookupCorrespondingAccount qry amount mbCorr
+  correspondence <- lookupCorrespondence qry amount mbCorr
   case correspondence of
     Right oneAccount -> do
       if value < 0
@@ -475,12 +495,14 @@ fillEntry qry dt cr mbCorr amount@(value :# _) = do
       postings <- mapM convertPosting' debitPostings
       return (dt ++ postings, cr)
 
+-- | Reconciliate one account; set it's current balance
+-- to given value.
 reconciliate :: (Throws NoSuchRate l,
                  Throws InvalidAccountType l,
                  Throws InternalError l)
-             => DateTime
-             -> AnyAccount
-             -> Amount
+             => DateTime       -- ^ Transaction date/time
+             -> AnyAccount     -- ^ Account
+             -> Amount         -- ^ Balance value to set
              -> Ledger l (Entry Amount Unchecked)
 reconciliate date account amount = do
 
@@ -504,6 +526,7 @@ reconciliate date account amount = do
          let posting = DPosting account' ((-diff) :# accountCurrency)
          return $ UEntry [posting] [] Nothing [getCurrency amount]
 
+-- | Calculate sum of amounts in accounts group.
 sumGroup :: (Throws InternalError l,
              Throws NoSuchRate l)
          => AccountGroupData
@@ -516,6 +539,7 @@ sumGroup ag ams = do
   let res = sum [x | x :# _ <- ams']
   return $ res :# c
 
+-- | Calculate saldos for each account \/ group in CoA.
 treeSaldo :: (Throws InternalError l,
               Throws NoSuchRate l)
           => Query
