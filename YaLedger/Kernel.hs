@@ -1,10 +1,10 @@
 {-# LANGUAGE GADTs, RecordWildCards, ScopedTypeVariables, FlexibleContexts, FlexibleInstances #-}
-{- # OPTIONS_GHC -F -pgmF MonadLoc #-}
+{-# OPTIONS_GHC -F -pgmF MonadLoc #-}
 
 module YaLedger.Kernel
   (module YaLedger.Kernel.Common,
    CanCredit (..), CanDebit (..),
-   negateAmount,
+   negateAmount, differenceType,
    convert, convert', convertPosting,
    convertPosting', convertDecimal,
    checkQuery,
@@ -146,6 +146,11 @@ checkBalance targetBalance acc = do
 negateAmount :: Amount -> Amount
 negateAmount (x :# c) = (-x) :# c
 
+differenceType :: Decimal -> PostingType
+differenceType x
+  | x < 0     = ECredit
+  | otherwise = EDebit
+
 convert :: (Throws NoSuchRate l)
         => Currency -> Amount -> Ledger l Amount
 convert c' (x :# c)
@@ -234,14 +239,14 @@ accountByID i (Leaf _ acc)
 accountAsCredit :: (Throws InvalidAccountType l)
                 => AnyAccount
                 -> Ledger l (FreeOr Credit Account)
-accountAsCredit (WDebit  _ _) = throwP $ InvalidAccountType AGDebit AGCredit
+accountAsCredit (WDebit  _ a) = throwP $ InvalidAccountType (getName a) AGDebit AGCredit
 accountAsCredit (WCredit _ a) = return $ Right a
 accountAsCredit (WFree   _ a) = return $ Left a
 
 accountAsDebit :: (Throws InvalidAccountType l)
                 => AnyAccount
                 -> Ledger l (FreeOr Debit Account)
-accountAsDebit (WCredit _ _) = throwP $ InvalidAccountType AGCredit AGDebit
+accountAsDebit (WCredit _ a) = throwP $ InvalidAccountType (getName a) AGCredit AGDebit
 accountAsDebit (WDebit  _ a) = return $ Right a
 accountAsDebit (WFree   _ a) = return $ Left a
 
@@ -324,14 +329,13 @@ checkEntry attrs (UEntry dt cr mbCorr currs) = do
                   then return (dt', cr')
                   else do
                        let diff = crSum - dtSum -- in firstCurrency
+                       let qry = CQuery {
+                                   cqType       = differenceType diff,
+                                   cqCurrencies = currencies ++ currs,
+                                   cqExcept     = accounts,
+                                   cqAttributes = M.insert "source" (Exactly source) attrs }
                        -- Fill credit / debit entry parts
-                       fillEntry dt' cr'
-                                 accounts
-                                 mbCorr
-                                 source
-                                 diff
-                                 (currencies ++ currs)
-                                 attrs firstCurrency
+                       fillEntry qry dt' cr' mbCorr diff firstCurrency
   let nCurrencies = length $ nub $ sort $
                           map getCurrency cr ++
                           map getCurrency dt ++
@@ -353,12 +357,15 @@ checkEntry attrs (UEntry dt cr mbCorr currs) = do
          rd <- if diffD == realFracToDecimal 10 (fromIntegral 0)
                  then return OneCurrency
                  else do
-                      correspondence <- lookupCorrespondingAccount (M.insert "category" (Exactly "rates-difference") attrs)
-                                                                   source
-                                                                   accounts
-                                                                   diffD
-                                                                   [defcur] -- Use only accounts in default currency
-                                                                   Nothing
+                      let attrs' = M.insert "category" (Exactly "rates-difference") $
+                                   M.insert "source"   (Exactly source) attrs
+                          qry = CQuery {
+                                  cqType       = differenceType diffD,
+                                  -- Search for accounts only in default currency
+                                  cqCurrencies = [defcur],
+                                  cqExcept     = accounts,
+                                  cqAttributes = attrs' }
+                      correspondence <- lookupCorrespondingAccount qry Nothing
                       if diffD < 0
                         then do
                              account <- accountAsCredit correspondence
@@ -370,26 +377,14 @@ checkEntry attrs (UEntry dt cr mbCorr currs) = do
     else return $ CEntry dtF crF OneCurrency
 
 lookupCorrespondingAccount :: (Throws NoCorrespondingAccountFound l)
-                           => Attributes
-                           -> String
-                           -> [AccountID]
-                           -> Decimal
-                           -> [Currency]
+                           => CQuery 
                            -> Maybe AnyAccount
                            -> Ledger l AnyAccount
-lookupCorrespondingAccount attrs source accounts value currencies mbCorr = do
+lookupCorrespondingAccount qry mbCorr = do
   coa <- gets lsCoA
   amap <- gets lsAccountMap
-  let qry = CQuery {
-               cqType = if value < 0
-                          then ECredit
-                          else EDebit,
-               cqCurrency = currencies,
-               cqExcept = accounts,
-               cqAttributes = M.insert "source" (Exactly source) attrs
-             }
   let mbAccount = runCQuery qry coa
-      mbByMap = lookupAMap coa amap qry accounts
+      mbByMap = lookupAMap coa amap qry (cqExcept qry)
   case mbCorr `mplus` mbByMap `mplus` mbAccount of
     Nothing -> throwP (NoCorrespondingAccountFound qry)
     Just acc -> return acc
@@ -398,18 +393,15 @@ fillEntry :: (Throws NoSuchRate l,
               Throws NoCorrespondingAccountFound l,
               Throws InvalidAccountType l,
               Throws InternalError l)
-           => [Posting Decimal Debit]
+           => CQuery
+           -> [Posting Decimal Debit]
            -> [Posting Decimal Credit]
-           -> [AccountID]
            -> Maybe AnyAccount
-           -> String
            -> Decimal
-           -> [Currency]
-           -> Attributes
            -> Currency
            -> Ledger l ([Posting Decimal Debit], [Posting Decimal Credit])
-fillEntry dt cr accounts mbCorr source value currencies attrs currency = do
-  correspondence <- lookupCorrespondingAccount attrs source accounts value currencies mbCorr
+fillEntry qry dt cr mbCorr value currency = do
+  correspondence <- lookupCorrespondingAccount qry mbCorr
   if value < 0
      then do
           account <- accountAsCredit correspondence

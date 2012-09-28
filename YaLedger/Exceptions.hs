@@ -49,13 +49,15 @@ instance Show InsufficientFunds where
 instance Exception InsufficientFunds
 
 data InvalidAccountType =
-    InvalidAccountType AccountGroupType AccountGroupType SourcePos
+    InvalidAccountType String AccountGroupType AccountGroupType SourcePos
   deriving (Typeable)
 
 instance Show InvalidAccountType where
-  show (InvalidAccountType t1 t2 pos) = 
+  show (InvalidAccountType name t1 t2 pos) = 
     showPos pos $
-      "Internal error:\n    Invalid account type: " ++ show t1 ++ " instead of " ++ show t2
+      "Internal error:\n    Invalid account type: "
+       ++ name ++ ": "
+       ++ show t1 ++ " instead of " ++ show t2
 
 instance Exception InvalidAccountType
 

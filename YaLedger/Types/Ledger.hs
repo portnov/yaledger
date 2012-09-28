@@ -291,7 +291,7 @@ type ChartOfAccounts = Tree AccountGroupData AnyAccount
 
 data CQuery = CQuery {
   cqType :: PostingType,
-  cqCurrency :: [Currency],
+  cqCurrencies :: [Currency],
   cqExcept :: [AccountID],
   cqAttributes :: Attributes }
   deriving (Eq)
@@ -300,7 +300,7 @@ instance Show CQuery where
   show (CQuery {..}) =
     printf "{\n  Type = %s\n  Currencies = %s\n  Except accounts: %s\n  Attributes: %s\n}"
       (show cqType)
-      (intercalate ", " cqCurrency)
+      (intercalate ", " cqCurrencies)
       (show cqExcept)
       (showA cqAttributes)
 

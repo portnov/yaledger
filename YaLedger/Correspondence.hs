@@ -69,7 +69,7 @@ filterCoA (CQuery {..}) (Leaf {..}) =
     if (getID leafData `notElem` cqExcept) &&
        ((cqType `matchT` accountType leafData) ||
         (accountType leafData == AGFree))
-      then if (getCurrency leafData `elem` cqCurrency) &&
+      then if (getCurrency leafData `elem` cqCurrencies) &&
               (accountAttributes leafData `match` cqAttributes)
              then [leafData]
              else []
