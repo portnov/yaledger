@@ -10,6 +10,7 @@ module YaLedger.Main
 import Control.Applicative ((<$>))
 import Control.Monad.Exception
 import Control.Monad.Exception.Base
+import Data.Char
 import Data.Maybe
 import qualified Data.Map as M
 import Data.List
@@ -32,6 +33,7 @@ import YaLedger.Parser.Common (pAttribute)
 import YaLedger.Kernel
 import YaLedger.Processor
 import YaLedger.Config
+import YaLedger.Logger
 import YaLedger.Reports.Balance
 
 parsePair :: String -> Either ParseError (String, AttributeValue)
@@ -41,6 +43,12 @@ parseParserConfig :: String -> Maybe (String, FilePath)
 parseParserConfig str =
   case span (/= '=') str of
     (key, '=':value) -> Just (key, value)
+    _ -> Nothing
+
+parseDebug :: String -> Maybe Priority
+parseDebug str =
+  case reads (map toUpper str) of
+    [(x, "")] -> Just x
     _ -> Nothing
 
 parseCmdLine :: IO Options
@@ -76,6 +84,11 @@ parseCmdLine = do
                 }
             Left err -> error $ show err
 
+      debugF str opts =
+          case parseDebug str of
+            Just value -> opts {logSeverity = value}
+            Nothing -> error $ "Unknown debug level: " ++ str
+
       pConfigF str opts =
           case parseParserConfig str of
             Just (name,value) -> opts {
@@ -94,6 +107,7 @@ parseCmdLine = do
        Option "e" ["end"]  (ReqArg endF "DATE") "Process only transactions before this date",
        Option "a" ["attribute"]
                            (ReqArg attrF "NAME=VALUE") "Process only transactions with this attribute",
+       Option "d" ["debug"] (ReqArg debugF "LEVEL") "Set debug level to LEVEL",
        Option "c" ["parser-config"]
                            (ReqArg pConfigF "PARSER=CONFIGFILE") "Use specified config file for this parser",
        Option "h" ["help"] (NoArg helpF) "Show this help and exit" ]
@@ -128,11 +142,13 @@ defaultMain list = do
            [] -> putStrLn $ "No such report: " ++ report ++
                             "\nSupported reports are: " ++
                             unwords (map fst list)
-           [fn] -> run (chartOfAccounts options)
-                       (accountMap options)
-                       (parserConfigs options)
-                       (query options)
-                       (files options) fn params
+           [fn] -> do
+               setupLogger (logSeverity options)
+               run (chartOfAccounts options)
+                   (accountMap options)
+                   (parserConfigs options)
+                   (query options)
+                   (files options) fn params
            _ -> putStrLn $ "Ambigous report specification: " ++ report ++
                            "\nSupported reports are: " ++
                            unwords (map fst list)

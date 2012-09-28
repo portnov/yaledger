@@ -37,6 +37,7 @@ import YaLedger.Monad
 import YaLedger.Exceptions
 import YaLedger.Correspondence
 import YaLedger.Kernel.Common
+import YaLedger.Logger
 
 class CanCredit a where
   credit :: (Throws InternalError l)
@@ -67,7 +68,7 @@ balancePlus p history = do
           }
   let zero = Ext (getDate p) (getLocation p) (getAttributes p) (Balance Nothing value)
   plusIOList zero update history
-  message $ "balancePlus: " ++ show (getDate p) ++ ": " ++ show (getContent p)
+  debug $ "balancePlus: " ++ show (getDate p) ++ ": " ++ show (getContent p)
 
 instance CanDebit (Account Debit) where
   debit (DAccount {..}) p = do
@@ -293,14 +294,14 @@ checkEntry attrs (UEntry dt cr mbCorr currs) = do
                           map (getCurrency . debitPostingAccount)  dtF
   -- If there is more than 1 currency,
   -- then we should calculate rates difference.
-  if traceS "currencies: " nCurrencies > 1
+  if nCurrencies > 1
     then do
-         message $ "Credit: " ++ show (getAmount $ head crF) ++
+         debug $ "Credit: " ++ show (getAmount $ head crF) ++
                    ", Debit: " ++ show (getAmount $ head crF)
          -- Convert all postings into default currency
          crD <- mapM (convertDecimal defcur) crF
          dtD <- mapM (convertDecimal defcur) dtF
-         message $ "crD: " ++ show crD ++ ", dtD: " ++ show dtD
+         debug $ "crD: " ++ show crD ++ ", dtD: " ++ show dtD
 
          let diffD :: Decimal -- In default currency
              diffD = sum crD - sum dtD

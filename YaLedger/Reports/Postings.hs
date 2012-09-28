@@ -20,6 +20,7 @@ import YaLedger.Monad
 import YaLedger.Strings
 import YaLedger.Pretty
 import YaLedger.Exceptions
+import YaLedger.Logger
 import YaLedger.Reports.Common
 
 postings :: Query -> Maybe Path -> Ledger NoExceptions ()

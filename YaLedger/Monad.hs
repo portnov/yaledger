@@ -58,11 +58,6 @@ wrapIO :: (MonadIO m, Throws InternalError l)
        -> EMT l m a
 wrapIO action = wrapE $ liftIO action
 
-type EHandler e = [String] -> e -> Ledger NoExceptions ()
-
-handler loc e =
-  wrapIO (putStrLn $ showExceptionWithTrace loc e)
-
 throwP e = do
   pos <- gets lsPosition
   throw (e pos)
@@ -70,10 +65,6 @@ throwP e = do
 setPos :: SourcePos -> Ledger l ()
 setPos pos =
   modify $ \st -> st {lsPosition = pos}
-
-message :: Throws InternalError l => String -> Ledger l ()
-message str =
-  wrapIO $ putStrLn $ ">> " ++ str
 
 runLedger :: ChartOfAccounts -> AccountMap -> [Ext Record] -> LedgerMonad a -> IO a
 runLedger coa amap records action = do

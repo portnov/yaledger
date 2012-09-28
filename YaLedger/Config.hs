@@ -18,6 +18,7 @@ import Text.Parsec
 
 import YaLedger.Types.Transactions
 import YaLedger.Attributes
+import YaLedger.Logger
 import YaLedger.Parser.Common (pAttributeValue)
 
 data Options =
@@ -26,6 +27,7 @@ data Options =
       accountMap :: Maybe FilePath,
       files :: [FilePath],
       query :: Query,
+      logSeverity :: Priority,
       parserConfigs :: [(String, FilePath)],
       reportParams :: [String] }
   | Help
@@ -41,6 +43,7 @@ instance Monoid Options where
       accountMap  = accountMap  o1 `mappend` accountMap o2,
       files = if null (files o2) then files o1 else files o2,
       query = query o1 `mappend` query o2,
+      logSeverity = min (logSeverity o1) (logSeverity o2),
       parserConfigs = parserConfigs o1 ++ parserConfigs o2,
       reportParams = if null (reportParams o2) then reportParams o1 else reportParams o2 }
 
@@ -59,9 +62,23 @@ instance FromJSON Options where
       <*> v .:? "accounts-map"
       <*> v .:?  "files" .!= []
       <*> v .:? "query" .!= Query Nothing Nothing M.empty
+      <*> v .:? "debug" .!= WARNING
       <*> (parseConfigs =<< (v .:? "parsers"))
       <*> return []
   parseJSON _ = fail "Invalid object"
+
+instance FromJSON Priority where
+  parseJSON (String text) =
+    case text of
+      "debug"     -> return DEBUG
+      "info"      -> return INFO
+      "notice"    -> return NOTICE
+      "warning"   -> return WARNING
+      "error"     -> return ERROR
+      "critical"  -> return CRITICAL
+      "alert"     -> return ALERT
+      "emergency" -> return EMERGENCY
+      _ -> fail $ "Unknown debug level: " ++ T.unpack text
 
 instance FromJSON Query where
   parseJSON (Object v) =
@@ -114,6 +131,7 @@ getDefaultOptions = do
                   qStart = Nothing,
                   qEnd   = Just now,
                   qAttributes = M.empty },
+        logSeverity = WARNING,
         parserConfigs = [],
         reportParams = ["balance"] }
 

@@ -19,6 +19,7 @@ import YaLedger.Correspondence
 import YaLedger.Kernel
 import YaLedger.Templates
 import YaLedger.Rules
+import YaLedger.Logger
 
 merge :: Ord a => [a] -> [a] -> [a]
 merge xs [] = xs
@@ -43,8 +44,8 @@ processEntry :: (Throws NoSuchRate l,
                -> Ledger l ()
 processEntry date pos attrs uentry = do
   entry@(CEntry dt cr rd) <- checkEntry attrs uentry
-  message $ show date ++ ":\n" ++ show entry
-  message $ showA attrs
+  debug $ show date ++ ":\n" ++ show entry
+  debug $ showA attrs
   forM dt $ \p -> do
       let account = debitPostingAccount p
       debit  account (Ext date pos attrs p)
@@ -116,7 +117,7 @@ processRecord = do
       let listFrom start =
               Ext start pos attrs tran: listFrom (start `addInterval` interval)
       let result = prune $ listFrom date
-      lift $ message $ "Periodic " ++ name ++ ": " ++ show (length result)
+      lift $ debug $ "Periodic " ++ name ++ ": " ++ show (length result)
       return result
 
 periodic name (Periodic x _ _) = name == x

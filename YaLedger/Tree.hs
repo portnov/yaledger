@@ -152,9 +152,8 @@ search' tree path =
     let allVariants = go [] True tree path
     in case filter (\(x,_,_) -> x) allVariants of
          [] -> let paths = [p | (_,p,_) <- allVariants]
-               in trace ("E: " ++ (unlines $ map (intercalate "/") paths))
-                    [x | (_,_,x) <- allVariants]
-         [(_,p,x)] -> trace ("T: " ++ intercalate "/" p) [x]
+               in  [x | (_,_,x) <- allVariants]
+         [(_,p,x)] -> [x]
          _ -> error $ "Internal error: search': ambigous exact path: " ++ intercalate "/" path
   where
     click _ = False
@@ -175,7 +174,7 @@ search tree path = map getData $ search' tree path
 
 -- | Search a sub-tree by exact path
 searchExactly :: Tree n a -> Path -> Maybe (Tree n a)
-searchExactly tree [] = trace ("z: " ++ nodeName tree) (Just tree)
+searchExactly tree [] = Just tree
 searchExactly tree (p:ps)
   | nodeName tree == p =
     case catMaybes [searchExactly c ps | c <- getChildren tree] of

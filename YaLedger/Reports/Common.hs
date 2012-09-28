@@ -14,6 +14,7 @@ import YaLedger.Strings
 import YaLedger.Pretty
 import YaLedger.Monad
 import YaLedger.Exceptions
+import YaLedger.Logger
 
 showE :: Ext (Entry Decimal Checked) -> [[String]]
 showE (Ext {getDate = date, getContent = (CEntry dt cr rd)}) =

@@ -19,6 +19,7 @@ import YaLedger.Strings
 import YaLedger.Kernel
 import YaLedger.Monad
 import YaLedger.Exceptions
+import YaLedger.Logger
 import YaLedger.Reports.Common
 
 incomeStatement :: Query
