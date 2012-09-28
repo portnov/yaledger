@@ -20,8 +20,6 @@ import YaLedger.Exceptions
 
 setupLogger :: Priority -> IO ()
 setupLogger p = do
-  h <- streamHandler stderr  p
-  updateGlobalLogger rootLoggerName (addHandler h)
   updateGlobalLogger rootLoggerName (setLevel p)
 
 debug :: Throws InternalError l => String -> Ledger l ()

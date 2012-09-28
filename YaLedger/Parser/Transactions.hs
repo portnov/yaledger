@@ -298,13 +298,6 @@ currency :: Parser Currency
 currency =
   (many $ noneOf " \r\n\t\")}->@0123456789.") <?> "Currency symbol"
 
-number :: Parser Decimal
-number = do
-  x <- naturalOrFloat
-  return $ case x of
-             Left i  -> realFracToDecimal 10 (fromIntegral i)
-             Right x -> realFracToDecimal 10 x
-
 param :: Parser Param
 param = try pParam <|> (Fixed <$> pAmount)
   where

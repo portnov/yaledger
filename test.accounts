@@ -45,6 +45,11 @@ group Root {
     account Z4 {
       rule = "testRule";
     };
+    account Z5 {
+      info = 70;
+      warning = 30;
+      error = 0;
+    };
   };
   group активы {
     currency = "р";

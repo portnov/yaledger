@@ -1,5 +1,5 @@
 {-# LANGUAGE GADTs, RecordWildCards, ScopedTypeVariables, FlexibleContexts, FlexibleInstances #-}
-{-# OPTIONS_GHC -F -pgmF MonadLoc #-}
+{- # OPTIONS_GHC -F -pgmF MonadLoc #-}
 
 module YaLedger.Kernel
   (module YaLedger.Kernel.Common,
@@ -40,16 +40,54 @@ import YaLedger.Kernel.Common
 import YaLedger.Logger
 
 class CanCredit a where
-  credit :: (Throws InternalError l)
+  credit :: (Throws InternalError l,
+             Throws InsufficientFunds l)
          => a
          -> Ext (Posting Decimal Credit)
          -> Ledger l ()
 
 class CanDebit a where
-  debit :: (Throws InternalError l)
+  debit :: (Throws InternalError l,
+            Throws InsufficientFunds l)
         => a
         -> Ext (Posting Decimal Debit)
         -> Ledger l ()
+
+instance CanDebit (Account Debit) where
+  debit acc@(DAccount {..}) p = do
+      balance <- getCurrentBalance acc
+      checkBalance (balance - postingValue (getContent p)) acc
+      appendIOList debitAccountPostings p
+      balancePlus p debitAccountBalances
+
+instance CanDebit (Account Free) where
+  debit acc@(FAccount {..}) p = do
+      balance <- getCurrentBalance acc
+      checkBalance (balance - postingValue (getContent p)) acc
+      appendIOList freeAccountDebitPostings p
+      balancePlus p freeAccountBalances
+
+instance CanCredit (Account Credit) where
+  credit acc@(CAccount {..}) p = do
+      balance <- getCurrentBalance acc
+      checkBalance (balance + postingValue (getContent p)) acc
+      appendIOList creditAccountPostings p
+      balancePlus p creditAccountBalances
+
+instance CanCredit (Account Free) where
+  credit acc@(FAccount {..}) p = do
+      balance <- getCurrentBalance acc
+      checkBalance (balance + postingValue (getContent p)) acc
+      appendIOList freeAccountCreditPostings p
+      balancePlus p freeAccountBalances
+
+instance CanCredit (FreeOr Credit Account) where
+  credit (Left  a) p = credit a p
+  credit (Right a) p = credit a p
+
+instance CanDebit (FreeOr Debit Account) where
+  debit (Left  a) p = debit a p
+  debit (Right a) p = debit a p
 
 balancePlus :: forall l t.
                (Throws InternalError l, Sign t)
@@ -70,33 +108,40 @@ balancePlus p history = do
   plusIOList zero update history
   debug $ "balancePlus: " ++ show (getDate p) ++ ": " ++ show (getContent p)
 
-instance CanDebit (Account Debit) where
-  debit (DAccount {..}) p = do
-      appendIOList debitAccountPostings p
-      balancePlus p debitAccountBalances
+whenJust :: (Monad m) => Maybe a -> (a -> m ()) -> m ()
+whenJust Nothing  _  = return ()
+whenJust (Just a) fn = fn a
 
-instance CanDebit (Account Free) where
-  debit (FAccount {..}) p = do
-      appendIOList freeAccountDebitPostings p
-      balancePlus p freeAccountBalances
+getCurrentBalance :: (IsAccount a,
+                      Throws InternalError l)
+                  => a
+                  -> Ledger l Decimal
+getCurrentBalance acc = do
+  balances <- readIOList (accountBalances acc)
+  return $ case balances of
+             [] -> 0
+             (b:_) -> balanceValue (getContent b)
 
-instance CanCredit (Account Credit) where
-  credit (CAccount {..}) p = do
-      appendIOList creditAccountPostings p
-      balancePlus p creditAccountBalances
-
-instance CanCredit (Account Free) where
-  credit (FAccount {..}) p = do
-      appendIOList freeAccountCreditPostings p
-      balancePlus p freeAccountBalances
-
-instance CanCredit (FreeOr Credit Account) where
-  credit (Left  a) p = credit a p
-  credit (Right a) p = credit a p
-
-instance CanDebit (FreeOr Debit Account) where
-  debit (Left  a) p = debit a p
-  debit (Right a) p = debit a p
+checkBalance :: (Throws InternalError l,
+                 Throws InsufficientFunds l,
+                 IsAccount a)
+             => Decimal
+             -> a
+             -> Ledger l ()
+checkBalance targetBalance acc = do
+  let bc = accountChecks acc
+      op = if sign acc > 0
+             then (>=)
+             else (<=)
+  whenJust (bcInfo bc) $ \value ->
+    when (targetBalance `op` value) $
+      info $ "Balance of " ++ getName acc ++ " will be " ++ show targetBalance ++ getCurrency acc
+  whenJust (bcWarning bc) $ \value ->
+    when (targetBalance `op` value) $ 
+      warning $ "Balance of " ++ getName acc ++ " will be " ++ show targetBalance ++ getCurrency acc
+  whenJust (bcError bc) $ \value ->
+    when (targetBalance `op` value) $ 
+      throwP (InsufficientFunds (getName acc) targetBalance (getCurrency acc))
 
 negateAmount :: Amount -> Amount
 negateAmount (x :# c) = (-x) :# c

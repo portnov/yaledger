@@ -7,6 +7,7 @@ import Control.Monad.Exception
 import Control.Monad.Exception.Base
 import Control.Monad.Loc
 import Data.List (intercalate)
+import Data.Decimal
 
 import YaLedger.Tree
 import YaLedger.Types.Ledger
@@ -36,6 +37,16 @@ instance Show NoSuchRate where
       "No conversion rate defined to convert " ++ c1 ++ " -> " ++ c2
 
 instance Exception NoSuchRate
+
+data InsufficientFunds = InsufficientFunds String Decimal Currency SourcePos
+  deriving (Typeable)
+
+instance Show InsufficientFunds where
+  show (InsufficientFunds account x c pos) =
+    showPos pos $ 
+      "Insufficient funds on account " ++ account ++ ": balance would be " ++ show (x :# c)
+
+instance Exception InsufficientFunds
 
 data InvalidAccountType =
     InvalidAccountType AccountGroupType AccountGroupType SourcePos

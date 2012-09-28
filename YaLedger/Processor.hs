@@ -36,6 +36,7 @@ processEntry :: (Throws NoSuchRate l,
                  Throws NoCorrespondingAccountFound l,
                  Throws InvalidAccountType l,
                  Throws NoSuchTemplate l,
+                 Throws InsufficientFunds l,
                  Throws InternalError l)
                => DateTime
                -> SourcePos
@@ -90,7 +91,8 @@ getNextP p doDelete = do
           else return ()
         return (Just x)
 
-processRecord :: Throws InternalError l
+processRecord :: (Throws InternalError l,
+                  Throws InsufficientFunds l)
               => StateT [Ext Record] (EMT l LedgerMonad) [Ext (Transaction Amount)]
 processRecord = do
   rec <- getNext
@@ -127,7 +129,8 @@ periodic _    _                = False
 isStop name (StopPeriodic x) = name == x
 isStop _    _                = False
 
-processAll :: Throws InternalError l
+processAll :: (Throws InternalError l,
+               Throws InsufficientFunds l)
            => StateT [Ext Record] (EMT l LedgerMonad) [Ext (Transaction Amount)]
 processAll = do
   trans <- processRecord
@@ -142,6 +145,7 @@ processRecords :: (Throws NoSuchRate l,
                    Throws NoCorrespondingAccountFound l,
                    Throws InvalidAccountType l,
                    Throws NoSuchTemplate l,
+                   Throws InsufficientFunds l,
                    Throws InternalError l)
                => [Ext Record]
                -> Ledger l ()
@@ -155,6 +159,7 @@ processTransaction :: (Throws NoSuchRate l,
                        Throws NoCorrespondingAccountFound l,
                        Throws InvalidAccountType l,
                        Throws NoSuchTemplate l,
+                       Throws InsufficientFunds l,
                        Throws InternalError l)
                    => Ext (Transaction Amount)
                    -> Ledger l ()

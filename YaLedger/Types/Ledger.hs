@@ -142,27 +142,45 @@ instance Show (Balance c) where
 zeroBalance :: Balance Checked
 zeroBalance = Balance Nothing 0
 
+data BalanceChecks =
+  BalanceChecks {
+    bcInfo    :: Maybe Decimal,
+    bcWarning :: Maybe Decimal,
+    bcError   :: Maybe Decimal }
+  deriving (Eq, Show)
+
+noChecks :: BalanceChecks
+noChecks = BalanceChecks Nothing Nothing Nothing
+
+-- | Generic account type.
 data Account t where
+  -- | Credit account
   CAccount :: {
     creditAccountName     :: String,
     creditAccountID       :: AccountID,
     creditAccountCurrency :: Currency,
+    -- | For credit accounts, we'll check if balance is GREATER THAN given values
+    creditAccountChecks   :: BalanceChecks,
     creditAccountBalances :: History Balance Checked,
     creditAccountPostings :: History (Posting Decimal) Credit
   } -> Account Credit
 
+  -- | Debit account
   DAccount :: {
     debitAccountName     :: String,
     debitAccountID       :: AccountID,
     debitAccountCurrency :: Currency,
+    debitAccountChecks   :: BalanceChecks,
     debitAccountBalances :: History Balance Checked,
     debitAccountPostings :: History (Posting Decimal) Debit
   } -> Account Debit
 
+  -- | Free (credit \/ debit) account
   FAccount :: {
     freeAccountName           :: String,
     freeAccountID             :: AccountID,
     freeAccountCurrency       :: Currency,
+    freeAccountChecks         :: BalanceChecks,
     freeAccountBalances       :: History Balance Checked,
     freeAccountCreditPostings :: History (Posting Decimal) Credit,
     freeAccountDebitPostings  :: History (Posting Decimal) Debit
@@ -170,20 +188,32 @@ data Account t where
 
 class HasBalances a where
   accountBalances :: a -> History Balance Checked
+  accountChecks :: a -> BalanceChecks
 
 instance HasBalances (Account t) where
   accountBalances (CAccount {..}) = creditAccountBalances
   accountBalances (DAccount {..}) = debitAccountBalances
   accountBalances (FAccount {..}) = freeAccountBalances
 
+  accountChecks (CAccount {..}) = creditAccountChecks
+  accountChecks (DAccount {..}) = debitAccountChecks
+  accountChecks (FAccount {..}) = freeAccountChecks
+
 instance HasBalances (FreeOr t Account) where
   accountBalances (Left a)  = accountBalances a
   accountBalances (Right a) = accountBalances a
+
+  accountChecks (Left a)  = accountChecks a
+  accountChecks (Right a) = accountChecks a
 
 instance HasBalances AnyAccount where
   accountBalances (WCredit _ a) = accountBalances a
   accountBalances (WDebit  _ a) = accountBalances a
   accountBalances (WFree   _ a) = accountBalances a
+
+  accountChecks (WCredit _ a) = accountChecks a
+  accountChecks (WDebit  _ a) = accountChecks a
+  accountChecks (WFree   _ a) = accountChecks a
 
 instance HasID (Account t) where
   getID (CAccount {..}) = creditAccountID
@@ -252,6 +282,10 @@ accountAttributes :: AnyAccount -> Attributes
 accountAttributes (WCredit as _) = as
 accountAttributes (WDebit  as _) = as
 accountAttributes (WFree   as _) = as
+
+class (Named a, HasBalances a, HasCurrency a, Sign a) => IsAccount a 
+
+instance (Named a, HasBalances a, HasCurrency a, Sign a) => IsAccount a 
 
 type ChartOfAccounts = Tree AccountGroupData AnyAccount
 

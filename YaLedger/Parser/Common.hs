@@ -8,6 +8,7 @@ import Control.Exception hiding (try)
 import Data.Functor.Identity
 import Data.Maybe
 import Data.List
+import Data.Decimal
 import qualified Data.Map as M
 import Text.Parsec
 import qualified Text.Parsec.Token as P
@@ -55,6 +56,13 @@ stringLit   = P.stringLiteral lexer
 float       = P.float lexer
 natural     = P.natural lexer
 naturalOrFloat = P.naturalOrFloat lexer
+
+number :: Monad m => ParsecT String st m Decimal
+number = do
+  x <- naturalOrFloat
+  return $ case x of
+             Left i  -> realFracToDecimal 10 (fromIntegral i)
+             Right x -> realFracToDecimal 10 x
 
 pRegexp :: Monad m => ParsecT String st m String
 pRegexp = do

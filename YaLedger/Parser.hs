@@ -8,6 +8,7 @@ import Data.List
 import Text.Parsec
 import System.FilePath
 import System.FilePath.Glob
+import System.Log.Logger
 
 import YaLedger.Types
 import qualified YaLedger.Parser.CoA as CoA
@@ -31,13 +32,17 @@ lookupMask file ((name,mask,parser):xs)
 parseInputFiles :: [(String, FilePath)] -> ChartOfAccounts -> [FilePath] -> IO [Ext Record]
 parseInputFiles configs coa masks = do
   inputFiles <- concat <$> mapM glob masks
+  infoM rootLoggerName $ "Input files:\n" ++ unlines inputFiles
   records <- forM inputFiles $ \file -> do
                  case lookupMask (takeFileName file) allParsers of
                    Nothing -> fail $ "Unknown file type: " ++ file
                    Just (parserName, parser) ->
                      let configFile = fromMaybe (parserName ++ ".yaml") $
                                           lookup parserName configs
-                     in  parser configFile coa file
+                     in  do
+                         rec <- parser configFile coa file
+                         infoM rootLoggerName $ "Read " ++ show (length rec) ++ " records from " ++ file
+                         return rec
   return $ sort $ concat records
 
 readCoA :: FilePath -> IO ChartOfAccounts

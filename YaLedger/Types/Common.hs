@@ -45,6 +45,12 @@ instance Sign Credit where
 instance Sign Debit where
   sign _ = -1
 
+instance Sign Free where
+  sign _ = 0
+
+instance Sign t => Sign (f t) where
+  sign _ = sign (undefined :: t)
+
 type IOList a = IORef [a]
 
 type Currency = String

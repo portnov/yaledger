@@ -4,6 +4,7 @@ module YaLedger.Parser.CoA where
 import Control.Applicative ((<$>))
 import Control.Monad.Trans
 import Data.Maybe
+import Data.Decimal
 import Data.IORef
 import qualified Data.Map as M
 import Text.Parsec
@@ -28,20 +29,20 @@ emptyPState = PState {
 
 type Parser a = ParsecT String PState IO a
 
-account :: AccountGroupType -> String -> Integer -> Currency -> Attributes -> Parser AnyAccount
-account AGDebit  name aid c attrs = do
+account :: AccountGroupType -> String -> Integer -> Currency -> BalanceChecks -> Attributes -> Parser AnyAccount
+account AGDebit  name aid c checks attrs = do
     empty1 <- lift $ newIORef []
     empty2 <- lift $ newIORef []
-    return $ WDebit  attrs $ DAccount name aid c empty1 empty2
-account AGCredit name aid c attrs = do
+    return $ WDebit  attrs $ DAccount name aid c checks empty1 empty2
+account AGCredit name aid c checks attrs = do
     empty1 <- lift $ newIORef []
     empty2 <- lift $ newIORef []
-    return $ WCredit attrs $ CAccount name aid c empty1 empty2
-account AGFree   name aid c attrs = do
+    return $ WCredit attrs $ CAccount name aid c checks empty1 empty2
+account AGFree   name aid c checks attrs = do
     empty1 <- lift $ newIORef []
     empty2 <- lift $ newIORef []
     empty3 <- lift $ newIORef []
-    return $ WFree   attrs $ FAccount name aid c empty1 empty2 empty3
+    return $ WFree   attrs $ FAccount name aid c checks empty1 empty2 empty3
 
 newAID :: Parser Integer
 newAID = do
@@ -88,10 +89,27 @@ pAccount = do
   symbol "account"
   name <- identifier
   tp <- pAGType (groupType st)
-  attrs <- option M.empty $ braces $ pAttributes
+  (checks, attrs) <- option (noChecks, M.empty) $ braces $ pAllAttributes
   aid <- newAID
   currency <- lookupCurrency attrs
-  account tp name aid currency attrs
+  account tp name aid currency checks attrs
+
+pAllAttributes :: Parser (BalanceChecks, Attributes)
+pAllAttributes = do
+  infoC    <- optionMaybe (bcheck "info")
+  warningC <- optionMaybe (bcheck "warning")
+  errorC   <- optionMaybe (bcheck "error")
+  attrs <- pAttributes
+  return (BalanceChecks infoC warningC errorC, attrs)
+
+bcheck :: String -> Parser Decimal
+bcheck kind = do
+  symbol kind
+  spaces
+  reservedOp "="
+  res <- number
+  semicolon
+  return res
 
 pAccountGroup :: Parser ChartOfAccounts 
 pAccountGroup = do

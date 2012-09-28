@@ -62,7 +62,8 @@ parseCmdLine = do
       mapF file opts =
           opts {accountMap = Just file}
 
-      fileF file opts =
+      fileF Nothing opts = opts {files = []}
+      fileF (Just file) opts =
           opts {files = file: files opts}
 
       startF s opts =
@@ -102,7 +103,7 @@ parseCmdLine = do
   let options = [
        Option "C" ["coa"] (ReqArg coaF "FILE") "Chart of accounts file to use",
        Option "M" ["map"]  (ReqArg mapF  "FILE") "Accounts map file to use",
-       Option "f" ["file"] (ReqArg fileF "FILE(s)") "Input file[s]",
+       Option "f" ["file"] (OptArg fileF "FILE(s)") "Input file[s]",
        Option "s" ["start"] (ReqArg startF "DATE") "Process only transactions after this date",
        Option "e" ["end"]  (ReqArg endF "DATE") "Process only transactions before this date",
        Option "a" ["attribute"]
