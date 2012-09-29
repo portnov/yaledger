@@ -1,5 +1,5 @@
 {-# LANGUAGE GADTs, RecordWildCards, ScopedTypeVariables, FlexibleContexts, FlexibleInstances #-}
-{- OPTIONS_GHC -F -pgmF MonadLoc -}
+{- OPTIONS_GHC -F -pgmF MonadLoc #-}
 
 module YaLedger.Processor where
 
@@ -20,6 +20,8 @@ import YaLedger.Kernel
 import YaLedger.Templates
 import YaLedger.Rules
 import YaLedger.Logger
+import YaLedger.Pretty
+import YaLedger.Processor.Duplicates
 
 merge :: Ord a => [a] -> [a] -> [a]
 merge xs [] = xs
@@ -45,8 +47,6 @@ processEntry :: (Throws NoSuchRate l,
                -> Ledger l ()
 processEntry date pos attrs uentry = do
   entry@(CEntry dt cr rd) <- checkEntry attrs uentry
-  debug $ show date ++ ":\n" ++ show entry
-  debug $ showA attrs
   forM dt $ \p -> do
       let account = debitPostingAccount p
       debit  account (Ext date pos attrs p)
@@ -146,11 +146,16 @@ processRecords :: (Throws NoSuchRate l,
                    Throws InvalidAccountType l,
                    Throws NoSuchTemplate l,
                    Throws InsufficientFunds l,
+                   Throws DuplicatedRecord l,
                    Throws InternalError l)
-               => [Ext Record]
+               => [DeduplicationRule]
+               -> [Ext Record]
                -> Ledger l ()
-processRecords list = do
-  list' <- evalStateT processAll (sort list)
+processRecords rules list = do
+  deduplicated <- deduplicate rules (sort list)
+  let records = sort deduplicated
+  modify $ \st -> st {lsLoadedRecords = records}
+  list' <- evalStateT processAll records
   now <- wrapIO getCurrentDateTime 
   forM_ (takeWhile (\t -> getDate t <= now) list') $
       processTransaction

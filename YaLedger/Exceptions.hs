@@ -48,6 +48,16 @@ instance Show InsufficientFunds where
 
 instance Exception InsufficientFunds
 
+data DuplicatedRecord = DuplicatedRecord String SourcePos
+  deriving (Typeable)
+
+instance Show DuplicatedRecord where
+  show (DuplicatedRecord s pos) =
+    showPos pos $
+      "Duplicated records:\n" ++ s
+
+instance Exception DuplicatedRecord
+
 data InvalidAccountType =
     InvalidAccountType String AccountGroupType AccountGroupType SourcePos
   deriving (Typeable)

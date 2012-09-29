@@ -149,6 +149,7 @@ defaultMain list = do
                    (accountMap options)
                    (parserConfigs options)
                    (query options)
+                   (deduplicationRules options)
                    (files options) fn params
            _ -> putStrLn $ "Ambigous report specification: " ++ report ++
                            "\nSupported reports are: " ++
@@ -157,12 +158,12 @@ defaultMain list = do
 tryE action =
   (Right <$> action) `catchWithSrcLoc` (\l e -> return (Left (l, e)))
 
-run (Just coaPath) (Just mapPath) configs qry inputPaths (Report report) params = do
+run (Just coaPath) (Just mapPath) configs qry rules inputPaths (Report report) params = do
   coa <- readCoA coaPath
   amap <- readAMap coa mapPath
   records <- parseInputFiles configs coa inputPaths
   runLedger coa amap records $ runEMT $ do
-      t <- tryE $ processRecords (filter (checkQuery qry) records)
+      t <- tryE $ processRecords rules (filter (checkQuery qry) records)
       case t of
         Left (l, e :: SomeException) -> wrapIO $ putStrLn $ showExceptionWithTrace l e
         Right _ -> do
@@ -172,5 +173,5 @@ run (Just coaPath) (Just mapPath) configs qry inputPaths (Report report) params 
                              wrapIO (putStrLn $ showExceptionWithTrace loc e)
                              return (return ()))
               x
-run _ _ _ _ _ _ _ = error "Impossible: no coa or map file."
+run _ _ _ _ _ _ _ _ = error "Impossible: no coa or map file."
 

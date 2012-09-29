@@ -15,6 +15,13 @@ data AttributeValue =
   | Any
   deriving (Eq)
 
+getString :: AttributeValue -> String
+getString (Exactly s) = s
+getString (OneOf ls) = intercalate ", " ls
+getString (AnyBut s) = '!':s
+getString (Regexp s) = s
+getString Any = "*"
+
 instance Show AttributeValue where
   show (Exactly s) = "\"" ++ s ++ "\""
   show (OneOf lst) = "[" ++ intercalate ", " (map go lst) ++ "]"

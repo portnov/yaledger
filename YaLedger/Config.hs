@@ -14,12 +14,13 @@ import System.FilePath
 import System.Directory
 import System.Environment.XDG.BaseDir
 import System.Environment.XDG.UserDir
-import Text.Parsec
+import Text.Parsec hiding ((<|>))
 
 import YaLedger.Types.Transactions
 import YaLedger.Attributes
 import YaLedger.Logger
 import YaLedger.Parser.Common (pAttributeValue)
+import YaLedger.Processor.Duplicates
 
 data Options =
     Options {
@@ -29,6 +30,7 @@ data Options =
       query :: Query,
       logSeverity :: Priority,
       parserConfigs :: [(String, FilePath)],
+      deduplicationRules :: [DeduplicationRule],
       reportParams :: [String] }
   | Help
   deriving (Eq, Show)
@@ -45,6 +47,9 @@ instance Monoid Options where
       query = query o1 `mappend` query o2,
       logSeverity = min (logSeverity o1) (logSeverity o2),
       parserConfigs = parserConfigs o1 ++ parserConfigs o2,
+      deduplicationRules = if null (deduplicationRules o2)
+                             then deduplicationRules o1
+                             else deduplicationRules o2,
       reportParams = if null (reportParams o2) then reportParams o1 else reportParams o2 }
 
 instance Monoid Query where
@@ -64,8 +69,43 @@ instance FromJSON Options where
       <*> v .:? "query" .!= Query Nothing Nothing M.empty
       <*> v .:? "debug" .!= WARNING
       <*> (parseConfigs =<< (v .:? "parsers"))
+      <*> v .:? "deduplicate" .!= []
       <*> return []
   parseJSON _ = fail "Invalid object"
+
+instance FromJSON DeduplicationRule where
+  parseJSON (Object v) =
+    DeduplicationRule
+      <$> v .:? "condition" .!= M.empty
+      <*> v .: "check-attributes"
+      <*> v .: "action"
+  parseJSON _ = mzero
+
+instance FromJSON CheckAttribute where
+  parseJSON (String text) =
+    case text of
+      "credit-account" -> return CCreditAccount
+      "debit-account"  -> return CDebitAccount
+      "date"           -> return (CDate 0)
+      "amount"         -> return (CAmount 0)
+      _ -> pure (CAttribute $ T.unpack text)
+  parseJSON (Object v) =
+        (CDate <$> v .: "date")
+    <|> (CAmount <$> v .: "amount")
+  parseJSON _ = mzero
+
+instance FromJSON DAction where
+  parseJSON (String text) =
+    case text of
+      "error"     -> return DError
+      "warning"   -> return DWarning
+      "duplicate" -> return DDuplicate
+      "ignore-new" -> return DIgnoreNew
+      "delete-old" -> return DDeleteOld
+      _ -> fail $ "Unknown deduplication action: " ++ T.unpack text
+  parseJSON (Object v) =
+    (DSetAttributes . map (uncurry (:=))) <$> (parsePairs =<< v .: "set-attributes")
+  parseJSON _ = mzero
 
 instance FromJSON Priority where
   parseJSON (String text) =
@@ -99,23 +139,30 @@ parseAttrs obj = do
   let pairs = H.toList obj
       pairs' = filter (\(name,_) -> name `notElem` ["start","end"]) pairs
 
-      parseValue (String text) = do
-        let str = T.unpack text
-        case runParser pAttributeValue () str str of
-          Left err -> fail $ show err
-          Right val -> return val
-      parseValue _ = fail "Invalid object type in attribute value"
-
   attrs <- forM pairs' $ \(name,value) -> do
                value' <- parseValue value
                return (T.unpack name, value')
   return $ M.fromList attrs
 
-parseConfigs :: Maybe Object -> Parser [(String, FilePath)]
-parseConfigs Nothing = return []
-parseConfigs (Just obj) = do
+instance FromJSON AttributeValue where
+  parseJSON v = parseValue v
+
+parseValue :: Value -> Parser AttributeValue
+parseValue (String text) = do
+  let str = T.unpack text
+  case runParser pAttributeValue () str str of
+    Left err -> fail $ show err
+    Right val -> return val
+parseValue _ = fail "Invalid object type in attribute value"
+
+parsePairs :: Object -> Parser [(String, String)]
+parsePairs obj = do
   let pairs = H.toList obj
   return [(T.unpack name, T.unpack value) | (name, String value) <- pairs]
+
+parseConfigs :: Maybe Object -> Parser [(String, FilePath)]
+parseConfigs Nothing = return []
+parseConfigs (Just obj) = parsePairs obj
 
 getDefaultOptions :: IO Options
 getDefaultOptions = do
@@ -133,6 +180,7 @@ getDefaultOptions = do
                   qAttributes = M.empty },
         logSeverity = WARNING,
         parserConfigs = [],
+        deduplicationRules = [],
         reportParams = ["balance"] }
 
 loadConfig :: IO Options

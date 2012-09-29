@@ -106,7 +106,6 @@ balancePlus p history = do
           }
   let zero = Ext (getDate p) (getLocation p) (getAttributes p) (Balance Nothing value)
   plusIOList zero update history
-  debug $ "balancePlus: " ++ show (getDate p) ++ ": " ++ show (getContent p)
 
 whenJust :: (Monad m) => Maybe a -> (a -> m ()) -> m ()
 whenJust Nothing  _  = return ()
