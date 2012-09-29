@@ -337,7 +337,7 @@ checkEntry attrs (UEntry dt cr mbCorr currs) = do
                                    cqType       = differenceType diff,
                                    cqCurrencies = currencies ++ currs,
                                    cqExcept     = accounts,
-                                   cqAttributes = M.insert "source" (Exactly source) attrs }
+                                   cqAttributes = M.insert "source" (Optional source) attrs }
                        -- Fill credit / debit entry parts
                        fillEntry qry dt' cr' mbCorr (diff :# firstCurrency)
   let nCurrencies = length $ nub $ sort $
@@ -362,7 +362,7 @@ checkEntry attrs (UEntry dt cr mbCorr currs) = do
                  then return OneCurrency
                  else do
                       let attrs' = M.insert "category" (Exactly "rates-difference") $
-                                   M.insert "source"   (Exactly source) attrs
+                                   M.insert "source"   (Optional source) attrs
                           qry = CQuery {
                                   cqType       = differenceType diffD,
                                   -- Search for accounts only in default currency

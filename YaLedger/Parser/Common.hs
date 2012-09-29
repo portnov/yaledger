@@ -81,6 +81,7 @@ pRegexp = do
 pAttributeValue :: Monad m => ParsecT String st m AttributeValue
 pAttributeValue =
         try (Exactly <$> stringLit)
+    <|> try (Optional <$> pOptional)
     <|> try (AnyBut  <$> anyBut)
     <|> try (OneOf   <$> brackets list)
     <|> try (reservedOp "*" >> return Any)
@@ -88,6 +89,10 @@ pAttributeValue =
   where
     anyBut = do
       char '!'
+      stringLit
+
+    pOptional = do
+      char '?'
       stringLit
 
     list = stringLit `sepBy1` comma

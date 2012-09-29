@@ -104,8 +104,19 @@ instance FromJSON DAction where
       "delete-old" -> return DDeleteOld
       _ -> fail $ "Unknown deduplication action: " ++ T.unpack text
   parseJSON (Object v) =
-    (DSetAttributes . map (uncurry (:=))) <$> (parsePairs =<< v .: "set-attributes")
+    pSetAttributes =<< parsePairs =<< v .: "set-attributes"
   parseJSON _ = mzero
+
+pSetAttributes :: [(String, String)] -> Parser DAction
+pSetAttributes pairs = do
+  let pset "" = SFixed ""
+      pset ('$':name) = SExactly name
+      pset ('?':name) = SOptional name
+      pset x = SFixed x
+      
+      sets = [name := pset value | (name, value) <- pairs]
+
+  return $ DSetAttributes sets
 
 instance FromJSON Priority where
   parseJSON (String text) =

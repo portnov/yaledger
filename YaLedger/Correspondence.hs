@@ -20,23 +20,27 @@ matchT ECredit AGCredit = True
 matchT EDebit  AGDebit  = True
 matchT _       _        = False
 
+isOptional :: AttributeValue -> Bool
+isOptional (Optional _) = True
+isOptional _            = False
+
 match :: Attributes -> Attributes -> Bool
 match attrs qry =
   let check (name, value) = case M.lookup name attrs of
-                              Nothing -> name `elem` nonsignificantAttributes
+                              Nothing -> isOptional value
                               Just av  -> matchAV value av
   in  all check $ M.assocs qry
 
 matchAll :: Attributes -> Attributes -> Bool
 matchAll attrs qry =
   let check (name, value) = case M.lookup name qry of
-                              Nothing -> name `elem` ["source", "rule"]
+                              Nothing  -> isOptional value
                               Just av  -> matchAV value av
   in  all check (M.assocs attrs) && all (`elem` M.keys attrs) (M.keys qry)
 
 additionalAttributes :: Attributes -> AnyAccount -> Int
 additionalAttributes as a = 
-    go (filter (\(name,_) -> name `elem` nonsignificantAttributes) $ M.assocs as) a
+    go (filter (\(_,value) -> isOptional value) $ M.assocs as) a
   where
     go []     _   = 1
     go ((k,v):as) acc =

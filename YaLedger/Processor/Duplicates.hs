@@ -19,7 +19,13 @@ import YaLedger.Monad
 import YaLedger.Logger
 
 data SetAttribute =
-    String := String
+    String := SetValue
+  deriving (Eq, Show)
+
+data SetValue =
+    SExactly String
+  | SOptional String
+  | SFixed String
   deriving (Eq, Show)
 
 data CheckAttribute =
@@ -125,21 +131,30 @@ setAttributes :: [SetAttribute] -> Ext Record -> Ext Record -> Ext Record
 setAttributes sets newRecord oldRecord = foldl apply oldRecord sets
   where
     apply :: Ext Record -> SetAttribute -> Ext Record
-    apply rec (targetName := sourceName)
+    apply rec (targetName := src)
       | targetName == "date" = rec {getDate = getDate newRecord}
-      | sourceName == "date" =
-          setAttr targetName (prettyPrint $ getDate newRecord) rec
-      | otherwise =
+      | SExactly "date" <- src = 
+          setAttr targetName (Exactly $ prettyPrint $ getDate newRecord) rec
+      | SOptional "date" <- src = 
+          setAttr targetName (Optional $ prettyPrint $ getDate newRecord) rec
+      | SExactly sourceName <- src = 
           case getAttr sourceName newRecord of
             Nothing -> rec
-            Just value -> setAttr targetName value rec
+            Just value -> setAttr targetName (Exactly value) rec
+      | SOptional sourceName <- src = 
+          case getAttr sourceName newRecord of
+            Nothing -> rec
+            Just value -> setAttr targetName (Optional value) rec
+      | SFixed string <- src = 
+          setAttr targetName (Exactly string) rec
+      | otherwise = rec
 
 getAttr :: String -> Ext Record -> Maybe String
 getAttr key rec = getString <$> M.lookup key (getAttributes rec)
 
-setAttr :: String -> String -> Ext Record -> Ext Record
+setAttr :: String -> AttributeValue -> Ext Record -> Ext Record
 setAttr name value rec =
-    rec {getAttributes = M.insert name (Exactly value) (getAttributes rec)}
+    rec {getAttributes = M.insert name value (getAttributes rec)}
 
 deduplicate :: (Throws DuplicatedRecord l,
                 Throws InternalError l)

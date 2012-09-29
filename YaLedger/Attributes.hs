@@ -9,6 +9,7 @@ import Debug.Trace
 
 data AttributeValue =
     Exactly String
+  | Optional String
   | OneOf [String]
   | AnyBut String
   | Regexp String
@@ -17,6 +18,7 @@ data AttributeValue =
 
 getString :: AttributeValue -> String
 getString (Exactly s) = s
+getString (Optional s) = s
 getString (OneOf ls) = intercalate ", " ls
 getString (AnyBut s) = '!':s
 getString (Regexp s) = s
@@ -24,6 +26,7 @@ getString Any = "*"
 
 instance Show AttributeValue where
   show (Exactly s) = "\"" ++ s ++ "\""
+  show (Optional s) = "?\"" ++ s ++ "\""
   show (OneOf lst) = "[" ++ intercalate ", " (map go lst) ++ "]"
     where go s = "\"" ++ s ++ "\""
   show (AnyBut s)  = "!\"" ++ s ++ "\""
@@ -41,18 +44,14 @@ matchAV :: AttributeValue -> AttributeValue -> Bool
 matchAV (Exactly x) (Exactly y) = x == y
 matchAV (Exactly x) (AnyBut y)  = x /= y
 matchAV (Exactly x) (OneOf lst) = x `elem` lst
-matchAV (OneOf lst) (Exactly x) = x `elem` lst
 matchAV (OneOf l1)  (OneOf l2)  = any (`elem` l2) l1
 matchAV (AnyBut x)  (OneOf lst) = all (/= x) lst
-matchAV (OneOf lst) (AnyBut x)  = all (/= x) lst
-matchAV (AnyBut x)  (Exactly y) = x /= y
 matchAV (Exactly x) (Regexp re) = x =~ re
-matchAV (Regexp re) (Exactly x) = x =~ re
 matchAV (OneOf lst) (Regexp re) = any (=~ re) lst
 matchAV (Regexp re) (OneOf lst) = any (=~ re) lst
-matchAV _           Any         = True
+matchAV (Optional x) y          = matchAV (Exactly x) y
 matchAV Any         _           = True
-matchAV _           _           = False
+matchAV x           y           = matchAV y x
 
 traceS :: Show a => String -> a -> a
 traceS a x = trace (a ++ show x) x
