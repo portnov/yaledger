@@ -1,6 +1,8 @@
 
 module YaLedger.Strings where
 
+import Data.List
+
 data Align = ALeft | ACenter | ARight
   deriving (Eq, Show)
 
@@ -62,7 +64,7 @@ columns list =
       ss = [replicate m '=' | m <- ms]
       hs = map fst list
       bs = map snd list
-  in  foldr (zipS "|") [] [h:s:l | (h,s,l) <- zip3 hs ss bs]
+  in  foldr (zipS "|") [] [align m ACenter h: s: l | (h,m,s,l) <- zip4 hs ms ss bs]
 
 columns' :: [Column] -> Column
 columns' list = foldr (zipS "|") [] list

@@ -16,6 +16,7 @@ module YaLedger.Kernel
    accountAsDebit,
    checkEntry,
    reconciliate,
+   creditTurnovers, debitTurnovers,
    saldo, treeSaldo
   ) where
 
@@ -200,20 +201,42 @@ debitPostings (WCredit _ (CAccount {..})) = newIOList
 debitPostings (WDebit  _ (DAccount {..})) = return debitAccountPostings
 debitPostings (WFree   _ (FAccount {..})) = return freeAccountDebitPostings
 
-saldo :: (Throws NoSuchRate l,
-          Throws InternalError l)
-      => Query -> AnyAccount -> Ledger l Amount
-saldo query account = do
+filterPostings :: Query -> [Ext (Posting Decimal t)] -> [Posting Decimal t]
+filterPostings query list = map getContent $ filter (checkQuery query) list
+
+-- | Calculate account saldo
+saldo :: (Throws InternalError l)
+      => Query              -- ^ Query to select postings
+      -> AnyAccount         -- ^ Account
+      -> Ledger l Amount
+saldo qry account = do
+  credit :# c <- creditTurnovers qry account
+  debit  :# _ <- debitTurnovers  qry account
+  return $ (credit - debit) :# c
+
+-- | Calculate credit turnovers of account
+-- (sum of credit postings)
+creditTurnovers :: (Throws InternalError l)
+                => Query            -- ^ Query to select postings
+                -> AnyAccount       -- ^ Account
+                -> Ledger l Amount
+creditTurnovers qry account = do
   let c = getCurrency account
+  postings <- filterPostings qry <$> (readIOList =<< creditPostings account)
+  let turnovers = sumPostings postings
+  return (turnovers :# c)
 
-      filterPostings :: [Ext (Posting Decimal t)] -> [Posting Decimal t]
-      filterPostings list = map getContent $ filter (checkQuery query) list
-
-  crp <- filterPostings <$> (readIOList =<< creditPostings account)
-  dtp <- filterPostings <$> (readIOList =<< debitPostings  account)
-  let cr = sumPostings crp
-      dt = sumPostings dtp
-  return $ (cr - dt) :# c
+-- | Calculate debit turnovers of account
+-- (sum of debit postings)
+debitTurnovers :: (Throws InternalError l)
+               => Query            -- ^ Query to select postings
+               -> AnyAccount       -- ^ Account
+               -> Ledger l Amount
+debitTurnovers qry account = do
+  let c = getCurrency account
+  postings <- filterPostings qry <$> (readIOList =<< debitPostings account)
+  let turnovers = sumPostings postings
+  return (turnovers :# c)
 
 sumPostings :: [Posting Decimal t] -> Decimal
 sumPostings es = sum (map postingValue es)

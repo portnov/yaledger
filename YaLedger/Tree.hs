@@ -35,8 +35,14 @@ instance (Eq n, Eq a) => Eq (Tree n a) where
 
 showTree :: (Show n, Show a) => Tree n a -> [String]
 showTree tree =
-    zipS "" (alignMax ALeft $ struct [True] tree)
+    zipS "" (alignMax ALeft $ showTreeStructure tree)
             (alignMax ARight $ values tree)
+  where
+    values (Branch {..}) = show branchData: concatMap values branchChildren
+    values (Leaf {..})   = [show leafData]
+
+showTreeStructure :: (Show n, Show a) => Tree n a -> [String]
+showTreeStructure tree = struct [True] tree
   where
     struct (b:bs) (Branch {nodeName = name, branchData = n, branchChildren = children}) =
         (concatMap bar (reverse bs) ++ glyph b ++ name ++ ": "):
@@ -44,9 +50,6 @@ showTree tree =
          (struct (True:b:bs) $ last children)
     struct (b:bs) (Leaf {nodeName = name, leafData = a}) =
         [concatMap bar (reverse bs) ++ glyph b ++ name ++ ": "]
-
-    values (Branch {..}) = show branchData: concatMap values branchChildren
-    values (Leaf {..})   = [show leafData]
 
     bar True  = "  "
     bar False = "| "
@@ -104,6 +107,11 @@ mapLeafsM f tree = go tree
       go (Leaf name a) = Leaf name <$> f a
       go (Branch name n lst) = do
           Branch name n <$> mapM go lst
+
+allNodes :: Tree a a -> [a]
+allNodes (Leaf {..}) = [leafData]
+allNodes (Branch {..}) =
+    branchData: concatMap allNodes branchChildren
 
 -- | Similar to 'forM_', but iterates on all leafs of tree.
 forL :: (Monad m) => Tree n a -> (String -> a -> m b) -> m ()
