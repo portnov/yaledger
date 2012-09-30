@@ -28,7 +28,7 @@ instance FromJSON ParserConfig where
     ParserConfig
       <$> v .:? "encoding"
       <*> v .:? "selector" .!= "table"
-      <*> parseGenericConfig v
+      <*> parseGenericConfig ["encoding", "selector"] v
 
 readHTML :: ParserConfig -> FilePath -> IO [[String]]
 readHTML pc path = do
@@ -57,5 +57,6 @@ loadHTML :: FilePath -> ChartOfAccounts -> FilePath -> IO [Ext Record]
 loadHTML configPath coa htmlPath = do
   config <- loadParserConfig configPath 
   table <- readHTML config htmlPath
-  parseHTML config htmlPath coa table
+  let goodRows = filterRows (pcRowsFilter $ pcGeneric config) table
+  parseHTML config htmlPath coa goodRows
 

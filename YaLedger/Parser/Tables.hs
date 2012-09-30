@@ -7,6 +7,7 @@ import qualified Data.Text as T
 import qualified Data.HashMap.Strict as H
 import qualified Data.ByteString as B
 import qualified Data.Map as M
+import Data.Decimal
 import Data.String
 import Data.Yaml
 import Data.Dates.Formats hiding (Fixed)
@@ -17,11 +18,18 @@ import System.Environment.XDG.BaseDir
 import YaLedger.Types
 import YaLedger.Tree
 
+data RowsFilter =
+  RowsFilter {
+    rfField :: Int,
+    rfRegexp :: String }
+  deriving (Eq, Show)
+
 data FieldConfig =
     FieldConfig {
-      fcField :: Int,
+      fcField  :: Int,
       fcRegexp :: Maybe String,
-      fcRules :: [(String, String)] }
+      fcOptional :: Bool,
+      fcRules  :: [(String, String)] }
   | FixedValue String
   deriving (Eq, Show)
 
@@ -30,24 +38,33 @@ defaultFieldConfig n =
   FieldConfig {
     fcField = n,
     fcRegexp = Nothing,
+    fcOptional = False,
     fcRules = [] }
 
 data GenericParserConfig = GenericParserConfig {
-    pcDate :: FieldConfig,
+    pcDate       :: FieldConfig,
     pcDateFormat :: String,
-    pcCurrency :: FieldConfig,
-    pcAmount :: FieldConfig,
-    pcAccount :: FieldConfig,
-    pcAccount2 :: Maybe FieldConfig,
-    pcOther :: [(String, FieldConfig)] }
+    pcCurrency   :: FieldConfig,
+    pcAmount     :: FieldConfig,
+    pcAccount    :: FieldConfig,
+    pcAccount2   :: Maybe FieldConfig,
+    pcRowsFilter :: [RowsFilter],
+    pcOther      :: [(String, FieldConfig)] }
   deriving (Eq, Show)
 
-instance FromJSON GenericParserConfig where
-  parseJSON (Object v) = parseGenericConfig v
-  parseJSON _ = fail "Invalid object"
+instance FromJSON RowsFilter where
+  parseJSON (Object v) =
+    RowsFilter
+      <$> v .:? "field" .!= 1
+      <*> v .: "regexp"
+  parseJSON _ = fail "Rows filter: invalid object"
 
-parseGenericConfig :: Object -> Parser GenericParserConfig
-parseGenericConfig v =
+instance FromJSON GenericParserConfig where
+  parseJSON (Object v) = parseGenericConfig [] v
+  parseJSON _ = fail "Generic parser config: invalid object"
+
+parseGenericConfig :: [T.Text] -> Object -> Parser GenericParserConfig
+parseGenericConfig reserved v =
   GenericParserConfig
       <$> v .:  "date"
       <*> v .:? "dateformat" .!= "YYYY/MM/DD"
@@ -55,17 +72,19 @@ parseGenericConfig v =
       <*> v .:  "amount"
       <*> v .:  "account"
       <*> v .:? "account2"
-      <*> getOther v
+      <*> v .:?  "filter" .!= []
+      <*> getOther reserved v
 
 instance FromJSON FieldConfig where
   parseJSON (Object v) =
     FieldConfig
       <$> v .: "field"
       <*> v .:? "regexp"
+      <*> v .:? "optional" .!= False
       <*> getRules v
   parseJSON (String str) =
     pure $ FixedValue (T.unpack str)
-  parseJSON _ = fail "Invalid object"
+  parseJSON _ = fail "Field config: invalid object"
 
 getRules :: Object -> Parser [(String, String)]
 getRules obj = do
@@ -82,12 +101,13 @@ reservedFields :: IsString s => [s]
 reservedFields =
   ["separator", "currency", "amount",
    "account", "account2",
-   "dateformat", "date"]
+   "dateformat", "date",
+   "filter"]
 
-getOther :: Object -> Parser [(String, FieldConfig)]
-getOther obj = do
+getOther :: [T.Text] -> Object -> Parser [(String, FieldConfig)]
+getOther reserved obj = do
   let pairs = H.toList obj
-      pairs' = filter (\(name,_) -> name `notElem` reservedFields) pairs
+      pairs' = filter (\(name,_) -> name `notElem` (reservedFields ++ reserved)) pairs
   forM pairs' $ \(name, value) -> do
       fc <- parseJSON value
       return (T.unpack name, fc)
@@ -109,7 +129,23 @@ field fc row =
                    [] -> ""
                    (x:_) -> x
 
-readSum str = read $ filter (/= ' ') str
+readSum :: String -> Either String Decimal
+readSum str =
+  let str' = filter (`notElem` " \r\n\t") str
+      list = reads str'
+  in case [x | (x, "") <- list] of
+       [x] -> Right x
+       _   -> Left $ "Cannot parse amount: " ++ str'
+
+filterRows :: [RowsFilter] -> [[String]] -> [[String]]
+filterRows filters rows = filter (\row -> all (ok row) filters) rows
+  where
+    ok :: [String] -> RowsFilter -> Bool
+    ok list rf =
+      if length list < rfField rf
+        then False
+        else let str = list !! (rfField rf - 1)
+             in  str =~ rfRegexp rf
 
 convertRow :: GenericParserConfig -> ChartOfAccounts -> FilePath -> Int -> [String] -> IO (Ext Record)
 convertRow pc coa path rowN row = do
@@ -120,9 +156,10 @@ convertRow pc coa path rowN row = do
       account2 = case pcAccount2 pc of
                    Just fc -> Just $ field fc row
                    Nothing -> Nothing
-      as = [(name, Exactly $ field fc row) | (name, fc) <- pcOther pc,
-                                    name `notElem` reservedFields]
-      attrs = M.fromList [p | p@(n,v) <- as, v /= Exactly ""]
+      as = [(name, (if fcOptional fc then Optional else Exactly) $ field fc row)
+            | (name, fc) <- pcOther pc,
+              name `notElem` reservedFields]
+      attrs = M.fromList [p | p@(n,v) <- as, v `notElem` [Exactly "", Optional ""]]
 
       lookupAccount path =
          case lookupTree (mkPath path) coa of
@@ -132,12 +169,18 @@ convertRow pc coa path rowN row = do
 
   date <- case parseDateFormat (pcDateFormat pc) dateStr of
             Right d -> return d
-            Left err -> fail $ show err
+            Left err -> fail $ dateStr ++ ":\n" ++ show err
 
   (s, amount) <- case head amountStr of
-                   '+' -> return (ECredit, readSum (tail amountStr))
-                   '-' -> return (EDebit,  readSum (tail amountStr))
-                   _   -> return (ECredit, readSum amountStr)
+                   '+' -> case readSum (tail amountStr) of
+                            Right x -> return (ECredit, x)
+                            Left err -> fail err
+                   '-' -> case readSum (tail amountStr) of
+                            Right x -> return (EDebit, x)
+                            Left err -> fail err
+                   _   -> case readSum amountStr of
+                            Right x -> return (ECredit, x)
+                            Left err -> fail err
 
   acc <- lookupAccount accountName
   acc2 <- case account2 of
@@ -165,14 +208,14 @@ cposting acc x =
   case acc of
     WCredit _ a -> return [CPosting (Right a) x]
     WFree   _ a -> return [CPosting (Left  a) x]
-    WDebit  _ _ -> fail $ "Invalid account type: debit instead of credit"
+    WDebit  _ a -> fail $ "Invalid account type: debit instead of credit: " ++ getName a ++ " " ++ show x
 
 dposting :: AnyAccount -> Amount -> IO [Posting Amount Debit]
 dposting acc x =
   case acc of
-    WDebit  _ a -> return [DPosting (Right a) x]
-    WFree   _ a -> return [DPosting (Left  a) x]
-    WCredit  _ _ -> fail $ "Invalid account type: credit instead of debit"
+    WDebit   _ a -> return [DPosting (Right a) x]
+    WFree    _ a -> return [DPosting (Left  a) x]
+    WCredit  _ a -> fail $ "Invalid account type: credit instead of debit: " ++ getName a ++ " " ++ show x
 
 loadParserConfig :: FromJSON config => FilePath -> IO config
 loadParserConfig path = do
@@ -182,7 +225,7 @@ loadParserConfig path = do
                      configDir <- getUserConfigDir "yaledger"
                      return (configDir </> path)
   str <- B.readFile fullPath
-  case decode str of
-    Nothing -> fail $ "Cannot parse config file " ++ fullPath
-    Just pc -> return pc
+  case decodeEither str of
+    Left err -> fail $ "Cannot parse config file " ++ fullPath ++ ": " ++ err
+    Right pc -> return pc
 

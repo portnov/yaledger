@@ -22,10 +22,10 @@ instance FromJSON ParserConfig where
   parseJSON (Object v) =
     ParserConfig
       <$> v .:? "separator" .!= ","
-      <*> parseGenericConfig v
+      <*> parseGenericConfig [] v
 
-csv :: String -> String -> [[String]]
-csv sep str = map parseRow $ lines str
+csvCells :: String -> String -> [[String]]
+csvCells sep str = map parseRow $ lines str
   where
     parseRow = split sep
 
@@ -35,7 +35,9 @@ parseCSV :: ParserConfig
          -> String
          -> IO [Ext Record]
 parseCSV pc path coa str =
-    zipWithM (convertRow (pcGeneric pc) coa path) [1..] $ csv (pcSeparator pc) str
+  let rows = csvCells (pcSeparator pc) str
+      goodRows = filterRows (pcRowsFilter $ pcGeneric pc) rows
+  in  zipWithM (convertRow (pcGeneric pc) coa path) [1..] goodRows
 
 loadCSV :: FilePath -> ChartOfAccounts -> FilePath -> IO [Ext Record]
 loadCSV configPath coa csvPath = do

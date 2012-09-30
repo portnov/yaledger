@@ -104,7 +104,10 @@ instance Show Param where
   show (Plus x y) = show x ++ " + " ++ show y
 
 instance Eq a => Ord (Ext a) where
-  compare x y = compare (getDate x) (getDate y)
+  compare x y =
+    case compare (getDate x) (getDate y) of
+      EQ -> compare (getLocation x) (getLocation y)
+      c  -> c
 
 instance HasID a => HasID (Ext a) where
   getID x = getID (getContent x)
