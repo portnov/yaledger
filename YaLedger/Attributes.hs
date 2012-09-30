@@ -5,8 +5,6 @@ import Data.List
 import Text.Regex.PCRE
 import qualified Data.Map as M
 
-import Debug.Trace
-
 data AttributeValue =
     Exactly String
   | Optional String
@@ -52,7 +50,4 @@ matchAV (Regexp re) (OneOf lst) = any (=~ re) lst
 matchAV (Optional x) y          = matchAV (Exactly x) y
 matchAV Any         _           = True
 matchAV x           y           = matchAV y x
-
-traceS :: Show a => String -> a -> a
-traceS a x = trace (a ++ show x) x
 
