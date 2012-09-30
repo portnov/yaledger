@@ -37,7 +37,11 @@ readHTML pc path = do
                                           Nothing -> bstr
                                           Just encoding -> IConv.convert encoding "UTF8" bstr
   let doc = readString [withParseHTML yes, withWarnings no] string
-  runX $ getTable (pcTableSelector pc) doc
+  table <- runX $ getTable (pcTableSelector pc) doc
+  return $ map (map clean) table
+
+clean :: String -> String
+clean str = filter (`notElem` "\r\n") str
 
 -- | Get needed <table> tag from HTML document.
 -- Here all magic goes :)
