@@ -427,7 +427,7 @@ lookupCorrespondence qry amount@(value :# currency) mbCorr = do
                      -- found account.
                      let firstPosting = DPosting (Left account) (currentBalance :# accountCurrency)
                      if toDebit <= currentBalance
-                       then return $ Left [firstPosting]
+                       then return $ Left [DPosting (Left account) (toDebit :# accountCurrency)]
                        else do
                             let toRedirect = toDebit - currentBalance
                             let qry' = CQuery {
