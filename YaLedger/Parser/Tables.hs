@@ -174,3 +174,15 @@ dposting acc x =
     WFree   _ a -> return [DPosting (Left  a) x]
     WCredit  _ _ -> fail $ "Invalid account type: credit instead of debit"
 
+loadParserConfig :: FromJSON config => FilePath -> IO config
+loadParserConfig path = do
+  fullPath <- case head path of
+                '/' -> return path
+                _ -> do
+                     configDir <- getUserConfigDir "yaledger"
+                     return (configDir </> path)
+  str <- B.readFile fullPath
+  case decode str of
+    Nothing -> fail $ "Cannot parse config file " ++ fullPath
+    Just pc -> return pc
+

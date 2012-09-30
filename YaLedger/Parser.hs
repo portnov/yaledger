@@ -15,13 +15,15 @@ import qualified YaLedger.Parser.CoA as CoA
 import qualified YaLedger.Parser.Map  as Map
 import qualified YaLedger.Parser.Transactions as T
 import qualified YaLedger.Parser.CSV as CSV
+import qualified YaLedger.Parser.HTML as HTML
 
 type InputParser = FilePath -> ChartOfAccounts -> FilePath -> IO [Ext Record]
 
 allParsers :: [(String, String, InputParser)]
 allParsers =
   [("yaledger", "*.yaledger", readTrans),
-   ("csv",      "*.csv",      CSV.loadCSV)]
+   ("csv",      "*.csv",      CSV.loadCSV),
+   ("html",     "*.html",     HTML.loadHTML)]
 
 lookupMask :: FilePath -> [(String, String, InputParser)] -> Maybe (String, InputParser)
 lookupMask _ [] = Nothing

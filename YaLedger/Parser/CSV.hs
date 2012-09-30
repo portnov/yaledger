@@ -24,25 +24,18 @@ instance FromJSON ParserConfig where
       <$> v .:? "separator" .!= ","
       <*> parseGenericConfig v
 
-loadParserConfig :: FilePath -> IO ParserConfig
-loadParserConfig path = do
-  fullPath <- case head path of
-                '/' -> return path
-                _ -> do
-                     configDir <- getUserConfigDir "yaledger"
-                     return (configDir </> path)
-  str <- B.readFile fullPath
-  case decode str of
-    Nothing -> fail $ "Cannot parse config file " ++ fullPath
-    Just pc -> return pc
-
 csv :: String -> String -> [[String]]
 csv sep str = map parseRow $ lines str
   where
     parseRow = split sep
 
-parseCSV :: ParserConfig -> FilePath -> ChartOfAccounts -> String -> IO [Ext Record]
-parseCSV pc path coa str = zipWithM (convertRow (pcGeneric pc) coa path) [1..] $ csv (pcSeparator pc) str
+parseCSV :: ParserConfig
+         -> FilePath
+         -> ChartOfAccounts
+         -> String
+         -> IO [Ext Record]
+parseCSV pc path coa str =
+    zipWithM (convertRow (pcGeneric pc) coa path) [1..] $ csv (pcSeparator pc) str
 
 loadCSV :: FilePath -> ChartOfAccounts -> FilePath -> IO [Ext Record]
 loadCSV configPath coa csvPath = do
