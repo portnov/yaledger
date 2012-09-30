@@ -1,0 +1,23 @@
+@ 2012/01/01 ...
+rate € -> $ = 1.18
+
+@ 2012/01/01 ...
+rate $ -> € = 0.81
+
+@ 2012/01/01
+rate р -> € = 0.024
+
+@ 2012/01/01
+rate р -> $ = 0.0323
+
+@ 01/01
+template interest
+  cr X1 #balance*0.05
+
+@ 09/01
+  cr X1 1000$
+
+@ 09/02
+periodic x1interest = every 2 days do
+call interest
+

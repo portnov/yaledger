@@ -5,6 +5,7 @@ module YaLedger.Kernel
   (module YaLedger.Kernel.Common,
    CanCredit (..), CanDebit (..),
    negateAmount, differenceType,
+   getCurrentBalance,
    convert, convert', convertPosting,
    convertPosting', convertDecimal,
    checkQuery,

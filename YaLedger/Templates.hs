@@ -7,6 +7,7 @@ import Control.Monad
 import Control.Monad.Reader
 import Control.Monad.State
 import Control.Monad.Exception
+import Control.Monad.Exception.Base
 import qualified Data.Map as M
 import Data.Maybe
 import Data.Decimal
@@ -15,19 +16,20 @@ import Text.Printf
 import YaLedger.Types
 import YaLedger.Exceptions
 import YaLedger.Monad
+import YaLedger.Kernel (getCurrentBalance)
 
 type SubstState = M.Map Int Amount
 
-type Subst a = Reader SubstState a
+type Subst l a = ReaderT SubstState (EMT l LedgerMonad) a
 
-use :: Int -> Subst (Maybe Amount)
+use :: Int -> Subst l (Maybe Amount)
 use i = asks (M.lookup i)
 
 class ATemplate a where
   type Result a
 
   nParams :: a -> Int
-  subst :: a -> Subst (Result a)
+  subst :: Throws InternalError l => a -> Subst l (Result a)
 
 instance ATemplate a => ATemplate (Ext a) where
   type Result (Ext a) = Ext (Result a)
@@ -65,6 +67,7 @@ instance ATemplate Param where
     mbX <- use i
     let (x :# cur) = fromMaybe d mbX
     return $ (x *. c) :# cur
+  subst x = fail $ "Internal error: subst " ++ show x
 
 instance ATemplate (Posting Param t) where
   type Result (Posting Param t) = Posting Amount t
@@ -72,14 +75,25 @@ instance ATemplate (Posting Param t) where
   nParams (DPosting _ a) = nParams a
   nParams (CPosting _ a) = nParams a
 
-  subst (DPosting acc a) = DPosting acc <$> subst a
-  subst (CPosting acc a) = CPosting acc <$> subst a
+  subst (DPosting acc a) =
+    case a of
+      FromBalance c -> do
+        balance <- lift (getCurrentBalance acc)
+        return $ DPosting acc (balance *. c :# getCurrency acc)
+      _ -> DPosting acc <$> subst a
+  subst (CPosting acc a) =
+    case a of
+      FromBalance c -> do
+        balance <- lift (getCurrentBalance acc)
+        return $ CPosting acc (balance *. c :# getCurrency acc)
+      _ -> CPosting acc <$> subst a
 
-fillTemplate :: Transaction Param -> [Amount] -> Ledger l (Transaction Amount)
+fillTemplate :: Throws InternalError l => Transaction Param -> [Amount] -> Ledger l (Transaction Amount)
 fillTemplate tran args =
-  return $ runReader (subst tran) (M.fromList $ zip [1..] args)
+  runReaderT (subst tran) (M.fromList $ zip [1..] args)
 
-getTemplate :: (Throws NoSuchTemplate l)
+getTemplate :: (Throws NoSuchTemplate l,
+                Throws InternalError l)
             => String
             -> Ledger l (Attributes, Transaction Param)
 getTemplate name = do

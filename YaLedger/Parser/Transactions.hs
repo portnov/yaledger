@@ -299,7 +299,7 @@ currency =
   (many $ noneOf " \r\n\t\")}->@0123456789.") <?> "Currency symbol"
 
 param :: Parser Param
-param = try pParam <|> (Fixed <$> pAmount)
+param = try pParam <|> try pBalance <|> (Fixed <$> pAmount)
   where
     pParam = do
       char '#'
@@ -314,4 +314,13 @@ param = try pParam <|> (Fixed <$> pAmount)
                reserved "default"
                pAmount
       return $ Param n c d
+
+    pBalance = do
+      char '#'
+      reserved "balance"
+      a <- optionMaybe $ try $ reservedOp "*"
+      c <- case a of
+             Nothing -> return 1.0
+             Just _  -> float
+      return $ FromBalance c
 

@@ -94,6 +94,7 @@ instance HasCurrency Amount where
 data Param =
     Fixed Amount
   | Param Int Double Amount
+  | FromBalance Double
   | Plus Param Param
   deriving (Eq)
 
@@ -101,6 +102,7 @@ instance Show Param where
   show (Fixed x) = show x
   show (Param n x d) = "#" ++ show n ++ " * " ++ show x
                     ++ " (default " ++ show d ++ ")"
+  show (FromBalance c) = "#balance*" ++ show c
   show (Plus x y) = show x ++ " + " ++ show y
 
 instance Eq a => Ord (Ext a) where
