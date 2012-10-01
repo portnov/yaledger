@@ -28,6 +28,7 @@ data Options =
       accountMap :: Maybe FilePath,
       files :: [FilePath],
       query :: Query,
+      reportsInterval :: Maybe DateInterval,
       logSeverity :: Priority,
       parserConfigs :: [(String, FilePath)],
       deduplicationRules :: [DeduplicationRule],
@@ -45,6 +46,7 @@ instance Monoid Options where
       accountMap  = accountMap  o1 `mappend` accountMap o2,
       files = if null (files o2) then files o1 else files o2,
       query = query o1 `mappend` query o2,
+      reportsInterval = reportsInterval o1 `mplus` reportsInterval o2,
       logSeverity = min (logSeverity o1) (logSeverity o2),
       parserConfigs = parserConfigs o1 ++ parserConfigs o2,
       deduplicationRules = if null (deduplicationRules o2)
@@ -67,11 +69,19 @@ instance FromJSON Options where
       <*> v .:? "accounts-map"
       <*> v .:?  "files" .!= []
       <*> v .:? "query" .!= Query Nothing Nothing M.empty
+      <*> v .:? "reports-interval"
       <*> v .:? "debug" .!= WARNING
       <*> (parseConfigs =<< (v .:? "parsers"))
       <*> v .:? "deduplicate" .!= []
       <*> return []
-  parseJSON _ = fail "Invalid object"
+  parseJSON _ = fail "Options: invalid object"
+
+instance FromJSON DateInterval where
+  parseJSON (String text) =
+    case runParser pDateInterval () (T.unpack text) (T.unpack text) of
+      Left err -> fail $ show err
+      Right interval -> return interval
+  parseJSON _ = fail "Date interval: invalid object"
 
 instance FromJSON DeduplicationRule where
   parseJSON (Object v) =
@@ -79,7 +89,7 @@ instance FromJSON DeduplicationRule where
       <$> v .:? "condition" .!= M.empty
       <*> v .: "check-attributes"
       <*> v .: "action"
-  parseJSON _ = mzero
+  parseJSON _ = fail "Deduplication rule: invalid object"
 
 instance FromJSON CheckAttribute where
   parseJSON (String text) =
@@ -92,7 +102,7 @@ instance FromJSON CheckAttribute where
   parseJSON (Object v) =
         (CDate <$> v .: "date")
     <|> (CAmount <$> v .: "amount")
-  parseJSON _ = mzero
+  parseJSON _ = fail "Check attributes: invalid object"
 
 instance FromJSON DAction where
   parseJSON (String text) =

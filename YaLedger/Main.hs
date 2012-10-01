@@ -8,6 +8,7 @@ module YaLedger.Main
   ) where
 
 import Control.Applicative ((<$>))
+import Control.Monad
 import Control.Monad.Exception
 import Control.Monad.Exception.Base
 import Data.Char
@@ -34,6 +35,8 @@ import YaLedger.Kernel
 import YaLedger.Processor
 import YaLedger.Config
 import YaLedger.Logger
+import YaLedger.Pretty
+import YaLedger.Reports.Common
 import YaLedger.Reports.Balance
 
 parsePair :: String -> Either ParseError (String, AttributeValue)
@@ -85,6 +88,10 @@ parseCmdLine = do
                 }
             Left err -> error $ show err
 
+      intervalF str opts =
+          case runParser pDateInterval () str str of
+            Left err -> error $ show err
+            Right int -> opts {reportsInterval = Just int}
       debugF str opts =
           case parseDebug str of
             Just value -> opts {logSeverity = value}
@@ -108,8 +115,17 @@ parseCmdLine = do
        Option "e" ["end"]  (ReqArg endF "DATE") "Process only transactions before this date",
        Option "a" ["attribute"]
                            (ReqArg attrF "NAME=VALUE") "Process only transactions with this attribute",
+       Option "P" ["period"] (ReqArg intervalF "PERIOD") "Output report by PERIOD",
+       Option ""  ["daily"] (NoArg (\opts -> opts {reportsInterval = Just (Days 1)}))
+                              "Alias for --period \"1 day\"",
+       Option ""  ["weekly"] (NoArg (\opts -> opts {reportsInterval = Just (Weeks 1)}))
+                              "Alias for --period \"1 week\"",
+       Option ""  ["monthly"] (NoArg (\opts -> opts {reportsInterval = Just (Months 1)}))
+                              "Alias for --period \"1 month\"",
+       Option ""  ["yearly"] (NoArg (\opts -> opts {reportsInterval = Just (Years 1)}))
+                              "Alias for --period \"1 year\"",
        Option "d" ["debug"] (ReqArg debugF "LEVEL") "Set debug level to LEVEL",
-       Option "c" ["parser-config"]
+       Option "p" ["parser-config"]
                            (ReqArg pConfigF "PARSER=CONFIGFILE") "Use specified config file for this parser",
        Option "h" ["help"] (NoArg helpF) "Show this help and exit" ]
   case getOpt RequireOrder options argv of
@@ -148,6 +164,7 @@ defaultMain list = do
                run (chartOfAccounts options)
                    (accountMap options)
                    (parserConfigs options)
+                   (reportsInterval options)
                    (query options)
                    (deduplicationRules options)
                    (files options) fn params
@@ -158,7 +175,14 @@ defaultMain list = do
 tryE action =
   (Right <$> action) `catchWithSrcLoc` (\l e -> return (Left (l, e)))
 
-run (Just coaPath) (Just mapPath) configs qry rules inputPaths (Report report) params = do
+showInterval :: Query -> String
+showInterval qry =
+    "From " ++ showMD "the begining" (qStart qry) ++ " till " ++ showMD "now" (qEnd qry)
+  where
+    showMD s Nothing = s
+    showMD _ (Just date) = prettyPrint date
+
+run (Just coaPath) (Just mapPath) configs mbInterval qry rules inputPaths (Report report) params = do
   coa <- readCoA coaPath
   amap <- readAMap coa mapPath
   records <- parseInputFiles configs coa inputPaths
@@ -167,11 +191,18 @@ run (Just coaPath) (Just mapPath) configs qry rules inputPaths (Report report) p
       case t of
         Left (l, e :: SomeException) -> wrapIO $ putStrLn $ showExceptionWithTrace l e
         Right _ -> do
-              x <- runGenerator (report qry) params
+          now <- wrapIO getCurrentDateTime
+          let firstDate = minimum (map getDate records)
+          let queries = case mbInterval of
+                          Nothing -> [qry]
+                          Just int -> splitQuery firstDate now qry int
+          forM_ queries $ \query -> do
+              wrapIO $ putStrLn $ showInterval query
+              x <- runGenerator (report query) params
                      `catchWithSrcLoc`
                        (\loc (e :: InvalidCmdLine) -> do
                              wrapIO (putStrLn $ showExceptionWithTrace loc e)
                              return (return ()))
               x
-run _ _ _ _ _ _ _ _ = error "Impossible: no coa or map file."
+run _ _ _ _ _ _ _ _ _ = error "Impossible: no coa or map file."
 

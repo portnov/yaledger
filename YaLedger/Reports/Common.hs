@@ -8,6 +8,7 @@ import Control.Monad.Exception
 import Control.Monad.Loc
 import Data.Maybe
 import Data.Decimal
+import Data.Dates
 
 import YaLedger.Types
 import YaLedger.Strings
@@ -15,6 +16,37 @@ import YaLedger.Pretty
 import YaLedger.Monad
 import YaLedger.Exceptions
 import YaLedger.Logger
+
+negateInterval :: DateInterval -> DateInterval
+negateInterval (Days n)   = Days (negate n)
+negateInterval (Weeks n)  = Weeks (negate n)
+negateInterval (Months n) = Months (negate n)
+negateInterval (Years n)  = Years (negate n)
+
+minusInterval :: DateTime -> DateInterval -> DateTime
+minusInterval date int = date `addInterval` negateInterval int
+
+datesBackFrom :: DateTime -> DateInterval -> [DateTime]
+datesBackFrom date int = go date
+  where
+    go dt = dt: go (dt `minusInterval` int)
+
+datesBetween :: DateTime -> DateTime -> DateInterval -> [DateTime]
+datesBetween start end int =
+  reverse $ takeWhile (>= start) $ datesBackFrom end int
+
+intervalsBetween :: DateTime -> DateTime -> DateInterval -> [(DateTime, DateTime)]
+intervalsBetween start end int =
+  let dates = datesBetween start end int
+  in  zip dates (tail dates)
+
+splitQuery :: DateTime -> DateTime -> Query -> DateInterval -> [Query]
+splitQuery first now qry int =
+  let start = fromMaybe first (qStart qry)
+      end   = fromMaybe now   (qEnd   qry)
+      pairs = intervalsBetween start end int
+      attrs = qAttributes qry
+  in  map (\(s, e) -> Query (Just s) (Just e) attrs) pairs
 
 showE :: Ext (Entry Decimal Checked) -> [[String]]
 showE (Ext {getDate = date, getContent = (CEntry dt cr rd)}) =
