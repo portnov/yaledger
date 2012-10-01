@@ -24,21 +24,21 @@ import YaLedger.Logger
 import YaLedger.Reports.Common
 
 postings :: Query -> Maybe Path -> Ledger NoExceptions ()
-postings _ mbPath = do
-    postings' mbPath
+postings qry mbPath = do
+    postings' qry mbPath
   `catchWithSrcLoc`
     (\l (e :: InternalError) -> handler l e)
   `catchWithSrcLoc`
     (\l (e :: InvalidPath) -> handler l e)
 
-postings' mbPath = do
+postings' qry mbPath = do
   coa <- case mbPath of
             Nothing   -> gets lsCoA
             Just path -> getCoAItem (gets lsPosition) (gets lsCoA) path
   forL coa $ \path acc -> do
       credit <- readIOList =<< creditPostings acc
       debit  <- readIOList =<< debitPostings  acc
-      let postings = sort (map left credit ++ map right debit)
+      let postings = sort $ filter (checkQuery qry) (map left credit ++ map right debit)
           res = unlines $ showPostings postings
       wrapIO $ do
         putStrLn $ path ++ ":"

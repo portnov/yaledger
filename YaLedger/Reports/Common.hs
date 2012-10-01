@@ -46,7 +46,8 @@ splitQuery first now qry int =
       end   = fromMaybe now   (qEnd   qry)
       pairs = intervalsBetween start end int
       attrs = qAttributes qry
-  in  map (\(s, e) -> Query (Just s) (Just e) attrs) pairs
+      adm   = qAllAdmin qry
+  in  map (\(s, e) -> Query (Just s) (Just e) adm attrs) pairs
 
 showE :: Ext (Entry Decimal Checked) -> [[String]]
 showE (Ext {getDate = date, getContent = (CEntry dt cr rd)}) =

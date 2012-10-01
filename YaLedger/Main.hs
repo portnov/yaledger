@@ -88,10 +88,14 @@ parseCmdLine = do
                 }
             Left err -> error $ show err
 
+      allAdmin opts =
+         opts {query = (query opts) {qAllAdmin = True}}
+
       intervalF str opts =
           case runParser pDateInterval () str str of
             Left err -> error $ show err
             Right int -> opts {reportsInterval = Just int}
+
       debugF str opts =
           case parseDebug str of
             Just value -> opts {logSeverity = value}
@@ -113,6 +117,7 @@ parseCmdLine = do
        Option "f" ["file"] (OptArg fileF "FILE(s)") "Input file[s]",
        Option "s" ["start"] (ReqArg startF "DATE") "Process only transactions after this date",
        Option "e" ["end"]  (ReqArg endF "DATE") "Process only transactions before this date",
+       Option "A" ["all-admin"] (NoArg allAdmin) "Process all admin records with any dates and attributes",
        Option "a" ["attribute"]
                            (ReqArg attrF "NAME=VALUE") "Process only transactions with this attribute",
        Option "P" ["period"] (ReqArg intervalF "PERIOD") "Output report by PERIOD",
@@ -187,7 +192,7 @@ run (Just coaPath) (Just mapPath) configs mbInterval qry rules inputPaths (Repor
   amap <- readAMap coa mapPath
   records <- parseInputFiles configs coa inputPaths
   runLedger coa amap records $ runEMT $ do
-      t <- tryE $ processRecords rules (filter (checkQuery qry) records)
+      t <- tryE $ processRecords rules (filter (checkRecord qry) records)
       case t of
         Left (l, e :: SomeException) -> wrapIO $ putStrLn $ showExceptionWithTrace l e
         Right _ -> do

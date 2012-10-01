@@ -26,6 +26,7 @@ data Transaction v =
 data Query = Query {
     qStart :: Maybe DateTime,
     qEnd   :: Maybe DateTime,
+    qAllAdmin :: Bool,
     qAttributes :: Attributes }
   deriving (Eq, Show)
 

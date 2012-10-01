@@ -1,5 +1,5 @@
 {-# LANGUAGE GADTs, RecordWildCards, ScopedTypeVariables, FlexibleContexts, FlexibleInstances #-}
-{-# OPTIONS_GHC -F -pgmF MonadLoc #-}
+{- # OPTIONS_GHC -F -pgmF MonadLoc #-}
 
 module YaLedger.Kernel
   (module YaLedger.Kernel.Common,
@@ -8,7 +8,7 @@ module YaLedger.Kernel
    getCurrentBalance,
    convert, convert', convertPosting,
    convertPosting', convertDecimal,
-   checkQuery,
+   checkQuery, checkRecord, isAdmin,
    creditPostings, debitPostings,
    accountByID,
    sumGroup, sumPostings,
@@ -186,6 +186,15 @@ checkQuery (Query {..}) (Ext {..}) =
           Just val -> matchAV val avalue
 
   in  p && q && r
+
+checkRecord :: Query -> Ext Record -> Bool
+checkRecord qry rec =
+    isAdmin (getContent rec) || checkQuery qry rec
+
+isAdmin :: Record -> Bool
+isAdmin (Transaction (TSetRate _ _ _)) = True
+isAdmin (Transaction _)                = False
+isAdmin _                              = True
 
 creditPostings :: Throws InternalError l
                => AnyAccount
@@ -530,8 +539,9 @@ reconciliate :: (Throws NoSuchRate l,
 reconciliate date account amount = do
 
   let qry = Query {
-              qStart = Nothing,
-              qEnd   = Just date,
+              qStart      = Nothing,
+              qEnd        = Just date,
+              qAllAdmin   = True,
               qAttributes = M.empty }
 
   currentBalance :# accountCurrency <- saldo qry account

@@ -55,11 +55,12 @@ instance Monoid Options where
       reportParams = if null (reportParams o2) then reportParams o1 else reportParams o2 }
 
 instance Monoid Query where
-  mempty = Query Nothing Nothing M.empty
+  mempty = Query Nothing Nothing False M.empty
   mappend q1 q2 =
     Query {
       qStart = qStart q1 `mappend` qStart q2,
       qEnd   = qEnd   q1 `mappend` qEnd   q2,
+      qAllAdmin = qAllAdmin q1 || qAllAdmin q2,
       qAttributes = qAttributes q1 `M.union` qAttributes q2 }
 
 instance FromJSON Options where
@@ -68,7 +69,7 @@ instance FromJSON Options where
       <$> v .:? "chart-of-accounts"
       <*> v .:? "accounts-map"
       <*> v .:?  "files" .!= []
-      <*> v .:? "query" .!= Query Nothing Nothing M.empty
+      <*> v .:? "query" .!= mempty
       <*> v .:? "reports-interval"
       <*> v .:? "debug" .!= WARNING
       <*> (parseConfigs =<< (v .:? "parsers"))
@@ -146,6 +147,7 @@ instance FromJSON Query where
     Query
       <$> v .:? "start"
       <*> v .:? "end"
+      <*> v .:? "all-admin" .!= False
       <*> parseAttrs v
   parseJSON _ = fail "Invalid object"
 
@@ -198,7 +200,9 @@ getDefaultOptions = do
         query = Query {
                   qStart = Nothing,
                   qEnd   = Just now,
+                  qAllAdmin   = False,
                   qAttributes = M.empty },
+        reportsInterval = Nothing,
         logSeverity = WARNING,
         parserConfigs = [],
         deduplicationRules = [],

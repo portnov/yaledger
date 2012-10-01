@@ -42,5 +42,5 @@ details' qry mbPath = do
       res <- saldo qry acc
       wrapIO $ do
         putStrLn $ path ++ ":"
-        putStrLn $ showEntries res (reverse entries)
+        putStrLn $ showEntries res (reverse $ filter (checkQuery qry) entries)
 

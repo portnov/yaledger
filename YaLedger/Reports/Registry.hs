@@ -44,9 +44,11 @@ registry' qry mbPath = do
     case coa of
       Leaf {leafData = account} -> do
           balances <- readIOList (accountBalances account)
-          wrapIO $ putStrLn $ showEntriesBalances totals (nub $ sort balances)
+          let balances' = filter (checkQuery qry) balances
+          wrapIO $ putStrLn $ showEntriesBalances totals (nub $ sort balances')
       Branch {} -> do
           let accounts = map snd $ leafs coa
           allEntries <- forM accounts getEntries
-          wrapIO $ putStrLn $ showEntries totals (nub $ sort $ concat allEntries)
+          let entries = concat $ map (filter $ checkQuery qry) allEntries
+          wrapIO $ putStrLn $ showEntries totals (nub $ sort entries)
   
