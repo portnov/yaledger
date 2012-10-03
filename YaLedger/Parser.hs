@@ -16,6 +16,7 @@ import qualified YaLedger.Parser.Map  as Map
 import qualified YaLedger.Parser.Transactions as T
 import qualified YaLedger.Parser.CSV as CSV
 import qualified YaLedger.Parser.HTML as HTML
+import qualified YaLedger.Parser.CBR as CBR
 
 type InputParser = FilePath -> ChartOfAccounts -> FilePath -> IO [Ext Record]
 
@@ -23,7 +24,8 @@ allParsers :: [(String, String, InputParser)]
 allParsers =
   [("yaledger", "*.yaledger", readTrans),
    ("csv",      "*.csv",      CSV.loadCSV),
-   ("html",     "*.html",     HTML.loadHTML)]
+   ("html",     "*.html",     HTML.loadHTML),
+   ("cbr",      "*.cbr",      CBR.loadCBR)]
 
 lookupMask :: FilePath -> [(String, String, InputParser)] -> Maybe (String, InputParser)
 lookupMask _ [] = Nothing
