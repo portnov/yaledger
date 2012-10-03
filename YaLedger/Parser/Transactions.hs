@@ -238,18 +238,37 @@ pReconciliate p = do
 
 pSetRate :: Parser (Transaction v)
 pSetRate = do
-  reserved "rate"
-  spaces
-  c1 <- currency
-  spaces
-  reservedOp "->"
-  spaces
-  c2 <- currency
-  spaces
-  reservedOp "="
-  spaces
-  x <- float
-  return $ TSetRate c1 c2 x
+    reserved "rate"
+    spaces
+    try implicit <|> explicit
+  where
+    operator =
+      try (reservedOp "->" >> return False) <|>
+          (reservedOp "<->" >> return True)
+
+    explicit = do
+      a1 <- float
+      c1 <- currency
+      spaces
+      reversible <- operator
+      spaces
+      a2 <- float
+      c2 <- currency
+      return $ TSetRate (Explicit c1 a1 c2 a2 reversible)
+
+    implicit = do
+      c1 <- currency
+      spaces
+      reversible <- operator
+      spaces
+      c2 <- currency
+      spaces
+      reservedOp "="
+      spaces
+      reserved "via"
+      spaces
+      base <- currency
+      return $ TSetRate (Implicit c1 c2 base reversible)
 
 pCreditPosting :: Parser v -> Parser (Posting v Credit)
 pCreditPosting p = do

@@ -47,7 +47,7 @@ emptyLedgerState coa amap records = do
              lsAccountMap = amap,
              lsTemplates = M.empty,
              lsRules = [],
-             lsRates = M.empty,
+             lsRates = [],
              lsLoadedRecords = records,
              lsPosition = newPos "<nowhere>" 0 0
            }

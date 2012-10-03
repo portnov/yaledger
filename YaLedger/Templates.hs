@@ -48,7 +48,7 @@ instance ATemplate (Transaction Param) where
   subst (TEntry entry) = TEntry <$> subst entry
   subst (TReconciliate p a) = TReconciliate p <$> subst a
   subst (TCallTemplate n t) = return $ TCallTemplate n t
-  subst (TSetRate c1 c2 x)  = return $ TSetRate c1 c2 x
+  subst (TSetRate rate)     = return (TSetRate rate)
 
 instance ATemplate (Entry Param Unchecked) where
   type Result (Entry Param Unchecked) = Entry Amount Unchecked

@@ -152,15 +152,39 @@ differenceType x
   | x < 0     = ECredit
   | otherwise = EDebit
 
+lookupRate :: (Throws NoSuchRate l)
+           => Currency
+           -> Currency
+           -> Ledger l Double
+lookupRate from to = do
+    rates <- gets lsRates
+    case go rates from to rates of
+      Nothing -> throwP (NoSuchRate from to)
+      Just rate -> return rate
+  where
+    go _ _ _ [] = Nothing
+    go ar f t (Explicit cFrom aFrom cTo aTo rev: rs)
+      | (cFrom == f) && (cTo == t) = Just (aFrom / aTo)
+      | rev && (cTo == f) && (cFrom == t) = Just (aTo / aFrom)
+      | otherwise = go ar f t rs
+    go ar f t (Implicit cFrom cTo cBase rev: rs)
+      | (cFrom == f) && (cTo == t) = do
+            x <- go ar f cBase ar
+            y <- go ar cBase t ar
+            return (x / y)
+      | rev && (cFrom == t) && (cTo == f) = do
+            x <- go ar t cBase ar
+            y <- go ar cBase f ar
+            return (x / y)
+      | otherwise = go ar f t rs
+
 convert :: (Throws NoSuchRate l)
         => Currency -> Amount -> Ledger l Amount
 convert c' (x :# c)
   | c == c' = return (x :# c)
   | otherwise = do
-    rs <- gets lsRates
-    case M.lookup (c, c') rs of
-      Nothing   -> throwP (NoSuchRate c c')
-      Just rate -> return $ (x *. rate) :# c'
+    rate <- lookupRate c c'
+    return $ (x *. rate) :# c'
 
 convert' :: Currency -> Amount -> Ledger l Amount
 convert' c x = 
@@ -192,9 +216,9 @@ checkRecord qry rec =
     isAdmin (getContent rec) || checkQuery qry rec
 
 isAdmin :: Record -> Bool
-isAdmin (Transaction (TSetRate _ _ _)) = True
-isAdmin (Transaction _)                = False
-isAdmin _                              = True
+isAdmin (Transaction _) = True
+isAdmin (Transaction _) = False
+isAdmin _               = True
 
 creditPostings :: Throws InternalError l
                => AnyAccount

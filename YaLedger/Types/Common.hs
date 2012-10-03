@@ -5,7 +5,7 @@ module YaLedger.Types.Common
    Sign (..),
    Credit, Debit, Free,
    IOList,
-   Currency, Rates,
+   Currency, Rate (..), Rates,
    AccountID, GroupID,
    FreeOr,
    Ext (..),
@@ -55,7 +55,21 @@ type IOList a = IORef [a]
 
 type Currency = String
 
-type Rates = M.Map (Currency, Currency) Double
+data Rate =
+    Explicit {
+      rateCurrencyFrom :: Currency,
+      rateAmountFrom   :: Double,
+      rateCurrencyTo   :: Currency,
+      rateAmountTo     :: Double,
+      rateReversible   :: Bool }
+  | Implicit {
+      rateCurrencyFrom :: Currency,
+      rateCurrencyTo   :: Currency,
+      rateBaseCurrency :: Currency,
+      rateReversible   :: Bool }
+  deriving (Eq, Show)
+
+type Rates = [Rate]
 
 type AccountID = Integer
 
