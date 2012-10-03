@@ -178,9 +178,9 @@ processTransaction (Ext date pos attrs (TReconciliate acc x)) = do
                  pos
                  (M.insert "category" (Exactly "reconciliation") attrs)
                  entry
-processTransaction (Ext _ pos _ (TSetRate rate)) = do
+processTransaction (Ext _ pos _ (TSetRate rates)) = do
     setPos pos
-    modify $ \st -> st {lsRates = rate: lsRates st}
+    modify $ \st -> st {lsRates = rates ++ lsRates st}
 processTransaction (Ext date pos attrs (TCallTemplate name args)) = do
     setPos pos
     (tplAttrs, template) <- getTemplate name

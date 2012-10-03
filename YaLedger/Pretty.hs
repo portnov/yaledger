@@ -96,17 +96,19 @@ instance (Pretty t) => Pretty (Transaction t) where
     printf "call %s %s\n"
            name
            (unwords $ map prettyPrint args)
-  prettyPrint (TSetRate (Explicit c1 a1 c2 a2 r)) =
-    printf "rate %.04f%s %s %.04f%s"
-      a1 c1
-      (if r then "<->" else "->")
-      a2 c2
-  prettyPrint (TSetRate (Implicit c1 c2 base r)) =
-    printf "rate %s %s %s = via %s"
-      c1
-      (if r then "<->" else "->")
-      c2
-      base
+  prettyPrint (TSetRate rates) = unlines (map go rates)
+    where
+      go (Explicit c1 a1 c2 a2 r) =
+        printf "rate %.04f%s %s %.04f%s"
+          a1 c1
+          (if r then "<->" else "->")
+          a2 c2
+      go (Implicit c1 c2 base r) =
+        printf "rate %s %s %s = via %s"
+          c1
+          (if r then "<->" else "->")
+          c2
+          base
 
 instance (Pretty v) => Pretty (Entry v c) where
   prettyPrint (CEntry dt cr _) =

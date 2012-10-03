@@ -20,7 +20,7 @@ data Transaction v =
     TEntry (Entry v Unchecked)
   | TReconciliate AnyAccount v
   | TCallTemplate String [Amount]
-  | TSetRate Rate
+  | TSetRate [Rate]
   deriving (Eq, Show)
 
 data Query = Query {
