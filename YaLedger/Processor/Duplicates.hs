@@ -104,7 +104,6 @@ matchBy checks newRecord oldRecords = go oldRecords
              in  (x, r: ers)
 
     matches oldRecord (CDate d) =
-      traceS ("Dates: " ++ (show $ getDate newRecord) ++ ", " ++ (show $ getDate oldRecord)) $
       datesDifference (getDate newRecord) (getDate oldRecord) <= d
     matches oldRecord (CAmount x) =
       case (getRAmount newRecord, getRAmount oldRecord) of
@@ -115,7 +114,7 @@ matchBy checks newRecord oldRecords = go oldRecords
         _ -> False
     matches oldRecord CCreditAccount =
       case (getCreditAccount newRecord, getCreditAccount oldRecord) of
-        (Just aid1, Just aid2) -> traceS ("C: " ++ show aid1 ++ " - " ++ show aid2) $ aid1 == aid2
+        (Just aid1, Just aid2) -> aid1 == aid2
         _                      -> False
     matches oldRecord CDebitAccount =
       case (getDebitAccount newRecord, getDebitAccount oldRecord) of

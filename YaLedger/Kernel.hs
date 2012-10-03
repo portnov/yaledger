@@ -164,8 +164,8 @@ lookupRate from to = do
   where
     go _ _ _ [] = Nothing
     go ar f t (Explicit cFrom aFrom cTo aTo rev: rs)
-      | (cFrom == f) && (cTo == t) = Just (aFrom / aTo)
-      | rev && (cTo == f) && (cFrom == t) = Just (aTo / aFrom)
+      | (cFrom == f) && (cTo == t) = Just (aTo / aFrom)
+      | rev && (cTo == f) && (cFrom == t) = Just (aFrom / aTo)
       | otherwise = go ar f t rs
     go ar f t (Implicit cFrom cTo cBase rev: rs)
       | (cFrom == f) && (cTo == t) = do
@@ -216,7 +216,7 @@ checkRecord qry rec =
     isAdmin (getContent rec) || checkQuery qry rec
 
 isAdmin :: Record -> Bool
-isAdmin (Transaction _) = True
+isAdmin (Transaction (TSetRate _)) = True
 isAdmin (Transaction _) = False
 isAdmin _               = True
 
@@ -418,6 +418,7 @@ checkEntry attrs (UEntry dt cr mbCorr currs) = do
          rd <- if diffD == realFracToDecimal 10 (fromIntegral 0)
                  then return OneCurrency
                  else do
+                      debug $ "Rates difference: " ++ show diffD
                       let attrs' = M.insert "category" (Exactly "rates-difference") $
                                    M.insert "source"   (Optional source) attrs
                           qry = CQuery {

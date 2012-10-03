@@ -8,8 +8,7 @@ module YaLedger.Types
    module YaLedger.Types.Map,
    module YaLedger.Types.Transactions,
    module YaLedger.Types.Rules,
-   Rule (..),
-   trace
+   Rule (..)
   ) where
 
 import YaLedger.Tree
@@ -19,8 +18,6 @@ import YaLedger.Types.Ledger
 import YaLedger.Types.Map
 import YaLedger.Types.Transactions
 import YaLedger.Types.Rules
-
-import Debug.Trace
 
 data Rule = When Condition (Transaction Param)
   deriving (Eq, Show)
