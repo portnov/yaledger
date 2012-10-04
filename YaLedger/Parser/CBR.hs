@@ -3,7 +3,7 @@ module YaLedger.Parser.CBR
   (loadCBR, test
   ) where
 
-import Control.Applicative
+import Control.Applicative hiding ((<|>), many)
 import Control.Monad
 import Data.List
 import qualified Data.Map as M
@@ -18,10 +18,17 @@ import Data.Dates
 import Network.HTTP
 import Network.Browser
 import Text.Printf
+import Text.Parsec
 
 import YaLedger.Types hiding (getChildren)
 import YaLedger.Config
 import YaLedger.Parser.Tables (loadParserConfig)
+import YaLedger.Parser.Common
+import qualified YaLedger.Parser.Transactions as T
+import YaLedger.Pretty
+
+roubles :: Currency
+roubles = "р"
 
 type ParserConfig = [GetRate]
 
@@ -62,9 +69,10 @@ splitP p list = go [] [] list
       | p x = go (x:good) bad xs
       | otherwise = go good (x:bad) xs
 
-allChecks :: DateTime -> ParserConfig -> [(DateTime, [GetRate])]
-allChecks till pc = mrg $ sort $ concatMap (checks till) pc
+allChecks :: DateTime -> ParserConfig -> [(DateTime, Currency)] -> [(DateTime, [GetRate])]
+allChecks till pc old = mrg $ sort $ filter new $ concatMap (checks till) pc
   where
+    new (d,gr) = (d, currencyName gr) `notElem` old
     mrg [] = []
     mrg [(d,c)] = [(d, [c])]
     mrg ((d1,c1):xs) =
@@ -122,20 +130,44 @@ parseRates str cids = do
     dot (',':s) = '.':s
     dot (x:xs) = x: dot xs
 
+pRates :: T.Parser [Ext Record]
+pRates =
+  T.ext (Transaction <$> T.pSetRate) `sepEndBy` many newline
+
+loadCache :: ChartOfAccounts -> FilePath -> IO [Ext Record]
+loadCache coa cachePath = do
+  st <- T.emptyPState coa
+  content <- readFile cachePath
+  case runParser pRates st cachePath content of
+    Left err -> fail $ show err
+    Right recs -> return recs
+
+getChecks :: [Ext Record] -> [(DateTime, Currency)]
+getChecks recs = concatMap go recs
+  where
+    go (Ext date _ _ (Transaction (TSetRate rates))) =
+      [(date, rateCurrencyFrom r) | r <-  rates]
+    go _ = error "Impossible: CBR.getChecks.go"
+
 loadCBR :: FilePath -> ChartOfAccounts -> FilePath -> IO [Ext Record]
-loadCBR configPath _ _ = do
+loadCBR configPath coa cachePath = do
     config <- loadParserConfig configPath
+    cache <- loadCache coa cachePath
+    let old = getChecks cache
     now <- getCurrentDateTime
-    forM (allChecks now config) $ \(date, grs) -> do
-        doc <- getCBRXML date
-        pairs <- parseRates doc (map currencyCode grs)
-        let rates = map (bind grs) pairs
-        return $ Ext date nowhere M.empty $ Transaction $ TSetRate $
-                   map convert rates
+    new <- forM (allChecks now config old) $ \(date, grs) -> do
+             doc <- getCBRXML date
+             pairs <- parseRates doc (map currencyCode grs)
+             let rates = map (bind grs) pairs
+             return $ Ext date nowhere M.empty $ Transaction $ TSetRate $
+                        map convert rates
+    let records = cache ++ new
+    writeFile cachePath $ unlines $ map prettyPrint records
+    return records
   where
     nowhere = newPos "<nowhere>" 0 0
     convert (cFrom, rev, (aFrom, aTo)) = 
-          Explicit cFrom aFrom "р" aTo rev
+          Explicit cFrom aFrom roubles aTo rev
     bind grs (cid, rate) =
       case filter ((== cid) . currencyCode) grs of
         [gr] -> (currencyName gr, readAsReversible gr, rate)
