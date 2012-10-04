@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 module YaLedger.Parser.CBR
-  (loadCBR
+  (loadCBR, test
   ) where
 
 import Control.Applicative
@@ -69,16 +69,18 @@ allChecks till pc = mrg $ sort $ concatMap (checks till) pc
     mrg [(d,c)] = [(d, [c])]
     mrg ((d1,c1):xs) =
       let (sameDate, other) = splitP ((== d1) . fst) xs
-      in  (d1, map snd sameDate): mrg other
+      in  (d1, c1: map snd sameDate): mrg other
 
 is ::  ArrowXml cat => String -> cat XmlTree XmlTree
 is name = isElem >>> hasName name
 
-getRateStrings :: (ArrowXml cat) => [Int] -> cat (NTree XNode) (String, String)
+getRateStrings :: (ArrowXml cat) => [Int] -> cat (NTree XNode) (String, (String, String))
 getRateStrings cids =
-    getChildren >>> is "ValCurs" /> is "Valute" >>> check `guards` (nominal &&& rate)
+    getChildren >>> is "ValCurs" /> is "Valute" >>> filterA check >>> (code &&& (nominal &&& rate))
   where
     check = getChildren >>> is "NumCode" /> hasText (`elem` map show cids)
+
+    code = getChildren >>> is "NumCode" /> getText
 
     nominal = getChildren >>> is "Nominal" /> getText
 
@@ -109,10 +111,10 @@ getCBRXML date = do
                request $ getRequest src
   return $ skipXmlDecl (rspBody rsp)
 
-parseRates :: String -> [Int] -> IO [(Double, Double)]
+parseRates :: String -> [Int] -> IO [(Int, (Double, Double))]
 parseRates str cids = do
     pairs <- runX $ readString [] str >>> getRateStrings cids
-    return $ map (double *** double) pairs
+    return $ map (read *** (double *** double)) pairs
   where
     double s = read (dot s)
 
@@ -124,16 +126,20 @@ loadCBR :: FilePath -> ChartOfAccounts -> FilePath -> IO [Ext Record]
 loadCBR configPath _ _ = do
     config <- loadParserConfig configPath
     now <- getCurrentDateTime
-    rs <- forM (allChecks now config) $ \(date, grs) -> do
-            doc <- getCBRXML date
-            pairs <- parseRates doc (map currencyCode grs)
-            return $ zipWith (convert date) pairs grs
-    return (concat rs)
+    forM (allChecks now config) $ \(date, grs) -> do
+        doc <- getCBRXML date
+        pairs <- parseRates doc (map currencyCode grs)
+        let rates = map (bind grs) pairs
+        return $ Ext date nowhere M.empty $ Transaction $ TSetRate $
+                   map convert rates
   where
     nowhere = newPos "<nowhere>" 0 0
-    convert date (aFrom, aTo) gr =
-      Ext date nowhere M.empty $ Transaction $ TSetRate [
-          Explicit (currencyName gr) aFrom "р" aTo (readAsReversible gr) ]
+    convert (cFrom, rev, (aFrom, aTo)) = 
+          Explicit cFrom aFrom "р" aTo rev
+    bind grs (cid, rate) =
+      case filter ((== cid) . currencyCode) grs of
+        [gr] -> (currencyName gr, readAsReversible gr, rate)
+        _ -> error "Impossible: CBR.loadCBR.bind"
 
 test :: IO ()
 test = do

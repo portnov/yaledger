@@ -98,3 +98,6 @@ stop testPeriodic
   cr X1 41$
   Z5
 
+@ 2012/10/01
+rate 1.0€ -> 1.21$
+
