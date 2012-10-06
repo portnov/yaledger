@@ -17,6 +17,9 @@ import YaLedger.Monad
 import YaLedger.Exceptions
 import YaLedger.Logger
 
+isNotZero :: Amount -> Bool
+isNotZero (x :# _) = x /= 0
+
 negateInterval :: DateInterval -> DateInterval
 negateInterval (Days n)   = Days (negate n)
 negateInterval (Weeks n)  = Weeks (negate n)

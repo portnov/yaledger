@@ -3,7 +3,7 @@
 module YaLedger.Types.Reports
   (ReportClass (..), ReportParameter (..),
    Report (..),
-   OptDescr (..),
+   OptDescr (..), ArgDescr (..),
    runAReport
   ) where
 
@@ -114,15 +114,18 @@ runAReport :: (Throws InvalidCmdLine l,
                Throws InternalError l)
            => Query -> [String] -> Report -> Ledger l ()
 runAReport qry cmdline (Report r) = do
+  let ropts = reportOptions r
   (options, params) <- do
-    if null (reportOptions r)
+    if null ropts
       then do
            p <- runParser parseParameter cmdline
            return (defaultOptions r, p)
-      else case getOpt RequireOrder (reportOptions r) cmdline of
+      else case getOpt RequireOrder ropts cmdline of
              (opts, ps, []) -> do
                  p <- runParser parseParameter ps
                  return (opts, p)
-             (_,_, errs) -> throw (InvalidCmdLine $ concat errs)
+             (_,_, errs) -> do
+               let message = usageInfo (reportHelp r) ropts
+               throw (InvalidCmdLine $ concat errs ++ message)
   runReport r qry options (fst params)
 

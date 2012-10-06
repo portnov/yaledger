@@ -21,21 +21,28 @@ import YaLedger.Reports.Common
 
 data Balances = Balances
 
+data BOptions = BNoZeros
+  deriving (Eq)
+
 instance ReportClass Balances where
-  type Options Balances = ()
+  type Options Balances = BOptions
   type Parameters Balances = Maybe Path
-  reportOptions _ = []
+  reportOptions _ = 
+    [Option "z" ["no-zeros"] (NoArg BNoZeros) "Do not show accounts with zero balance"]
   defaultOptions _ = []
-  reportHelp _ = ""
+  reportHelp _ = "Show accounts balances. One optional parameter: account or accounts group."
 
-  runReport _ qry _ mbPath = balance qry mbPath
+  runReport _ qry opts mbPath = balance qry opts mbPath
 
-balance qry mbPath = (do
+balance qry options mbPath = (do
     coa <- case mbPath of
               Nothing   -> gets lsCoA
               Just path -> getCoAItem (gets lsPosition) (gets lsCoA) path
     res <- treeSaldo qry coa
-    wrapIO $ print res)
+    let res' = if BNoZeros `elem` options
+                  then filterLeafs isNotZero res
+                  else res
+    wrapIO $ print res')
   `catchWithSrcLoc`
     (\l (e :: InvalidPath) -> handler l e)
   `catchWithSrcLoc`

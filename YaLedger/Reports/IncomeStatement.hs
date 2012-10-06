@@ -24,15 +24,19 @@ import YaLedger.Reports.Common
 
 data IncomeStatement = IncomeStatement
 
+data IOptions = INoZeros
+  deriving (Eq)
+
 instance ReportClass IncomeStatement where
-  type Options IncomeStatement = ()
+  type Options IncomeStatement = IOptions
   type Parameters IncomeStatement = Maybe Path
-  reportOptions _ = []
+  reportOptions _ = 
+    [Option "z" ["no-zeros"] (NoArg INoZeros) "Do not show accounts with zero balance"]
   defaultOptions _ = []
   reportHelp _ = ""
 
-  runReport _ qry _ mbPath = 
-      incomeStatement' qry mbPath
+  runReport _ qry opts mbPath = 
+      incomeStatement' qry opts mbPath
     `catchWithSrcLoc`
       (\l (e :: InternalError) -> handler l e)
     `catchWithSrcLoc`
@@ -40,7 +44,7 @@ instance ReportClass IncomeStatement where
     `catchWithSrcLoc`
       (\l (e :: NoSuchRate) -> handler l e)
 
-incomeStatement' qry mbPath = do
+incomeStatement' qry options mbPath = do
     coa <- case mbPath of
               Nothing   -> gets lsCoA
               Just path -> getCoAItem (gets lsPosition) (gets lsCoA) path
@@ -56,6 +60,10 @@ incomeStatement' qry mbPath = do
         incomes  = filterLeafs isDebit  coa
         outcomes = filterLeafs isCredit coa
 
+        nz x = if INoZeros `elem` options
+                 then isNotZero x
+                 else True
+
     incomes'  <- mapTree negateAmount negateAmount <$> treeSaldo qry incomes
     outcomes' <- treeSaldo qry outcomes
 
@@ -63,8 +71,8 @@ incomeStatement' qry mbPath = do
     incomeD  :# _ <- convert defcur (amount incomes')
     outcomeD :# _ <- convert defcur (amount outcomes')
 
-    let incomesS  = lines (show incomes')
-        outcomesS = lines (show outcomes')
+    let incomesS  = lines (show $ filterLeafs nz incomes')
+        outcomesS = lines (show $ filterLeafs nz outcomes')
         m = max (length incomesS) (length outcomesS)
         padE list = list ++ replicate (m - length list) ""
         res = twoColumns "INCOMES" "OUTCOMES"

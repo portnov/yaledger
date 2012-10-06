@@ -29,6 +29,7 @@ instance ReportClass Turnovers where
   type Parameters Turnovers = Maybe Path
   defaultOptions Turnovers = []
   reportHelp _ = ""
+  reportOptions _ = []
   runReport _ qry _ mbPath =
     turnovers' qry mbPath
       `catchWithSrcLoc`
