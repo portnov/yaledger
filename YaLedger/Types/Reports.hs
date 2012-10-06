@@ -1,12 +1,19 @@
-{-# LANGUAGE EmptyDataDecls, MultiParamTypeClasses, FlexibleContexts, FlexibleInstances, TypeOperators, ScopedTypeVariables, ExistentialQuantification, OverlappingInstances #-}
-{-# OPTIONS_GHC -F -pgmF MonadLoc #-}
-module YaLedger.Types.Reports where
+{-# LANGUAGE EmptyDataDecls, MultiParamTypeClasses, FlexibleContexts, FlexibleInstances, TypeOperators, ScopedTypeVariables, ExistentialQuantification, OverlappingInstances, TypeFamilies #-}
+{- # OPTIONS_GHC -F -pgmF MonadLoc #-}
+module YaLedger.Types.Reports
+  (ReportClass (..), ReportParameter (..),
+   Report (..),
+   OptDescr (..),
+   runAReport
+  ) where
 
+import Control.Applicative ((<$>))
 import Control.Monad.State
 import Control.Monad.Exception
 import Control.Monad.Exception.Base
 import Control.Monad.Loc
 import Data.Dates
+import System.Console.GetOpt
 
 import YaLedger.Tree
 import YaLedger.Exceptions
@@ -15,59 +22,104 @@ import YaLedger.Types.Transactions
 import YaLedger.Monad
 import YaLedger.Kernel.Common
 
-class ReportGenerator a r where
-  runGenerator :: (Throws InvalidCmdLine l,
-                   Throws InternalError l)
-               => a -> [String] -> Ledger l r
+newtype Parser l a = Parser {
+    runParser :: [String] -> Ledger l (a, [String])
+  }
 
-data Report =
-  forall a. (ReportGenerator a (Ledger NoExceptions ()))
-           => Report (Query -> a)
+instance Monad (Parser l) where
+  return x = Parser (\s -> return (x, s))
 
-instance ReportGenerator r r where
-  runGenerator r [] = return r
-  runGenerator _ lst = throw (InvalidCmdLine $ "Too many parameters: " ++ unwords lst)
+  m >>= f = Parser $ \s -> do
+    (y, s') <- runParser m s
+    runParser (f y) s'
 
-instance (ReportGenerator a r, ReportParameter p)
-      => ReportGenerator (p -> a) r where
-  runGenerator _ [] = throw (InvalidCmdLine "Not enough parameters")
-  runGenerator f (x:xs) = do
-    p <- parseParameter x
-    runGenerator (f p) xs
+instance Functor (Parser l) where
+  fmap = liftM
 
-instance (ReportGenerator a r, ReportParameter p)
-      => ReportGenerator (Maybe p -> a) r where
-  runGenerator f [] = runGenerator (f Nothing) []
-  runGenerator f (x:xs) = do
-    p <- parseParameter x
-    runGenerator (f $ Just p) xs
+liftL :: Ledger l a -> Parser l a
+liftL action = Parser $ \s -> do
+  y <- action
+  return (y, s)
+
+word :: Throws InvalidCmdLine l => Parser l String
+word = Parser $ \s ->
+         case s of
+           [] -> throw (InvalidCmdLine "Not enough parameters")
+           (x:xs) -> return (x, xs)
+
+maybeWord :: Parser l (Maybe String)
+maybeWord = Parser $ \s ->
+              case s of
+                [] -> return (Nothing, [])
+                (x:xs) -> return (Just x, xs)
 
 class ReportParameter a where
   parseParameter :: (Throws InvalidCmdLine l,
                      Throws InternalError l)
-                 => String -> Ledger l a
+                 => Parser l a
+
+class (ReportParameter (Parameters a)) => ReportClass a where
+  type Options a
+  type Parameters a
+
+  reportOptions :: a -> [OptDescr (Options a)]
+  defaultOptions :: a -> [Options a]
+  runReport :: (Throws InvalidCmdLine l,
+                Throws InternalError l)
+            => a -> Query -> [Options a] -> Parameters a -> Ledger l ()
+  reportHelp :: a -> String
+
+data Report =
+  forall a. (ReportClass a) => Report a
+
+instance ReportParameter () where
+  parseParameter = return ()
+
+instance ReportParameter a => ReportParameter (Maybe a) where
+  parseParameter = Parser $ \s ->
+    case s of
+      [] -> return (Nothing, [])
+      (x:xs) -> runParser parseParameter (x:xs)
 
 instance ReportParameter String where
-  parseParameter s = return s
+  parseParameter  = word
 
 instance ReportParameter Path where
-  parseParameter s = return (mkPath s)
+  parseParameter = mkPath <$> word
 
 instance ReportParameter DateTime where
-  parseParameter s = do
-    now <- wrapIO getCurrentDateTime
+  parseParameter = do
+    s <- word
+    now <- liftL (gets lsStartDate)
     case parseDate now s of
       Right date -> return date
-      Left err -> throw (InvalidCmdLine $ s ++ ": " ++ show err)
+      Left err -> liftL $ throw (InvalidCmdLine $ s ++ ": " ++ show err)
 
 instance ReportParameter AnyAccount where
-  parseParameter s = do
-    let path = mkPath s
-    getAccount (gets lsPosition) (gets lsCoA) path
-      `catchWithSrcLoc`
-        (\l (e :: NotAnAccount) ->
-             rethrow l (InvalidCmdLine $ show e))
-      `catchWithSrcLoc`
-        (\l (e :: InvalidPath) ->
-             rethrow l (InvalidCmdLine $ show e))
+  parseParameter = do
+    s <- word
+    liftL $ 
+      getAccount (gets lsPosition) (gets lsCoA) (mkPath s)
+        `catchWithSrcLoc`
+          (\l (e :: NotAnAccount) ->
+               rethrow l (InvalidCmdLine $ show e))
+        `catchWithSrcLoc`
+          (\l (e :: InvalidPath) ->
+               rethrow l (InvalidCmdLine $ show e))
+
+runAReport :: (Throws InvalidCmdLine l,
+               Throws InternalError l)
+           => Query -> [String] -> Report -> Ledger l ()
+runAReport qry cmdline (Report r) = do
+  (options, params) <- do
+    if null (reportOptions r)
+      then do
+           p <- runParser parseParameter cmdline
+           return (defaultOptions r, p)
+      else case getOpt RequireOrder (reportOptions r) cmdline of
+             (opts, ps, []) -> do
+                 p <- runParser parseParameter ps
+                 return (opts, p)
+             (_,_, errs) -> throw (InvalidCmdLine $ concat errs)
+  runReport r qry options (fst params)
 

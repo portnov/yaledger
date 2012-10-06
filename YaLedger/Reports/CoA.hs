@@ -1,4 +1,4 @@
-{-# LANGUAGE ScopedTypeVariables, FlexibleContexts, OverlappingInstances, GADTs, RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables, FlexibleContexts, OverlappingInstances, GADTs, RecordWildCards, TypeFamilies #-}
 {-# OPTIONS_GHC -F -pgmF MonadLoc #-}
 
 module YaLedger.Reports.CoA where
@@ -17,12 +17,21 @@ import YaLedger.Exceptions
 import YaLedger.Logger
 import YaLedger.Reports.Common
 
-showCoA :: Query -> Maybe Path -> Ledger NoExceptions ()
-showCoA _ mbPath = showCoA' mbPath
-  `catchWithSrcLoc`
-    (\l (e :: InternalError) -> handler l e)
-  `catchWithSrcLoc`
-    (\l (e :: InvalidPath) -> handler l e)
+data CoA = CoA
+
+instance ReportClass CoA where
+  type Options CoA = ()
+  type Parameters CoA = Maybe Path
+  reportOptions _ = []
+  defaultOptions _ = []
+  reportHelp _ = ""
+
+  runReport _ qry _ mbPath = 
+      showCoA' mbPath
+    `catchWithSrcLoc`
+      (\l (e :: InternalError) -> handler l e)
+    `catchWithSrcLoc`
+      (\l (e :: InvalidPath) -> handler l e)
 
 showCoA' :: (Throws InvalidPath l,
               Throws InternalError l)

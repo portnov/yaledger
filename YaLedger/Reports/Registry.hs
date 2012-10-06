@@ -1,4 +1,4 @@
-{-# LANGUAGE ScopedTypeVariables, FlexibleContexts, OverlappingInstances, GADTs, RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables, FlexibleContexts, OverlappingInstances, GADTs, RecordWildCards, TypeFamilies #-}
 {-# OPTIONS_GHC -F -pgmF MonadLoc #-}
 
 module YaLedger.Reports.Registry where
@@ -22,15 +22,23 @@ import YaLedger.Exceptions
 import YaLedger.Logger
 import YaLedger.Reports.Common
 
-registry :: Query -> Maybe Path -> Ledger NoExceptions ()
-registry qry mbPath =
-    registry' qry mbPath
-  `catchWithSrcLoc`
-    (\l (e :: InternalError) -> handler l e)
-  `catchWithSrcLoc`
-    (\l (e :: InvalidPath) -> handler l e)
-  `catchWithSrcLoc`
-    (\l (e :: NoSuchRate) -> handler l e)
+data Registry = Registry
+
+instance ReportClass Registry where
+  type Options Registry = ()
+  type Parameters Registry = Maybe Path
+  reportOptions _ = []
+  defaultOptions _ = []
+  reportHelp _ = ""
+
+  runReport _ qry _ mbPath = 
+      registry' qry mbPath
+    `catchWithSrcLoc`
+      (\l (e :: InternalError) -> handler l e)
+    `catchWithSrcLoc`
+      (\l (e :: InvalidPath) -> handler l e)
+    `catchWithSrcLoc`
+      (\l (e :: NoSuchRate) -> handler l e)
 
 registry' qry mbPath = do
     coa <- case mbPath of

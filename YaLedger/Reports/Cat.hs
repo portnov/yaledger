@@ -1,4 +1,4 @@
-{-# LANGUAGE ScopedTypeVariables, FlexibleContexts, OverlappingInstances #-}
+{-# LANGUAGE ScopedTypeVariables, FlexibleContexts, OverlappingInstances, TypeFamilies #-}
 {-# OPTIONS_GHC -F -pgmF MonadLoc #-}
 
 module YaLedger.Reports.Cat where
@@ -20,11 +20,19 @@ import YaLedger.Logger
 import YaLedger.Pretty
 import YaLedger.Reports.Common
 
-cat :: Query -> Ledger NoExceptions ()
-cat qry =
-    cat' qry
-  `catchWithSrcLoc`
-    (\l (e :: InternalError) -> handler l e)
+data Cat = Cat
+
+instance ReportClass Cat where
+  type Options Cat = ()
+  type Parameters Cat = ()
+  reportOptions _ = []
+  defaultOptions _ = []
+  reportHelp _ = ""
+
+  runReport _ qry _ () = 
+      cat' qry
+    `catchWithSrcLoc`
+      (\l (e :: InternalError) -> handler l e)
 
 cat' qry = do
   records <- gets lsLoadedRecords

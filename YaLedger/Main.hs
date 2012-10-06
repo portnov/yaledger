@@ -3,7 +3,7 @@ module YaLedger.Main
   (module YaLedger.Types,
    module YaLedger.Types.Reports,
    module YaLedger.Monad,
-   Options (..),
+   LedgerOptions (..),
    defaultMain
   ) where
 
@@ -54,7 +54,7 @@ parseDebug str =
     [(x, "")] -> Just x
     _ -> Nothing
 
-parseCmdLine :: IO Options
+parseCmdLine :: IO LedgerOptions
 parseCmdLine = do
   argv <- getArgs
   now <-  getCurrentDateTime
@@ -187,7 +187,7 @@ showInterval qry =
     showMD s Nothing = s
     showMD _ (Just date) = prettyPrint date
 
-run (Just coaPath) (Just mapPath) configs mbInterval qry rules inputPaths (Report report) params = do
+run (Just coaPath) (Just mapPath) configs mbInterval qry rules inputPaths report params = do
   coa <- readCoA coaPath
   amap <- readAMap coa mapPath
   records <- parseInputFiles configs coa inputPaths
@@ -203,11 +203,9 @@ run (Just coaPath) (Just mapPath) configs mbInterval qry rules inputPaths (Repor
                           Just int -> splitQuery firstDate now qry int
           forM_ queries $ \query -> do
               wrapIO $ putStrLn $ showInterval query
-              x <- runGenerator (report query) params
-                     `catchWithSrcLoc`
-                       (\loc (e :: InvalidCmdLine) -> do
-                             wrapIO (putStrLn $ showExceptionWithTrace loc e)
-                             return (return ()))
-              x
+              runAReport query params report
+                 `catchWithSrcLoc`
+                   (\loc (e :: InvalidCmdLine) -> do
+                         wrapIO (putStrLn $ showExceptionWithTrace loc e))
 run _ _ _ _ _ _ _ _ _ = error "Impossible: no coa or map file."
 

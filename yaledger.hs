@@ -14,11 +14,11 @@ import YaLedger.Reports.IncomeStatement
 
 main :: IO ()
 main =
-  defaultMain [("balance",  Report balance),
-               ("registry", Report registry),
-               ("postings", Report postings),
-               ("details",  Report details),
-               ("turnovers", Report turnovers),
-               ("accounts", Report showCoA),
-               ("cat",      Report cat),
-               ("incomestatement", Report incomeStatement)]
+  defaultMain [("balances",  Report Balances),
+               ("registry", Report Registry),
+               ("postings", Report Postings),
+               ("details",  Report Details),
+               ("turnovers", Report Turnovers),
+               ("accounts", Report CoA),
+               ("cat",      Report Cat),
+               ("incomestatement", Report IncomeStatement)]

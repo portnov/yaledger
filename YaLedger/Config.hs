@@ -22,8 +22,8 @@ import YaLedger.Logger
 import YaLedger.Parser.Common (pAttributeValue)
 import YaLedger.Processor.Duplicates
 
-data Options =
-    Options {
+data LedgerOptions =
+    LedgerOptions {
       chartOfAccounts :: Maybe FilePath,
       accountMap :: Maybe FilePath,
       files :: [FilePath],
@@ -36,12 +36,12 @@ data Options =
   | Help
   deriving (Eq, Show)
 
-instance Monoid Options where
+instance Monoid LedgerOptions where
   mempty = Help
   mappend Help o = o
   mappend o Help = o
   mappend o1 o2 =
-    Options {
+    LedgerOptions {
       chartOfAccounts = chartOfAccounts o1 `mappend` chartOfAccounts o2,
       accountMap  = accountMap  o1 `mappend` accountMap o2,
       files = if null (files o2) then files o1 else files o2,
@@ -63,9 +63,9 @@ instance Monoid Query where
       qAllAdmin = qAllAdmin q1 || qAllAdmin q2,
       qAttributes = qAttributes q1 `M.union` qAttributes q2 }
 
-instance FromJSON Options where
+instance FromJSON LedgerOptions where
   parseJSON (Object v) =
-    Options
+    LedgerOptions
       <$> v .:? "chart-of-accounts"
       <*> v .:? "accounts-map"
       <*> v .:?  "files" .!= []
@@ -75,7 +75,7 @@ instance FromJSON Options where
       <*> (parseConfigs =<< (v .:? "parsers"))
       <*> v .:? "deduplicate" .!= []
       <*> return []
-  parseJSON _ = fail "Options: invalid object"
+  parseJSON _ = fail "LedgerOptions: invalid object"
 
 instance FromJSON DateInterval where
   parseJSON (String text) =
@@ -187,13 +187,13 @@ parseConfigs :: Maybe Object -> Parser [(String, FilePath)]
 parseConfigs Nothing = return []
 parseConfigs (Just obj) = parsePairs obj
 
-getDefaultOptions :: IO Options
-getDefaultOptions = do
+getDefaultLedgerOptions :: IO LedgerOptions
+getDefaultLedgerOptions = do
   now <-  getCurrentDateTime
   configDir <- getUserConfigDir "yaledger"
   documents <- getUserDir "DOCUMENTS"
   let inputFile = documents </> "yaledger" </> "default.yaledger"
-  return $ Options {
+  return $ LedgerOptions {
         chartOfAccounts = Just (configDir </> "default.accounts"),
         accountMap  = Just (configDir </> "default.map"),
         files = [inputFile],
@@ -208,16 +208,16 @@ getDefaultOptions = do
         deduplicationRules = [],
         reportParams = ["balance"] }
 
-loadConfig :: IO Options
+loadConfig :: IO LedgerOptions
 loadConfig = do
-  defaultOptions <- getDefaultOptions
+  defaultLedgerOptions <- getDefaultLedgerOptions
   configFile <- getUserConfigFile "yaledger" "yaledger.yaml"
   exist <- doesFileExist configFile
   if not exist
-    then return defaultOptions
+    then return defaultLedgerOptions
     else do
         str <- B.readFile configFile
         case decode str of
           Nothing -> fail $ "Cannot parse config file: " ++ configFile
-          Just options -> return (defaultOptions `mappend` options)
+          Just options -> return (defaultLedgerOptions `mappend` options)
 

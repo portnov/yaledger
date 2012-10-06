@@ -1,4 +1,4 @@
-{-# LANGUAGE ScopedTypeVariables, FlexibleContexts, OverlappingInstances #-}
+{-# LANGUAGE ScopedTypeVariables, FlexibleContexts, OverlappingInstances, TypeFamilies #-}
 {-# OPTIONS_GHC -F -pgmF MonadLoc #-}
 
 module YaLedger.Reports.Balance where
@@ -19,9 +19,17 @@ import YaLedger.Exceptions
 import YaLedger.Logger
 import YaLedger.Reports.Common
 
-balance :: Query
-        -> Maybe Path
-        -> Ledger NoExceptions ()
+data Balances = Balances
+
+instance ReportClass Balances where
+  type Options Balances = ()
+  type Parameters Balances = Maybe Path
+  reportOptions _ = []
+  defaultOptions _ = []
+  reportHelp _ = ""
+
+  runReport _ qry _ mbPath = balance qry mbPath
+
 balance qry mbPath = (do
     coa <- case mbPath of
               Nothing   -> gets lsCoA

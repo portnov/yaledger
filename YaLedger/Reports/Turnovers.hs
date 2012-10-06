@@ -1,4 +1,4 @@
-{-# LANGUAGE ScopedTypeVariables, FlexibleContexts, OverlappingInstances, GADTs, RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables, FlexibleContexts, OverlappingInstances, GADTs, RecordWildCards, TypeFamilies #-}
 {- # OPTIONS_GHC -F -pgmF MonadLoc #-}
 
 module YaLedger.Reports.Turnovers where
@@ -22,17 +22,19 @@ import YaLedger.Exceptions
 import YaLedger.Logger
 import YaLedger.Reports.Common
 
-turnovers :: Query
-          -> Maybe Path
-          -> Ledger NoExceptions ()
-turnovers qry mbPath =
+data Turnovers = Turnovers
+
+instance ReportClass Turnovers where
+  type Options Turnovers = ()
+  type Parameters Turnovers = Maybe Path
+  defaultOptions Turnovers = []
+  reportHelp _ = ""
+  runReport _ qry _ mbPath =
     turnovers' qry mbPath
-  `catchWithSrcLoc`
-    (\l (e :: InternalError) -> handler l e)
-  `catchWithSrcLoc`
-    (\l (e :: InvalidPath) -> handler l e)
-  `catchWithSrcLoc`
-    (\l (e :: NoSuchRate) -> handler l e)
+      `catchWithSrcLoc`
+        (\l (e :: InvalidPath) -> handler l e)
+      `catchWithSrcLoc`
+        (\l (e :: NoSuchRate) -> handler l e)
 
 sumTurnovers ag list = do
   let c = agCurrency ag

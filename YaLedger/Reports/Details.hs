@@ -1,4 +1,4 @@
-{-# LANGUAGE ScopedTypeVariables, FlexibleContexts, OverlappingInstances, GADTs #-}
+{-# LANGUAGE ScopedTypeVariables, FlexibleContexts, OverlappingInstances, GADTs, TypeFamilies #-}
 {-# OPTIONS_GHC -F -pgmF MonadLoc #-}
 
 module YaLedger.Reports.Details where
@@ -23,15 +23,23 @@ import YaLedger.Exceptions
 import YaLedger.Logger
 import YaLedger.Reports.Common
 
-details :: Query -> Maybe Path -> Ledger NoExceptions ()
-details qry mbPath =
-    details' qry mbPath
-  `catchWithSrcLoc`
-    (\l (e :: InternalError) -> handler l e)
-  `catchWithSrcLoc`
-    (\l (e :: InvalidPath) -> handler l e)
-  `catchWithSrcLoc`
-    (\l (e :: NoSuchRate) -> handler l e)
+data Details = Details
+
+instance ReportClass Details where
+  type Options Details = ()
+  type Parameters Details = Maybe Path
+  reportOptions _ = []
+  defaultOptions _ = []
+  reportHelp _ = ""
+
+  runReport _ qry _ mbPath = 
+      details' qry mbPath
+    `catchWithSrcLoc`
+      (\l (e :: InternalError) -> handler l e)
+    `catchWithSrcLoc`
+      (\l (e :: InvalidPath) -> handler l e)
+    `catchWithSrcLoc`
+      (\l (e :: NoSuchRate) -> handler l e)
 
 details' qry mbPath = do
     coa <- case mbPath of

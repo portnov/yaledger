@@ -1,4 +1,4 @@
-{-# LANGUAGE ScopedTypeVariables, FlexibleContexts, OverlappingInstances, GADTs #-}
+{-# LANGUAGE ScopedTypeVariables, FlexibleContexts, OverlappingInstances, GADTs, TypeFamilies #-}
 {-# OPTIONS_GHC -F -pgmF MonadLoc #-}
 
 module YaLedger.Reports.Postings where
@@ -23,13 +23,21 @@ import YaLedger.Exceptions
 import YaLedger.Logger
 import YaLedger.Reports.Common
 
-postings :: Query -> Maybe Path -> Ledger NoExceptions ()
-postings qry mbPath = do
-    postings' qry mbPath
-  `catchWithSrcLoc`
-    (\l (e :: InternalError) -> handler l e)
-  `catchWithSrcLoc`
-    (\l (e :: InvalidPath) -> handler l e)
+data Postings = Postings
+
+instance ReportClass Postings where
+  type Options Postings = ()
+  type Parameters Postings = Maybe Path
+  reportOptions _ = []
+  defaultOptions _ = []
+  reportHelp _ = ""
+
+  runReport _ qry _ mbPath =
+      postings' qry mbPath
+    `catchWithSrcLoc`
+      (\l (e :: InternalError) -> handler l e)
+    `catchWithSrcLoc`
+      (\l (e :: InvalidPath) -> handler l e)
 
 postings' qry mbPath = do
   coa <- case mbPath of
@@ -59,3 +67,4 @@ showPostings list =
         getAmountS (Ext {getContent = (Left p)}) = show (getAmount p)
         getAmountS (Ext {getContent = (Right p)}) = '-': show (getAmount p)
     in  twoColumns "DATE" "AMOUNT" (alignMax ACenter dates) (alignMax ARight amounts)
+

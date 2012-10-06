@@ -1,4 +1,4 @@
-{-# LANGUAGE ScopedTypeVariables, FlexibleContexts, OverlappingInstances, GADTs, RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables, FlexibleContexts, OverlappingInstances, GADTs, RecordWildCards, TypeFamilies #-}
 {-# OPTIONS_GHC -F -pgmF MonadLoc #-}
 
 module YaLedger.Reports.IncomeStatement where
@@ -22,17 +22,23 @@ import YaLedger.Exceptions
 import YaLedger.Logger
 import YaLedger.Reports.Common
 
-incomeStatement :: Query
-                -> Maybe Path
-                -> Ledger NoExceptions ()
-incomeStatement qry mbPath =
-    incomeStatement' qry mbPath
-  `catchWithSrcLoc`
-    (\l (e :: InternalError) -> handler l e)
-  `catchWithSrcLoc`
-    (\l (e :: InvalidPath) -> handler l e)
-  `catchWithSrcLoc`
-    (\l (e :: NoSuchRate) -> handler l e)
+data IncomeStatement = IncomeStatement
+
+instance ReportClass IncomeStatement where
+  type Options IncomeStatement = ()
+  type Parameters IncomeStatement = Maybe Path
+  reportOptions _ = []
+  defaultOptions _ = []
+  reportHelp _ = ""
+
+  runReport _ qry _ mbPath = 
+      incomeStatement' qry mbPath
+    `catchWithSrcLoc`
+      (\l (e :: InternalError) -> handler l e)
+    `catchWithSrcLoc`
+      (\l (e :: InvalidPath) -> handler l e)
+    `catchWithSrcLoc`
+      (\l (e :: NoSuchRate) -> handler l e)
 
 incomeStatement' qry mbPath = do
     coa <- case mbPath of
@@ -68,4 +74,4 @@ incomeStatement' qry mbPath = do
         footer = "    TOTALS: " ++ show (incomeD - outcomeD) ++ defcur
 
     wrapIO $ putStrLn $ unlines (res ++ [sep, footer])
-      
+
