@@ -16,14 +16,16 @@ import YaLedger.Parser.Common
 data PState = PState {
     lastAID :: Integer,
     lastGID :: Integer,
-    groupCurrency :: Currency,
-    groupType :: AccountGroupType }
+    groupAttributes :: Attributes,
+    groupCurrency   :: Currency,
+    groupType       :: AccountGroupType }
   deriving (Eq, Show)
 
 emptyPState :: PState
 emptyPState = PState {
   lastAID = 0,
   lastGID = 0,
+  groupAttributes = M.empty,
   groupCurrency = "",
   groupType = AGFree }
 
@@ -89,10 +91,11 @@ pAccount = do
   symbol "account"
   name <- identifier
   tp <- pAGType (groupType st)
+  let parentAttrs = groupAttributes st
   (redirect, checks, attrs) <- option (False, noChecks, M.empty) $ braces $ pAllAttributes
   aid <- newAID
   currency <- lookupCurrency attrs
-  account tp name aid currency redirect checks attrs
+  account tp name aid currency redirect checks (attrs `M.union` parentAttrs)
 
 pAllAttributes :: Parser (Bool, BalanceChecks, Attributes)
 pAllAttributes = do
@@ -120,10 +123,12 @@ pAccountGroup = do
   st <- getState
   symbol "group"
   name <- identifier
+  let parentAttrs = groupAttributes st
   tp <- pAGType (groupType st)
   gid <- newGID
   reserved "{"
   attrs <- option M.empty pAttributes
+  let allAttrs = attrs `M.union` parentAttrs
   currency <- lookupCurrency attrs
   let agData r = AccountGroupData {
                    agName = name,
@@ -131,12 +136,12 @@ pAccountGroup = do
                    agRange = r,
                    agCurrency = currency,
                    agType = tp,
-                   agAttributes = attrs }
-  let st' = st {
+                   agAttributes = allAttrs }
+  putState $ st {
               lastGID = gid,
+              groupAttributes = allAttrs,
               groupCurrency = currency,
               groupType = tp }
-  putState st'
   children <- (try (mkLeaf <$> pAccount) <|> pAccountGroup) `sepEndBy` semicolon
   reserved "}"
   st1 <- getState

@@ -20,6 +20,7 @@ group Root {
     account X2;
   };
   group Y (debit) {
+    category = "Y";
     account Y1;
     account Y2 {
       currency = "€";
