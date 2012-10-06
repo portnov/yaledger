@@ -76,7 +76,7 @@ twoColumns h1 h2 l1 l2 =
 
 columns :: [(String, Align, Column)] -> Column
 columns list =
-  let ms = [(a, maximum (map length (h:l)) + 1) | (h, a, l) <- list]
+  let ms = [(a, maximum (map length (h:l)) + 2) | (h, a, l) <- list]
       ss = [replicate m '=' | (_,m) <- ms]
       hs = map (\(x,_,_) -> x) list
       bs = map (\(_,_,x) -> x) list
