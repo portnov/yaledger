@@ -85,14 +85,20 @@ showEntries totals list =
   let l = map showE list
       footer = ["    TOTALS: " ++ show totals]
   in  unlines $
-          grid ["DATE", "CREDIT", "DEBIT", "RATES DIFF."] l ++ footer
+          grid [(ALeft, "DATE"),
+                (ARight, "CREDIT"),
+                (ARight, "DEBIT"),
+                (ARight, "RATES DIFF.")] l ++ footer
 
 showEntriesBalances :: Amount -> [Ext (Balance Checked)] -> String
 showEntriesBalances totals list =
   let l = map (showB $ getCurrency totals) list
       footer = ["    TOTALS: " ++ show totals]
   in  unlines $
-          grid ["DATE", "CREDIT", "DEBIT", "BALANCE B/D"] l ++ footer
+          grid [(ALeft, "DATE"),
+                (ARight, "CREDIT"),
+                (ARight, "DEBIT"),
+                (ARight, "BALANCE B/D")] l ++ footer
 
 causedByExt :: Ext (Balance Checked) -> Maybe (Ext (Entry Decimal Checked))
 causedByExt (Ext date pos attrs p) =

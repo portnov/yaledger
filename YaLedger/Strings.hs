@@ -25,6 +25,22 @@ align w ACenter str
         pad2 = replicate n ' '
     in pad1 ++ str ++ pad2
 
+alignPad :: Int -> Align -> String -> String
+alignPad w ALeft str
+  | length str >= w = take w str
+  | otherwise = " " ++ str ++ replicate (w - length str - 1) ' '
+alignPad w ARight str
+  | length str >= w = take w str
+  | otherwise = replicate (w - length str - 1) ' ' ++ str ++ " " 
+alignPad w ACenter str
+  | length str >= w = take w str
+  | otherwise =
+    let m = (w - length str) `div` 2
+        n = w - length str - m
+        pad1 = replicate m ' '
+        pad2 = replicate n ' '
+    in pad1 ++ str ++ pad2
+
 alignMax :: Align -> Column -> Column 
 alignMax a list =
   let m = maximum (map length list)
@@ -58,13 +74,14 @@ twoColumns h1 h2 l1 l2 =
       h2' = align m2 ACenter h2
   in  zipS "|" (h1':s1:l1) (h2':s2:l2)
 
-columns :: [(String, Column)] -> Column
+columns :: [(String, Align, Column)] -> Column
 columns list =
-  let ms = [maximum (map length (h:l)) | (h, l) <- list]
-      ss = [replicate m '=' | m <- ms]
-      hs = map fst list
-      bs = map snd list
-  in  foldr (zipS "|") [] [align m ACenter h: s: l | (h,m,s,l) <- zip4 hs ms ss bs]
+  let ms = [(a, maximum (map length (h:l)) + 1) | (h, a, l) <- list]
+      ss = [replicate m '=' | (_,m) <- ms]
+      hs = map (\(x,_,_) -> x) list
+      bs = map (\(_,_,x) -> x) list
+  in  foldr (zipS "|") [] [alignPad m ACenter h: s: map (alignPad m a) l
+                           | (h,(a,m),s,l) <- zip4 hs ms ss bs]
 
 columns' :: [Column] -> Column
 columns' list = foldr (zipS "|") [] list
@@ -74,15 +91,17 @@ padColumns columns =
   let m = maximum (map length columns)
   in  map (padE m) columns
 
-grid :: [String] -> [Row] -> Column
+grid :: [(Align,String)] -> [Row] -> Column
 grid _ [] = []
-grid headers rows =
-  let rows' = map padColumns rows :: [Row]
+grid colHeaders rows =
+  let headers = map snd colHeaders
+      aligns  = map fst colHeaders
+      rows' = map padColumns rows :: [Row]
       cols = foldr1 (zipWith (++)) rows' :: Row
       wds = [maximum $ map length (h:column) | (h,column) <- zip headers cols]
       colsAligned = [map (align (w+2) ACenter) col | (w,col) <- zip wds cols]
       headersAligned = [align (w+2) ACenter h | (w,h) <- zip wds headers]
-  in  columns $ zip headersAligned colsAligned
+  in  columns $ zip3 headersAligned aligns colsAligned
 
 understrike :: Column -> Column
 understrike list =
