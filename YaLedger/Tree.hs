@@ -44,6 +44,8 @@ showTree tree =
 showTreeStructure :: (Show n, Show a) => Tree n a -> [String]
 showTreeStructure tree = struct [True] tree
   where
+    struct (b:bs) (Branch {nodeName = name, branchData = n, branchChildren = []}) =
+        [concatMap bar (reverse bs) ++ glyph b ++ name ++ ": ∅"]
     struct (b:bs) (Branch {nodeName = name, branchData = n, branchChildren = children}) =
         (concatMap bar (reverse bs) ++ glyph b ++ name ++ ": "):
          (concatMap (struct (False:b:bs)) $ init children) ++
