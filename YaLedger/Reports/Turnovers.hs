@@ -104,14 +104,22 @@ allTurnovers calcTotals qry account = do
                           then Just $ (cr + dt) :# c
                           else Nothing }
 
+noZeroTurns tr =
+  case trTotals tr of
+    Nothing -> isNotZero (trCredit tr) || isNotZero (trDebit tr)
+    Just t  -> isNotZero t
+
 turnovers' qry options mbPath = do
     coa <- case mbPath of
               Nothing   -> gets lsCoA
               Just path -> getCoAItem (gets lsPosition) (gets lsCoA) path
     let calcTotals = TShowTotals `elem` options
     tree <- mapTreeM (sumTurnovers calcTotals) (allTurnovers calcTotals qry) coa
-    let struct = showTreeStructure tree
-        nodes = allNodes tree
+    let tree' = if TNoZeros `elem` options
+                  then filterLeafs noZeroTurns tree
+                  else tree
+    let struct = showTreeStructure tree'
+        nodes = allNodes tree'
         credits = map trCredit nodes
         debits  = map trDebit  nodes
         inc     = map trIncSaldo nodes
