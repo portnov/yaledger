@@ -21,6 +21,7 @@ import YaLedger.Types.Ledger
 import YaLedger.Types.Transactions
 import YaLedger.Monad
 import YaLedger.Kernel.Common
+import YaLedger.Logger
 
 newtype Parser l a = Parser {
     runParser :: [String] -> Ledger l (a, [String])
@@ -79,7 +80,9 @@ instance ReportParameter a => ReportParameter (Maybe a) where
   parseParameter = Parser $ \s ->
     case s of
       [] -> return (Nothing, [])
-      (x:xs) -> runParser parseParameter (x:xs)
+      (x:xs) -> do
+          (r,s) <- runParser parseParameter (x:xs)
+          return (Just r, s)
 
 instance ReportParameter String where
   parseParameter  = word
