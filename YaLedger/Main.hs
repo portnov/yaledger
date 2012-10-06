@@ -4,11 +4,15 @@ module YaLedger.Main
    module YaLedger.Types.Reports,
    module YaLedger.Monad,
    LedgerOptions (..),
-   defaultMain
+   parseCmdLine,
+   defaultMain,
+   lookupInit,
+   runYaLedger
   ) where
 
 import Control.Applicative ((<$>))
 import Control.Monad
+import Control.Monad.State
 import Control.Monad.Exception
 import Control.Monad.Exception.Base
 import Data.Char
@@ -54,9 +58,8 @@ parseDebug str =
     [(x, "")] -> Just x
     _ -> Nothing
 
-parseCmdLine :: IO LedgerOptions
-parseCmdLine = do
-  argv <- getArgs
+parseCmdLine :: [String] -> IO LedgerOptions
+parseCmdLine argv = do
   now <-  getCurrentDateTime
   defaultOptions <- loadConfig
   let coaF file opts =
@@ -150,8 +153,9 @@ lookupInit key list = [v | (k,v) <- list, key `isPrefixOf` k]
 
 defaultMain :: [(String, Report)] -> IO ()
 defaultMain list = do
+  argv <- getArgs
   dataDir <- getUserDataDir "yaledger"
-  options <- parseCmdLine
+  options <- parseCmdLine argv
   case options of
     Help -> return ()
     _ -> do
@@ -166,7 +170,7 @@ defaultMain list = do
                             unwords (map fst list)
            [fn] -> do
                setupLogger (logSeverity options)
-               run (chartOfAccounts options)
+               runYaLedger (chartOfAccounts options)
                    (accountMap options)
                    (parserConfigs options)
                    (reportsInterval options)
@@ -187,25 +191,30 @@ showInterval qry =
     showMD s Nothing = s
     showMD _ (Just date) = prettyPrint date
 
-run (Just coaPath) (Just mapPath) configs mbInterval qry rules inputPaths report params = do
+runYaLedger (Just coaPath) (Just mapPath) configs mbInterval qry rules inputPaths report params = do
   coa <- readCoA coaPath
   amap <- readAMap coa mapPath
   records <- parseInputFiles configs coa inputPaths
-  runLedger coa amap records $ runEMT $ do
-      t <- tryE $ processRecords rules (filter (checkRecord qry) records)
-      case t of
-        Left (l, e :: SomeException) -> wrapIO $ putStrLn $ showExceptionWithTrace l e
-        Right _ -> do
-          now <- wrapIO getCurrentDateTime
-          let firstDate = minimum (map getDate records)
-          let queries = case mbInterval of
-                          Nothing -> [qry]
-                          Just int -> splitQuery firstDate now qry int
-          forM_ queries $ \query -> do
-              wrapIO $ putStrLn $ showInterval query
-              runAReport query params report
-                 `catchWithSrcLoc`
-                   (\loc (e :: InvalidCmdLine) -> do
-                         wrapIO (putStrLn $ showExceptionWithTrace loc e))
-run _ _ _ _ _ _ _ _ _ = error "Impossible: no coa or map file."
+  runLedger coa amap records $ runEMT $
+    processYaLedger qry mbInterval rules (filter (checkRecord qry) records) report params
+runYaLedger _ _ _ _ _ _ _ _ _ = error "Impossible: no coa or map file."
+
+processYaLedger qry mbInterval rules records report params = do
+  now <- gets lsStartDate
+  let endDate = fromMaybe now (qEnd qry)
+  t <- tryE $ processRecords endDate rules records 
+  case t of
+    Left (l, e :: SomeException) -> wrapIO $ putStrLn $ showExceptionWithTrace l e
+    Right _ -> do
+      now <- wrapIO getCurrentDateTime
+      let firstDate = minimum (map getDate records)
+      let queries = case mbInterval of
+                      Nothing -> [qry]
+                      Just int -> splitQuery firstDate now qry int
+      forM_ queries $ \query -> do
+          wrapIO $ putStrLn $ showInterval query
+          runAReport query params report
+             `catchWithSrcLoc`
+               (\loc (e :: InvalidCmdLine) -> do
+                     wrapIO (putStrLn $ showExceptionWithTrace loc e))
 

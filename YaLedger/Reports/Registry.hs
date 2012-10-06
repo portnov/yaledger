@@ -20,6 +20,7 @@ import YaLedger.Kernel
 import YaLedger.Monad
 import YaLedger.Exceptions
 import YaLedger.Logger
+import YaLedger.Pretty
 import YaLedger.Reports.Common
 
 data Registry = Registry

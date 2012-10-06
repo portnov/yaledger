@@ -30,3 +30,13 @@ data Query = Query {
     qAttributes :: Attributes }
   deriving (Eq, Show)
 
+replicateRecords :: DateInterval -> Int -> [Ext Record] -> [Ext Record]
+replicateRecords interval n list = concat [map (shift i) list | i <- [0..n]]
+  where
+    shift 0 r = r
+    shift i r = r {getDate = plus i (getDate r)}
+
+    plus 0 date = date
+    plus i date = plus (i-1) date `addInterval` interval
+
+

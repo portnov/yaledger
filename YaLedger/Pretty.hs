@@ -4,6 +4,7 @@ module YaLedger.Pretty where
 import Data.Maybe
 import Data.Dates
 import Data.List
+import Data.Decimal
 import qualified Data.Map as M
 import Text.Printf
 
@@ -22,6 +23,9 @@ instance Pretty a => Pretty (Ext a) where
              (maybe "" getString $ M.lookup "description" attrs)
              (prettyPrint attrs)
              (prettyPrint a)
+
+instance Pretty Decimal where
+  prettyPrint x = show (roundTo 4 x)
 
 instance Pretty Attributes where
   prettyPrint as = go $ M.filterWithKey (\name _ -> name /= "description") as

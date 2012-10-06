@@ -148,16 +148,16 @@ processRecords :: (Throws NoSuchRate l,
                    Throws InsufficientFunds l,
                    Throws DuplicatedRecord l,
                    Throws InternalError l)
-               => [DeduplicationRule]
+               => DateTime
+               -> [DeduplicationRule]
                -> [Ext Record]
                -> Ledger l ()
-processRecords rules list = do
+processRecords endDate rules list = do
   deduplicated <- deduplicate rules (sort list)
   let records = sort deduplicated
   modify $ \st -> st {lsLoadedRecords = records}
   list' <- evalStateT processAll records
-  now <- wrapIO getCurrentDateTime 
-  forM_ (takeWhile (\t -> getDate t <= now) list') $
+  forM_ (takeWhile (\t -> getDate t <= endDate) list') $
       processTransaction
 
 processTransaction :: (Throws NoSuchRate l,

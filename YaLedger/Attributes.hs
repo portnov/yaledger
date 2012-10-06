@@ -34,7 +34,7 @@ instance Show AttributeValue where
 type Attributes = M.Map String AttributeValue
 
 showA :: Attributes -> String
-showA attrs = "{" ++ intercalate ", " (map one $ M.assocs attrs) ++ "}"
+showA attrs = "{" ++ intercalate "; " (map one $ M.assocs attrs) ++ "}"
   where
     one (name, value) = name ++ " = " ++ show value
 
