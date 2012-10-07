@@ -76,8 +76,8 @@ showB currency (Ext {getDate = date, getContent = balance}) =
        padding ++ [show bd ++ show currency]]
 
 posting :: Posting Decimal t -> String
-posting (DPosting acc x) = getName acc ++ ": " ++ show (roundTo 4 x) ++ show (getCurrency acc)
-posting (CPosting acc x) = getName acc ++ ": " ++ show (roundTo 4 x) ++ show (getCurrency acc)
+posting (DPosting acc x) = getName acc ++ ": " ++ show (x :# getCurrency acc)
+posting (CPosting acc x) = getName acc ++ ": " ++ show (x :# getCurrency acc)
 
 showEntries :: Amount -> [Ext (Entry Decimal Checked)] -> String
 showEntries totals list =

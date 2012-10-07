@@ -92,7 +92,7 @@ instance Pretty ValueCondition where
   prettyPrint (Equals x)   = " == " ++ prettyPrint x
 
 instance Pretty Amount where
-  prettyPrint (x :# c) = show x ++ show c
+  prettyPrint x = show x
 
 instance Pretty Param where
   prettyPrint (Fixed x) = prettyPrint x

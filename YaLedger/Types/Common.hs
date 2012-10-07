@@ -122,7 +122,7 @@ data Amount = Decimal :# Currency
   deriving (Eq)
 
 instance Show Amount where
-  show (n :# c) = show (roundTo 4 n) ++ show c
+  show (n :# c) = show (roundTo (fromIntegral $ cPrecision c) n) ++ show c
 
 instance HasCurrency Amount where
   getCurrency (_ :# c) = c

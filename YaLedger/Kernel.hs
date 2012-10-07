@@ -185,7 +185,9 @@ convert mbDate c' (x :# c)
   | c == c' = return (x :# c)
   | otherwise = do
     rate <- lookupRate mbDate c c'
-    return $ (x *. rate) :# c'
+    -- Round amount to precision of target currency
+    let qty = roundTo (fromIntegral $ cPrecision c') (x *. rate)
+    return $ qty :# c'
 
 -- | Check if record \/ entry \/ whatever matches to query
 checkQuery :: Query -> Ext a -> Bool
@@ -343,6 +345,10 @@ convertDecimal mbDate to (DPosting acc a) = do
 convertDecimal mbDate to (CPosting acc a) = do
   x :# _ <- convert mbDate to (a :# getCurrency acc)
   return x
+
+setZero :: Posting Decimal t -> Posting Decimal t
+setZero (CPosting a _) = CPosting a 0
+setZero (DPosting a _) = DPosting a 0
 
 -- | Check an entry:
 --
@@ -539,19 +545,50 @@ fillEntry qry date dt cr mbCorr amount@(value :# _) = do
               account <- accountAsCredit oneAccount
               -- Convert value into currency of found account
               value' :# _ <- convert (Just date) (getCurrency account) amount
-              let e = CPosting account (-value')
-              -- Will fill rates difference later
-              return (dt, e:cr)
+              if value' == 0
+                then if (length dt == 1) && null cr
+                       then do
+                         info $ "Credit part is zero: " ++ show cr ++ ", setting debit to zero too." 
+                         return (map setZero dt, cr)
+                       else do
+                         warning $ "Credit-Debit = " ++ show amount ++ ", which is 0.0"
+                                 ++ show (getCurrency account)
+                         return (dt, cr)
+                else do
+                     let e = CPosting account (-value')
+                     return (dt, e:cr)
          else do
               account <- accountAsDebit oneAccount
               -- Convert value into currency of found account
               value' :# _ <- convert (Just date) (getCurrency account) amount
-              let e = DPosting account value'
-              -- Will fill rates difference later
-              return (e:dt, cr)
+              if value' == 0
+                then if (length cr == 1) && null dt
+                       then do
+                         info $ "Debit part is zero: " ++ show dt ++ ", setting credit to zero too." 
+                         return (dt, map setZero cr)
+                       else do
+                         warning $ "Credit-Debit = " ++ show amount ++ ", which is 0.0"
+                                 ++ show (getCurrency account)
+                         return (dt, cr)
+                else do
+                     let e = DPosting account value'
+                     return (e:dt, cr)
     Left debitPostings -> do
+      let diffValue = sum [x | x :# _ <- map postingValue debitPostings]
       postings <- mapM (convertPosting' $ Just date) debitPostings
-      return (dt ++ postings, cr)
+      let value = sum (map postingValue postings)
+      if value == 0
+        then do
+             if (length cr == 1) && null dt
+               then do
+                 info $ "Debit is " ++ show diffValue ++
+                        ", which is 0.0 in currencies of amounts. Setting credit to zero too."
+                 return (dt, map setZero cr)
+               else do
+                 warning $ "Debit difference is " ++ show diffValue ++
+                        ", which is 0.0 in currencies of amounts."
+                 return (dt, cr)
+        else return (dt ++ postings, cr)
 
 -- | Reconciliate one account; set it's current balance
 -- to given value.
