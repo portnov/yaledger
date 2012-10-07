@@ -18,7 +18,7 @@ import qualified YaLedger.Parser.CSV as CSV
 import qualified YaLedger.Parser.HTML as HTML
 import qualified YaLedger.Parser.CBR as CBR
 
-type InputParser = FilePath -> ChartOfAccounts -> FilePath -> IO [Ext Record]
+type InputParser = FilePath -> Currencies -> ChartOfAccounts -> FilePath -> IO [Ext Record]
 
 allParsers :: [(String, String, InputParser)]
 allParsers =
@@ -33,8 +33,8 @@ lookupMask file ((name,mask,parser):xs)
   | match (compile mask) file = Just (name, parser)
   | otherwise                 = lookupMask file xs
 
-parseInputFiles :: [(String, FilePath)] -> ChartOfAccounts -> [FilePath] -> IO [Ext Record]
-parseInputFiles configs coa masks = do
+parseInputFiles :: [(String, FilePath)] -> Currencies -> ChartOfAccounts -> [FilePath] -> IO [Ext Record]
+parseInputFiles configs currs coa masks = do
   inputFiles <- concat <$> mapM glob masks
   infoM rootLoggerName $ "Input files:\n" ++ unlines inputFiles
   records <- forM inputFiles $ \file -> do
@@ -44,15 +44,15 @@ parseInputFiles configs coa masks = do
                      let configFile = fromMaybe (parserName ++ ".yaml") $
                                           lookup parserName configs
                      in  do
-                         rec <- parser configFile coa file
+                         rec <- parser configFile currs coa file
                          infoM rootLoggerName $ "Read " ++ show (length rec) ++ " records from " ++ file
                          return rec
   return $ sort $ concat records
 
-readCoA :: FilePath -> IO ChartOfAccounts
-readCoA path = do
+readCoA :: Currencies -> FilePath -> IO ChartOfAccounts
+readCoA currs path = do
   content <- readFile path
-  res <- runParserT CoA.pAccountGroup CoA.emptyPState path content
+  res <- runParserT CoA.pAccountGroup (CoA.emptyPState currs) path content
   case res of
     Right res -> return res
     Left err -> fail $ show err
@@ -64,10 +64,10 @@ readAMap coa path = do
     Right res -> return res
     Left err -> fail $ show err
 
-readTrans :: FilePath -> ChartOfAccounts -> FilePath -> IO [Ext Record]
-readTrans _ coa path = do
+readTrans :: FilePath -> Currencies -> ChartOfAccounts -> FilePath -> IO [Ext Record]
+readTrans _ currs coa path = do
   content <- readFile path
-  st <- T.emptyPState coa
+  st <- T.emptyPState coa currs
   case runParser T.pRecords st path content of
     Right res -> return res
     Left err -> fail $ show err

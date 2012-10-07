@@ -117,7 +117,7 @@ instance Show v => Show (Entry v t) where
       go lst = unlines $ map ("  " ++) $ map show lst
   show (UEntry dt cr acc cs) = "Debit:\n" ++ go dt ++ "\nCredit:\n" ++ go cr
                               ++ "(correspondence: " ++ showName acc ++ ")\n"
-                              ++ "(add. currencies: " ++ intercalate ", " cs ++ ")"
+                              ++ "(add. currencies: " ++ intercalate ", " (map show cs) ++ ")"
     where
       go :: Show a => [a] -> String
       go lst = unlines $ map ("  " ++) $ map show lst
@@ -243,7 +243,7 @@ instance Show (Account t) where
   show x =
     printf "%s (%s)"
       (getName x)
-      (getCurrency x)
+      (show $ getCurrency x)
 
 data AnyAccount =
     WFree   Attributes (Account Free)
@@ -298,7 +298,7 @@ instance Show CQuery where
   show (CQuery {..}) =
     printf "{\n  Type = %s\n  Currencies = %s\n  Except accounts: %s\n  Attributes: %s\n}"
       (show cqType)
-      (intercalate ", " cqCurrencies)
+      (intercalate ", " $ map show cqCurrencies)
       (show cqExcept)
       (showA cqAttributes)
 

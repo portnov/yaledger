@@ -5,7 +5,8 @@ module YaLedger.Types.Common
    Sign (..),
    Credit, Debit, Free,
    IOList,
-   Currency, Rate (..), Rates,
+   Currency (..), Currencies,
+   Rate (..), Rates,
    AccountID, GroupID,
    FreeOr,
    Ext (..),
@@ -15,6 +16,7 @@ module YaLedger.Types.Common
    AccountGroupType (..),
    AccountGroupData (..),
    SourcePos,
+   emptyCurrency,
    sourceLine, sourceColumn, sourceName,
    newPos
   ) where
@@ -22,6 +24,7 @@ module YaLedger.Types.Common
 import Data.Decimal
 import Data.IORef
 import Data.Dates
+import qualified Data.Map as M
 import Text.Printf
 import Text.Parsec.Pos
 
@@ -51,7 +54,28 @@ instance Sign t => Sign (f t) where
 
 type IOList a = IORef [a]
 
-type Currency = String
+data Currency =
+  Currency {
+    cSymbol :: String,
+    cIntCode :: Maybe Int,
+    cStrCode :: Maybe String,
+    cPrecision :: Int }
+  deriving (Eq)
+
+instance Show Currency where
+  show = cSymbol
+
+instance Ord Currency where
+  compare c1 c2 = compare (cSymbol c1) (cSymbol c2)
+
+emptyCurrency :: Currency
+emptyCurrency = Currency {
+  cSymbol = "¤",
+  cIntCode = Nothing,
+  cStrCode = Nothing,
+  cPrecision = 2 }
+
+type Currencies = M.Map String Currency
 
 data Rate =
     Explicit {
@@ -98,7 +122,7 @@ data Amount = Decimal :# Currency
   deriving (Eq)
 
 instance Show Amount where
-  show (n :# c) = show (roundTo 4 n) ++ c
+  show (n :# c) = show (roundTo 4 n) ++ show c
 
 instance HasCurrency Amount where
   getCurrency (_ :# c) = c
@@ -162,7 +186,7 @@ instance Show AccountGroupData where
       (agID ag)
       (show $ agType ag)
       (agName ag)
-      (agCurrency ag)
+      (show $ agCurrency ag)
       (fst $ agRange ag)
       (snd $ agRange ag)
       (showA $ agAttributes ag)

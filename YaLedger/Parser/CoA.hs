@@ -15,17 +15,19 @@ import YaLedger.Parser.Common
 data PState = PState {
     lastAID :: Integer,
     lastGID :: Integer,
+    declaredCurrencies :: Currencies,
     groupAttributes :: Attributes,
     groupCurrency   :: Currency,
     groupType       :: AccountGroupType }
   deriving (Eq, Show)
 
-emptyPState :: PState
-emptyPState = PState {
+emptyPState :: Currencies -> PState
+emptyPState currs = PState {
   lastAID = 0,
   lastGID = 0,
+  declaredCurrencies = currs,
   groupAttributes = M.empty,
-  groupCurrency = "",
+  groupCurrency = emptyCurrency,
   groupType = AGFree }
 
 type Parser a = ParsecT String PState IO a
@@ -80,7 +82,10 @@ lookupCurrency attrs = do
   st <- getState
   mbCurrency <- case M.lookup "currency" attrs of
                   Nothing -> return Nothing
-                  Just (Exactly c) -> return (Just c)
+                  Just (Exactly s) -> do
+                      case M.lookup s (declaredCurrencies st) of
+                        Nothing -> fail $ "Unknown currency: " ++ s
+                        Just c -> return (Just c)
                   Just _ -> fail $ "Currency must be specified exactly!"
   return $ fromMaybe (groupCurrency st) mbCurrency
 

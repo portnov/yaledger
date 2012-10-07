@@ -146,10 +146,17 @@ filterRows filters rows = filter (\row -> all (ok row) filters) rows
         else let str = list !! (rfField rf - 1)
              in  str =~ rfRegexp rf
 
-convertRow :: GenericParserConfig -> ChartOfAccounts -> FilePath -> Int -> [String] -> IO (Ext Record)
-convertRow pc coa path rowN row = do
+-- | Convert one row of table
+convertRow :: GenericParserConfig
+           -> Currencies
+           -> ChartOfAccounts
+           -> FilePath
+           -> Int
+           -> [String]
+           -> IO (Ext Record)
+convertRow pc currs coa path rowN row = do
   let dateStr = field (pcDate pc) row
-      currency = field (pcCurrency pc) row
+      currencyS = field (pcCurrency pc) row
       amountStr = field (pcAmount pc) row
       accountName = field (pcAccount pc) row
       account2 = case pcAccount2 pc of
@@ -165,6 +172,10 @@ convertRow pc coa path rowN row = do
            [] -> fail $ "No such account: " ++ path
            [a] -> return a
            as -> fail "Ambigous account specification"
+
+  currency <- case M.lookup currencyS currs of
+                Nothing -> fail $ "Unknown currency: " ++ currencyS
+                Just c  -> return c
 
   date <- case parseDateFormat (pcDateFormat pc) dateStr of
             Right d -> return d

@@ -1,5 +1,4 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, GeneralizedNewtypeDeriving, FlexibleContexts, FlexibleInstances, ScopedTypeVariables #-}
-{-# OPTIONS_GHC -F -pgmF MonadLoc #-}
 
 module YaLedger.Monad where
 
@@ -12,6 +11,7 @@ import Data.IORef
 import Text.Parsec.Pos
 
 import YaLedger.Types
+import YaLedger.Types.Common
 import YaLedger.Exceptions
 
 newtype LedgerMonad a = LedgerMonad (StateT LedgerState IO a)
@@ -41,7 +41,7 @@ emptyLedgerState coa amap records = do
   now <- getCurrentDateTime
   return $ LedgerState {
              lsStartDate = now,
-             lsDefaultCurrency = "",
+             lsDefaultCurrency = emptyCurrency,
              lsCoA = coa,
              lsAccountMap = amap,
              lsTemplates = M.empty,

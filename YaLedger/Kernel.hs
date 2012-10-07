@@ -133,10 +133,10 @@ checkBalance targetBalance acc = do
              else (<=)
   whenJust (bcInfo bc) $ \value ->
     when (targetBalance `op` value) $
-      info $ "Balance of " ++ getName acc ++ " will be " ++ show targetBalance ++ getCurrency acc
+      info $ "Balance of " ++ getName acc ++ " will be " ++ show targetBalance ++ show (getCurrency acc)
   whenJust (bcWarning bc) $ \value ->
     when (targetBalance `op` value) $ 
-      warning $ "Balance of " ++ getName acc ++ " will be " ++ show targetBalance ++ getCurrency acc
+      warning $ "Balance of " ++ getName acc ++ " will be " ++ show targetBalance ++ show (getCurrency acc)
   whenJust (bcError bc) $ \value ->
     when (targetBalance `op` value) $ 
       throwP (InsufficientFunds (getName acc) targetBalance (getCurrency acc))

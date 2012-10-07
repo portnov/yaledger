@@ -18,17 +18,22 @@ import Text.Parsec
 
 import YaLedger.Types hiding (getChildren)
 import YaLedger.Parser.Tables (loadParserConfig)
-import qualified YaLedger.Parser.Transactions as T
 import YaLedger.Pretty
 import YaLedger.Config () -- we need some instances for FromJSON
+import YaLedger.Parser.Currencies ()
+import qualified YaLedger.Parser.Transactions as T
 
 roubles :: Currency
-roubles = "р"
+roubles = Currency {
+  cSymbol = "р",
+  cIntCode = Just 643,
+  cStrCode = Just "RUB",
+  cPrecision = 2 }
 
 type ParserConfig = [GetRate]
 
 data GetRate = GetRate {
-  currencyName :: Currency,
+  currencyName :: String,
   currencyCode :: Int,
   readAsReversible :: Bool,
   startDate :: DateTime,
@@ -64,7 +69,7 @@ splitP p list = go [] [] list
       | p x = go (x:good) bad xs
       | otherwise = go good (x:bad) xs
 
-allChecks :: DateTime -> ParserConfig -> [(DateTime, Currency)] -> [(DateTime, [GetRate])]
+allChecks :: DateTime -> ParserConfig -> [(DateTime, String)] -> [(DateTime, [GetRate])]
 allChecks till pc old = mrg $ sort $ filter new $ concatMap (checks till) pc
   where
     new (d,gr) = (d, currencyName gr) `notElem` old
@@ -129,25 +134,25 @@ pRates :: T.Parser [Ext Record]
 pRates =
   T.ext T.pSetRate `sepEndBy` many newline
 
-loadCache :: ChartOfAccounts -> FilePath -> IO [Ext Record]
-loadCache coa cachePath = do
-  st <- T.emptyPState coa
+loadCache :: Currencies -> ChartOfAccounts -> FilePath -> IO [Ext Record]
+loadCache currs coa cachePath = do
+  st <- T.emptyPState coa currs
   content <- readFile cachePath
   case runParser pRates st cachePath content of
     Left err -> fail $ show err
     Right recs -> return recs
 
-getChecks :: [Ext Record] -> [(DateTime, Currency)]
+getChecks :: [Ext Record] -> [(DateTime, String)]
 getChecks recs = concatMap go recs
   where
     go (Ext date _ _ (SetRate rates)) =
-      [(date, rateCurrencyFrom r) | r <-  rates]
+      [(date, cSymbol $ rateCurrencyFrom r) | r <-  rates]
     go _ = error "Impossible: CBR.getChecks.go"
 
-loadCBR :: FilePath -> ChartOfAccounts -> FilePath -> IO [Ext Record]
-loadCBR configPath coa cachePath = do
+loadCBR :: FilePath -> Currencies -> ChartOfAccounts -> FilePath -> IO [Ext Record]
+loadCBR configPath currs coa cachePath = do
     config <- loadParserConfig configPath
-    cache <- loadCache coa cachePath
+    cache <- loadCache currs coa cachePath
     let old = getChecks cache
     now <- getCurrentDateTime
     new <- forM (allChecks now config old) $ \(date, grs) -> do
@@ -155,14 +160,16 @@ loadCBR configPath coa cachePath = do
              pairs <- parseRates doc (map currencyCode grs)
              let rates = map (bind grs) pairs
              return $ Ext date nowhere M.empty $ SetRate $
-                        map convert rates
+                        map (convert currs) rates
     let records = cache ++ new
     writeFile cachePath $ unlines $ map prettyPrint records
     return records
   where
     nowhere = newPos "<nowhere>" 0 0
-    convert (cFrom, rev, (aFrom, aTo)) = 
-          Explicit cFrom aFrom roubles aTo rev
+    convert currs (cFromS, rev, (aFrom, aTo)) =
+      case M.lookup cFromS currs of
+        Nothing -> error $ "While loading CBR rates: unknown currency: " ++ cFromS
+        Just cFrom -> Explicit cFrom aFrom roubles aTo rev
     bind grs (cid, rate) =
       case filter ((== cid) . currencyCode) grs of
         [gr] -> (currencyName gr, readAsReversible gr, rate)

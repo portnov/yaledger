@@ -32,7 +32,7 @@ data NoSuchRate = NoSuchRate Currency Currency SourcePos
 instance Show NoSuchRate where
   show (NoSuchRate c1 c2 pos) =
     showPos pos $
-      "No conversion rate defined to convert " ++ c1 ++ " -> " ++ c2
+      "No conversion rate defined to convert " ++ show c1 ++ " -> " ++ show c2
 
 instance Exception NoSuchRate
 

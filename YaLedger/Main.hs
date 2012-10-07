@@ -31,6 +31,7 @@ import YaLedger.Types.Reports
 import YaLedger.Monad
 import YaLedger.Parser
 import YaLedger.Parser.Common (pAttribute)
+import YaLedger.Parser.Currencies
 import YaLedger.Kernel
 import YaLedger.Processor
 import YaLedger.Config
@@ -62,6 +63,9 @@ parseCmdLine argv = do
 
       mapF file opts =
           opts {accountMap = Just file}
+
+      currF file opts =
+          opts {currenciesList = Just file}
 
       fileF Nothing opts = opts {files = []}
       fileF (Just file) opts =
@@ -112,6 +116,7 @@ parseCmdLine argv = do
   let options = [
        Option "C" ["coa"] (ReqArg coaF "FILE") "Chart of accounts file to use",
        Option "M" ["map"]  (ReqArg mapF  "FILE") "Accounts map file to use",
+       Option "c" ["currencies"] (ReqArg currF "FILE") "Currencies list file to use",
        Option "f" ["file"] (OptArg fileF "FILE(s)") "Input file[s]",
        Option "s" ["start"] (ReqArg startF "DATE") "Process only transactions after this date",
        Option "e" ["end"]  (ReqArg endF "DATE") "Process only transactions before this date",
@@ -163,6 +168,7 @@ defaultMain list = do
                setupLogger (logSeverity options)
                runYaLedger (chartOfAccounts options)
                    (accountMap options)
+                   (currenciesList options)
                    (parserConfigs options)
                    (reportsInterval options)
                    (query options)
@@ -182,13 +188,15 @@ showInterval qry =
     showMD s Nothing = s
     showMD _ (Just date) = prettyPrint date
 
-runYaLedger (Just coaPath) (Just mapPath) configs mbInterval qry rules inputPaths report params = do
-  coa <- readCoA coaPath
+runYaLedger (Just coaPath) (Just mapPath) (Just cpath) configs mbInterval qry rules inputPaths report params = do
+  currs <- loadCurrencies cpath
+  let currsMap = M.fromList [(cSymbol c, c) | c <- currs]
+  coa <- readCoA currsMap coaPath
   amap <- readAMap coa mapPath
-  records <- parseInputFiles configs coa inputPaths
+  records <- parseInputFiles configs currsMap coa inputPaths
   runLedger coa amap records $ runEMT $
     processYaLedger qry mbInterval rules (filter (checkRecord qry) records) report params
-runYaLedger _ _ _ _ _ _ _ _ _ = error "Impossible: no coa or map file."
+runYaLedger _ _ _ _ _ _ _ _ _ _ = error "Impossible: no coa or map file."
 
 processYaLedger qry mbInterval rules records report params = do
   now <- gets lsStartDate

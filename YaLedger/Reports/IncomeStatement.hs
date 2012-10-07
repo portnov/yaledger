@@ -74,7 +74,7 @@ incomeStatement' qry options mbPath = do
                  (alignMax ALeft $ padE incomesS)
                  (alignMax ALeft $ padE outcomesS)
         sep = replicate (length $ head res) '='
-        footer = "    TOTALS: " ++ show (incomeD - outcomeD) ++ defcur
+        footer = "    TOTALS: " ++ show (incomeD - outcomeD) ++ show defcur
 
     wrapIO $ putStrLn $ unlines (res ++ [sep, footer])
 

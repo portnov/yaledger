@@ -17,17 +17,19 @@ import YaLedger.Parser.Common
 data PState = PState {
   getCoA :: ChartOfAccounts,
   currentDate :: DateTime,
+  declaredCurrencies :: Currencies,
   templates :: M.Map String Int -- ^ Number of parameters
   }
 
 type Parser a = Parsec String PState a
 
-emptyPState :: ChartOfAccounts -> IO PState
-emptyPState coa = do
+emptyPState :: ChartOfAccounts -> Currencies -> IO PState
+emptyPState coa currs = do
   now <- getCurrentDateTime
   return $ PState {
              getCoA = coa,
              currentDate = now,
+             declaredCurrencies = currs,
              templates = M.empty }
 
 addTemplate :: String -> Transaction Param -> Parser ()
@@ -311,8 +313,12 @@ pAmount = try numberFirst <|> currencyFirst
       return $ n :# c
 
 currency :: Parser Currency
-currency =
-  (many $ noneOf " \r\n\t\")}->@0123456789.") <?> "Currency symbol"
+currency = do
+  symbol <- currencySymbol
+  st <- getState
+  case M.lookup symbol (declaredCurrencies st) of
+    Nothing -> fail $ "Unknown currency: " ++ symbol
+    Just c  -> return c
 
 param :: Parser Param
 param = try pParam <|> try pBalance <|> (Fixed <$> pAmount)
@@ -326,7 +332,7 @@ param = try pParam <|> try pBalance <|> (Fixed <$> pAmount)
              Nothing -> return 1.0
              Just _ -> float
       spaces
-      d <- option (0 :# "") $ try $ parens $ do
+      d <- option (0 :# emptyCurrency) $ try $ parens $ do
                reserved "default"
                pAmount
       return $ Param n c d

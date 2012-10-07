@@ -73,11 +73,11 @@ showB currency (Ext {getDate = date, getContent = balance}) =
       padding = replicate (m-1) ""
   in  [prettyPrint date: padding,
        map posting cr, map posting dt,
-       padding ++ [show bd ++ currency]]
+       padding ++ [show bd ++ show currency]]
 
 posting :: Posting Decimal t -> String
-posting (DPosting acc x) = getName acc ++ ": " ++ show (roundTo 4 x) ++ getCurrency acc
-posting (CPosting acc x) = getName acc ++ ": " ++ show (roundTo 4 x) ++ getCurrency acc
+posting (DPosting acc x) = getName acc ++ ": " ++ show (roundTo 4 x) ++ show (getCurrency acc)
+posting (CPosting acc x) = getName acc ++ ": " ++ show (roundTo 4 x) ++ show (getCurrency acc)
 
 showEntries :: Amount -> [Ext (Entry Decimal Checked)] -> String
 showEntries totals list =

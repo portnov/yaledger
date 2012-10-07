@@ -26,6 +26,7 @@ data LedgerOptions =
     LedgerOptions {
       chartOfAccounts :: Maybe FilePath,
       accountMap :: Maybe FilePath,
+      currenciesList :: Maybe FilePath,
       files :: [FilePath],
       query :: Query,
       reportsInterval :: Maybe DateInterval,
@@ -44,6 +45,7 @@ instance Monoid LedgerOptions where
     LedgerOptions {
       chartOfAccounts = chartOfAccounts o1 `mappend` chartOfAccounts o2,
       accountMap  = accountMap  o1 `mappend` accountMap o2,
+      currenciesList = currenciesList o1 `mappend` currenciesList o2,
       files = if null (files o2) then files o1 else files o2,
       query = query o1 `mappend` query o2,
       reportsInterval = reportsInterval o1 `mplus` reportsInterval o2,
@@ -68,6 +70,7 @@ instance FromJSON LedgerOptions where
     LedgerOptions
       <$> v .:? "chart-of-accounts"
       <*> v .:? "accounts-map"
+      <*> v .:? "currencies"
       <*> v .:?  "files" .!= []
       <*> v .:? "query" .!= mempty
       <*> v .:? "reports-interval"
@@ -196,6 +199,7 @@ getDefaultLedgerOptions = do
   return $ LedgerOptions {
         chartOfAccounts = Just (configDir </> "default.accounts"),
         accountMap  = Just (configDir </> "default.map"),
+        currenciesList = Just (configDir </> "currencies.yaml"),
         files = [inputFile],
         query = Query {
                   qStart = Nothing,

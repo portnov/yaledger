@@ -60,15 +60,15 @@ instance Pretty Record where
     where
       go (Explicit c1 a1 c2 a2 r) =
         printf "rate %.04f%s %s %.04f%s"
-          a1 c1
+          a1 (show c1)
           (if r then "<->" else "->")
-          a2 c2
+          a2 (show c2)
       go (Implicit c1 c2 base r) =
         printf "rate %s %s %s = via %s"
-          c1
+          (show c1)
           (if r then "<->" else "->")
-          c2
-          base
+          (show c2)
+          (show base)
   prettyPrint (Transaction tran) = prettyPrint tran
 
 instance Pretty DateInterval where
@@ -92,7 +92,7 @@ instance Pretty ValueCondition where
   prettyPrint (Equals x)   = " == " ++ prettyPrint x
 
 instance Pretty Amount where
-  prettyPrint (x :# c) = show x ++ c
+  prettyPrint (x :# c) = show x ++ show c
 
 instance Pretty Param where
   prettyPrint (Fixed x) = prettyPrint x

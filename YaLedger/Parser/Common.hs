@@ -105,3 +105,7 @@ pAttribute = do
 pPath :: Monad m => ParsecT String st m Path
 pPath = try identifier `sepBy1` reservedOp "/"
 
+currencySymbol :: Monad m => ParsecT String st m String
+currencySymbol =
+  (many $ noneOf " \r\n\t\")}->@0123456789.") <?> "Currency symbol"
+

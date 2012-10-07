@@ -5,6 +5,7 @@ import Control.Applicative
 import Control.Monad
 import Data.String.Utils
 import Data.Yaml
+import qualified Data.Map as M
 
 import YaLedger.Types
 import YaLedger.Parser.Tables
@@ -28,17 +29,18 @@ csvCells sep str = map parseRow $ lines str
 
 parseCSV :: ParserConfig
          -> FilePath
+         -> Currencies
          -> ChartOfAccounts
          -> String
          -> IO [Ext Record]
-parseCSV pc path coa str =
+parseCSV pc path currs coa str =
   let rows = csvCells (pcSeparator pc) str
       goodRows = filterRows (pcRowsFilter $ pcGeneric pc) rows
-  in  zipWithM (convertRow (pcGeneric pc) coa path) [1..] goodRows
+  in  zipWithM (convertRow (pcGeneric pc) currs coa path) [1..] goodRows
 
-loadCSV :: FilePath -> ChartOfAccounts -> FilePath -> IO [Ext Record]
-loadCSV configPath coa csvPath = do
+loadCSV :: FilePath -> Currencies -> ChartOfAccounts -> FilePath -> IO [Ext Record]
+loadCSV configPath currs coa csvPath = do
   config <- loadParserConfig configPath 
   csv <- readFile csvPath
-  parseCSV config csvPath coa csv
+  parseCSV config csvPath currs coa csv
 

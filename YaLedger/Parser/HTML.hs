@@ -50,16 +50,17 @@ getTable selector doc =
 
 parseHTML :: ParserConfig
           -> FilePath
+          -> Currencies
           -> ChartOfAccounts
           -> [[String]]
           -> IO [Ext Record]
-parseHTML pc path coa table =
-  zipWithM (convertRow (pcGeneric pc) coa path) [1..] table
+parseHTML pc path currs coa table =
+  zipWithM (convertRow (pcGeneric pc) currs coa path) [1..] table
 
-loadHTML :: FilePath -> ChartOfAccounts -> FilePath -> IO [Ext Record]
-loadHTML configPath coa htmlPath = do
+loadHTML :: FilePath -> Currencies -> ChartOfAccounts -> FilePath -> IO [Ext Record]
+loadHTML configPath currs coa htmlPath = do
   config <- loadParserConfig configPath 
   table <- readHTML config htmlPath
   let goodRows = filterRows (pcRowsFilter $ pcGeneric config) table
-  parseHTML config htmlPath coa goodRows
+  parseHTML config htmlPath currs coa goodRows
 
