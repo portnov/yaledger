@@ -10,6 +10,7 @@ module YaLedger.Main
    runYaLedger
   ) where
 
+import Prelude hiding (catch)
 import Control.Applicative ((<$>))
 import Control.Monad
 import Control.Monad.State
@@ -150,7 +151,7 @@ defaultMain list = do
   argv <- getArgs
   options <- parseCmdLine argv
   case options of
-    Help -> return ()
+    Help -> putStrLn $ "Supported reports are: " ++ unwords (map fst list)
     _ -> do
          let report = head $ reportParams options
              params = tail $ reportParams options
@@ -204,7 +205,7 @@ processYaLedger qry mbInterval rules records report params = do
       forM_ queries $ \query -> do
           wrapIO $ putStrLn $ showInterval query
           runAReport query params report
-             `catchWithSrcLoc`
-               (\loc (e :: InvalidCmdLine) -> do
-                     wrapIO (putStrLn $ showExceptionWithTrace loc e))
+             `catch`
+               (\(e :: InvalidCmdLine) -> do
+                     wrapIO (putStrLn $ show e))
 

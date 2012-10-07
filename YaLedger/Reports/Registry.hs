@@ -23,7 +23,7 @@ instance ReportClass Registry where
   type Parameters Registry = Maybe Path
   reportOptions _ = []
   defaultOptions _ = []
-  reportHelp _ = ""
+  reportHelp _ = "Show all entries in account or group of accounts."
 
   runReport _ qry _ mbPath = 
       registry' qry mbPath

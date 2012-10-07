@@ -135,17 +135,22 @@ runAReport :: (Throws InvalidCmdLine l,
            -> Ledger l ()
 runAReport qry cmdline (Report r) = do
   let ropts = reportOptions r
-  (options, params) <- do
-    if null ropts
-      then do
-           p <- runParser parseParameter cmdline
-           return (defaultOptions r, p)
-      else case getOpt RequireOrder ropts cmdline of
-             (opts, ps, []) -> do
-                 p <- runParser parseParameter ps
-                 return (opts, p)
-             (_,_, errs) -> do
-               let message = usageInfo (reportHelp r) ropts
-               throw (InvalidCmdLine $ concat errs ++ message)
-  runReport r qry options (fst params)
+  if (cmdline == ["-h"]) || (cmdline == ["--help"])
+    then do
+         let message = usageInfo (reportHelp r) ropts
+         wrapIO $ putStrLn $ message
+    else do
+      (options, params) <- do
+        if null ropts
+          then do
+               p <- runParser parseParameter cmdline
+               return (defaultOptions r, p)
+          else case getOpt RequireOrder ropts cmdline of
+                 (opts, ps, []) -> do
+                     p <- runParser parseParameter ps
+                     return (opts, p)
+                 (_,_, errs) -> do
+                   let message = usageInfo (reportHelp r) ropts
+                   throw (InvalidCmdLine $ concat errs ++ message)
+      runReport r qry options (fst params)
 
