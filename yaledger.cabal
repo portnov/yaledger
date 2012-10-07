@@ -48,7 +48,6 @@ library
                    YaLedger.Parser
                    YaLedger.Parser.Map
                    YaLedger.Parser.CoA
-                   YaLedger.Parser.Test
                    YaLedger.Parser.Transactions
                    YaLedger.Pretty
                    YaLedger.Processor
