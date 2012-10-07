@@ -12,16 +12,16 @@ template test
 
 @ 2012/09/09  test2
 template rec
-reconciliate roubles #1*1.00 (default 0)
+reconciliate roubles #1*1.00 (default 0р)
 
 @ 2012/09/09  0.5%
 rule testRule = when credit X1 with {description = /Just/} do
-  cr X2  #1*0.01 (default 0)
+  cr X2  #1*0.01 (default 0р)
 
 @ 2012/09/09  0.5% за снятие с карточки
 {category = "комиссии"; rule = !"one"}
 rule one = when debit карточка with {description = /банкомат/} do
-  dr карточка  #1*0.01 (default 0)
+  dr карточка  #1*0.01 (default 0р)
 
 @ 2012/09/09  -
 {category = "транспорт"}
@@ -115,16 +115,16 @@ template test
 
 @ 2012/12/09  test2
 template rec
-reconciliate roubles #1*1.00 (default 0)
+reconciliate roubles #1*1.00 (default 0р)
 
 @ 2012/12/09  0.5%
 rule testRule = when credit X1 with {description = /Just/} do
-  cr X2  #1*0.01 (default 0)
+  cr X2  #1*0.01 (default 0р)
 
 @ 2012/12/09  0.5% за снятие с карточки
 {category = "комиссии"; rule = !"one"}
 rule one = when debit карточка with {description = /банкомат/} do
-  dr карточка  #1*0.01 (default 0)
+  dr карточка  #1*0.01 (default 0р)
 
 @ 2012/12/09  -
 {category = "транспорт"}
@@ -218,16 +218,16 @@ template test
 
 @ 2013/03/09  test2
 template rec
-reconciliate roubles #1*1.00 (default 0)
+reconciliate roubles #1*1.00 (default 0р)
 
 @ 2013/03/09  0.5%
 rule testRule = when credit X1 with {description = /Just/} do
-  cr X2  #1*0.01 (default 0)
+  cr X2  #1*0.01 (default 0р)
 
 @ 2013/03/09  0.5% за снятие с карточки
 {category = "комиссии"; rule = !"one"}
 rule one = when debit карточка with {description = /банкомат/} do
-  dr карточка  #1*0.01 (default 0)
+  dr карточка  #1*0.01 (default 0р)
 
 @ 2013/03/09  -
 {category = "транспорт"}
@@ -321,16 +321,16 @@ template test
 
 @ 2013/06/09  test2
 template rec
-reconciliate roubles #1*1.00 (default 0)
+reconciliate roubles #1*1.00 (default 0р)
 
 @ 2013/06/09  0.5%
 rule testRule = when credit X1 with {description = /Just/} do
-  cr X2  #1*0.01 (default 0)
+  cr X2  #1*0.01 (default 0р)
 
 @ 2013/06/09  0.5% за снятие с карточки
 {category = "комиссии"; rule = !"one"}
 rule one = when debit карточка with {description = /банкомат/} do
-  dr карточка  #1*0.01 (default 0)
+  dr карточка  #1*0.01 (default 0р)
 
 @ 2013/06/09  -
 {category = "транспорт"}
@@ -424,16 +424,16 @@ template test
 
 @ 2013/09/09  test2
 template rec
-reconciliate roubles #1*1.00 (default 0)
+reconciliate roubles #1*1.00 (default 0р)
 
 @ 2013/09/09  0.5%
 rule testRule = when credit X1 with {description = /Just/} do
-  cr X2  #1*0.01 (default 0)
+  cr X2  #1*0.01 (default 0р)
 
 @ 2013/09/09  0.5% за снятие с карточки
 {category = "комиссии"; rule = !"one"}
 rule one = when debit карточка with {description = /банкомат/} do
-  dr карточка  #1*0.01 (default 0)
+  dr карточка  #1*0.01 (default 0р)
 
 @ 2013/09/09  -
 {category = "транспорт"}
@@ -527,16 +527,16 @@ template test
 
 @ 2013/12/09  test2
 template rec
-reconciliate roubles #1*1.00 (default 0)
+reconciliate roubles #1*1.00 (default 0р)
 
 @ 2013/12/09  0.5%
 rule testRule = when credit X1 with {description = /Just/} do
-  cr X2  #1*0.01 (default 0)
+  cr X2  #1*0.01 (default 0р)
 
 @ 2013/12/09  0.5% за снятие с карточки
 {category = "комиссии"; rule = !"one"}
 rule one = when debit карточка with {description = /банкомат/} do
-  dr карточка  #1*0.01 (default 0)
+  dr карточка  #1*0.01 (default 0р)
 
 @ 2013/12/09  -
 {category = "транспорт"}
@@ -630,16 +630,16 @@ template test
 
 @ 2014/03/09  test2
 template rec
-reconciliate roubles #1*1.00 (default 0)
+reconciliate roubles #1*1.00 (default 0р)
 
 @ 2014/03/09  0.5%
 rule testRule = when credit X1 with {description = /Just/} do
-  cr X2  #1*0.01 (default 0)
+  cr X2  #1*0.01 (default 0р)
 
 @ 2014/03/09  0.5% за снятие с карточки
 {category = "комиссии"; rule = !"one"}
 rule one = when debit карточка with {description = /банкомат/} do
-  dr карточка  #1*0.01 (default 0)
+  dr карточка  #1*0.01 (default 0р)
 
 @ 2014/03/09  -
 {category = "транспорт"}
@@ -733,16 +733,16 @@ template test
 
 @ 2014/06/09  test2
 template rec
-reconciliate roubles #1*1.00 (default 0)
+reconciliate roubles #1*1.00 (default 0р)
 
 @ 2014/06/09  0.5%
 rule testRule = when credit X1 with {description = /Just/} do
-  cr X2  #1*0.01 (default 0)
+  cr X2  #1*0.01 (default 0р)
 
 @ 2014/06/09  0.5% за снятие с карточки
 {category = "комиссии"; rule = !"one"}
 rule one = when debit карточка with {description = /банкомат/} do
-  dr карточка  #1*0.01 (default 0)
+  dr карточка  #1*0.01 (default 0р)
 
 @ 2014/06/09  -
 {category = "транспорт"}
@@ -836,16 +836,16 @@ template test
 
 @ 2014/09/09  test2
 template rec
-reconciliate roubles #1*1.00 (default 0)
+reconciliate roubles #1*1.00 (default 0р)
 
 @ 2014/09/09  0.5%
 rule testRule = when credit X1 with {description = /Just/} do
-  cr X2  #1*0.01 (default 0)
+  cr X2  #1*0.01 (default 0р)
 
 @ 2014/09/09  0.5% за снятие с карточки
 {category = "комиссии"; rule = !"one"}
 rule one = when debit карточка with {description = /банкомат/} do
-  dr карточка  #1*0.01 (default 0)
+  dr карточка  #1*0.01 (default 0р)
 
 @ 2014/09/09  -
 {category = "транспорт"}
@@ -939,16 +939,16 @@ template test
 
 @ 2014/12/09  test2
 template rec
-reconciliate roubles #1*1.00 (default 0)
+reconciliate roubles #1*1.00 (default 0р)
 
 @ 2014/12/09  0.5%
 rule testRule = when credit X1 with {description = /Just/} do
-  cr X2  #1*0.01 (default 0)
+  cr X2  #1*0.01 (default 0р)
 
 @ 2014/12/09  0.5% за снятие с карточки
 {category = "комиссии"; rule = !"one"}
 rule one = when debit карточка with {description = /банкомат/} do
-  dr карточка  #1*0.01 (default 0)
+  dr карточка  #1*0.01 (default 0р)
 
 @ 2014/12/09  -
 {category = "транспорт"}
@@ -1042,16 +1042,16 @@ template test
 
 @ 2015/03/09  test2
 template rec
-reconciliate roubles #1*1.00 (default 0)
+reconciliate roubles #1*1.00 (default 0р)
 
 @ 2015/03/09  0.5%
 rule testRule = when credit X1 with {description = /Just/} do
-  cr X2  #1*0.01 (default 0)
+  cr X2  #1*0.01 (default 0р)
 
 @ 2015/03/09  0.5% за снятие с карточки
 {category = "комиссии"; rule = !"one"}
 rule one = when debit карточка with {description = /банкомат/} do
-  dr карточка  #1*0.01 (default 0)
+  dr карточка  #1*0.01 (default 0р)
 
 @ 2015/03/09  -
 {category = "транспорт"}
@@ -1145,16 +1145,16 @@ template test
 
 @ 2015/06/09  test2
 template rec
-reconciliate roubles #1*1.00 (default 0)
+reconciliate roubles #1*1.00 (default 0р)
 
 @ 2015/06/09  0.5%
 rule testRule = when credit X1 with {description = /Just/} do
-  cr X2  #1*0.01 (default 0)
+  cr X2  #1*0.01 (default 0р)
 
 @ 2015/06/09  0.5% за снятие с карточки
 {category = "комиссии"; rule = !"one"}
 rule one = when debit карточка with {description = /банкомат/} do
-  dr карточка  #1*0.01 (default 0)
+  dr карточка  #1*0.01 (default 0р)
 
 @ 2015/06/09  -
 {category = "транспорт"}
@@ -1248,16 +1248,16 @@ template test
 
 @ 2015/09/09  test2
 template rec
-reconciliate roubles #1*1.00 (default 0)
+reconciliate roubles #1*1.00 (default 0р)
 
 @ 2015/09/09  0.5%
 rule testRule = when credit X1 with {description = /Just/} do
-  cr X2  #1*0.01 (default 0)
+  cr X2  #1*0.01 (default 0р)
 
 @ 2015/09/09  0.5% за снятие с карточки
 {category = "комиссии"; rule = !"one"}
 rule one = when debit карточка with {description = /банкомат/} do
-  dr карточка  #1*0.01 (default 0)
+  dr карточка  #1*0.01 (default 0р)
 
 @ 2015/09/09  -
 {category = "транспорт"}
@@ -1351,16 +1351,16 @@ template test
 
 @ 2015/12/09  test2
 template rec
-reconciliate roubles #1*1.00 (default 0)
+reconciliate roubles #1*1.00 (default 0р)
 
 @ 2015/12/09  0.5%
 rule testRule = when credit X1 with {description = /Just/} do
-  cr X2  #1*0.01 (default 0)
+  cr X2  #1*0.01 (default 0р)
 
 @ 2015/12/09  0.5% за снятие с карточки
 {category = "комиссии"; rule = !"one"}
 rule one = when debit карточка with {description = /банкомат/} do
-  dr карточка  #1*0.01 (default 0)
+  dr карточка  #1*0.01 (default 0р)
 
 @ 2015/12/09  -
 {category = "транспорт"}
@@ -1454,16 +1454,16 @@ template test
 
 @ 2016/03/09  test2
 template rec
-reconciliate roubles #1*1.00 (default 0)
+reconciliate roubles #1*1.00 (default 0р)
 
 @ 2016/03/09  0.5%
 rule testRule = when credit X1 with {description = /Just/} do
-  cr X2  #1*0.01 (default 0)
+  cr X2  #1*0.01 (default 0р)
 
 @ 2016/03/09  0.5% за снятие с карточки
 {category = "комиссии"; rule = !"one"}
 rule one = when debit карточка with {description = /банкомат/} do
-  dr карточка  #1*0.01 (default 0)
+  dr карточка  #1*0.01 (default 0р)
 
 @ 2016/03/09  -
 {category = "транспорт"}
@@ -1557,16 +1557,16 @@ template test
 
 @ 2016/06/09  test2
 template rec
-reconciliate roubles #1*1.00 (default 0)
+reconciliate roubles #1*1.00 (default 0р)
 
 @ 2016/06/09  0.5%
 rule testRule = when credit X1 with {description = /Just/} do
-  cr X2  #1*0.01 (default 0)
+  cr X2  #1*0.01 (default 0р)
 
 @ 2016/06/09  0.5% за снятие с карточки
 {category = "комиссии"; rule = !"one"}
 rule one = when debit карточка with {description = /банкомат/} do
-  dr карточка  #1*0.01 (default 0)
+  dr карточка  #1*0.01 (default 0р)
 
 @ 2016/06/09  -
 {category = "транспорт"}
@@ -1660,16 +1660,16 @@ template test
 
 @ 2016/09/09  test2
 template rec
-reconciliate roubles #1*1.00 (default 0)
+reconciliate roubles #1*1.00 (default 0р)
 
 @ 2016/09/09  0.5%
 rule testRule = when credit X1 with {description = /Just/} do
-  cr X2  #1*0.01 (default 0)
+  cr X2  #1*0.01 (default 0р)
 
 @ 2016/09/09  0.5% за снятие с карточки
 {category = "комиссии"; rule = !"one"}
 rule one = when debit карточка with {description = /банкомат/} do
-  dr карточка  #1*0.01 (default 0)
+  dr карточка  #1*0.01 (default 0р)
 
 @ 2016/09/09  -
 {category = "транспорт"}
@@ -1763,16 +1763,16 @@ template test
 
 @ 2016/12/09  test2
 template rec
-reconciliate roubles #1*1.00 (default 0)
+reconciliate roubles #1*1.00 (default 0р)
 
 @ 2016/12/09  0.5%
 rule testRule = when credit X1 with {description = /Just/} do
-  cr X2  #1*0.01 (default 0)
+  cr X2  #1*0.01 (default 0р)
 
 @ 2016/12/09  0.5% за снятие с карточки
 {category = "комиссии"; rule = !"one"}
 rule one = when debit карточка with {description = /банкомат/} do
-  dr карточка  #1*0.01 (default 0)
+  dr карточка  #1*0.01 (default 0р)
 
 @ 2016/12/09  -
 {category = "транспорт"}
@@ -1866,16 +1866,16 @@ template test
 
 @ 2017/03/09  test2
 template rec
-reconciliate roubles #1*1.00 (default 0)
+reconciliate roubles #1*1.00 (default 0р)
 
 @ 2017/03/09  0.5%
 rule testRule = when credit X1 with {description = /Just/} do
-  cr X2  #1*0.01 (default 0)
+  cr X2  #1*0.01 (default 0р)
 
 @ 2017/03/09  0.5% за снятие с карточки
 {category = "комиссии"; rule = !"one"}
 rule one = when debit карточка with {description = /банкомат/} do
-  dr карточка  #1*0.01 (default 0)
+  dr карточка  #1*0.01 (default 0р)
 
 @ 2017/03/09  -
 {category = "транспорт"}
@@ -1969,16 +1969,16 @@ template test
 
 @ 2017/06/09  test2
 template rec
-reconciliate roubles #1*1.00 (default 0)
+reconciliate roubles #1*1.00 (default 0р)
 
 @ 2017/06/09  0.5%
 rule testRule = when credit X1 with {description = /Just/} do
-  cr X2  #1*0.01 (default 0)
+  cr X2  #1*0.01 (default 0р)
 
 @ 2017/06/09  0.5% за снятие с карточки
 {category = "комиссии"; rule = !"one"}
 rule one = when debit карточка with {description = /банкомат/} do
-  dr карточка  #1*0.01 (default 0)
+  dr карточка  #1*0.01 (default 0р)
 
 @ 2017/06/09  -
 {category = "транспорт"}
@@ -2072,16 +2072,16 @@ template test
 
 @ 2017/09/09  test2
 template rec
-reconciliate roubles #1*1.00 (default 0)
+reconciliate roubles #1*1.00 (default 0р)
 
 @ 2017/09/09  0.5%
 rule testRule = when credit X1 with {description = /Just/} do
-  cr X2  #1*0.01 (default 0)
+  cr X2  #1*0.01 (default 0р)
 
 @ 2017/09/09  0.5% за снятие с карточки
 {category = "комиссии"; rule = !"one"}
 rule one = when debit карточка with {description = /банкомат/} do
-  dr карточка  #1*0.01 (default 0)
+  dr карточка  #1*0.01 (default 0р)
 
 @ 2017/09/09  -
 {category = "транспорт"}
@@ -2175,16 +2175,16 @@ template test
 
 @ 2017/12/09  test2
 template rec
-reconciliate roubles #1*1.00 (default 0)
+reconciliate roubles #1*1.00 (default 0р)
 
 @ 2017/12/09  0.5%
 rule testRule = when credit X1 with {description = /Just/} do
-  cr X2  #1*0.01 (default 0)
+  cr X2  #1*0.01 (default 0р)
 
 @ 2017/12/09  0.5% за снятие с карточки
 {category = "комиссии"; rule = !"one"}
 rule one = when debit карточка with {description = /банкомат/} do
-  dr карточка  #1*0.01 (default 0)
+  dr карточка  #1*0.01 (default 0р)
 
 @ 2017/12/09  -
 {category = "транспорт"}
@@ -2278,16 +2278,16 @@ template test
 
 @ 2018/03/09  test2
 template rec
-reconciliate roubles #1*1.00 (default 0)
+reconciliate roubles #1*1.00 (default 0р)
 
 @ 2018/03/09  0.5%
 rule testRule = when credit X1 with {description = /Just/} do
-  cr X2  #1*0.01 (default 0)
+  cr X2  #1*0.01 (default 0р)
 
 @ 2018/03/09  0.5% за снятие с карточки
 {category = "комиссии"; rule = !"one"}
 rule one = when debit карточка with {description = /банкомат/} do
-  dr карточка  #1*0.01 (default 0)
+  dr карточка  #1*0.01 (default 0р)
 
 @ 2018/03/09  -
 {category = "транспорт"}
@@ -2381,16 +2381,16 @@ template test
 
 @ 2018/06/09  test2
 template rec
-reconciliate roubles #1*1.00 (default 0)
+reconciliate roubles #1*1.00 (default 0р)
 
 @ 2018/06/09  0.5%
 rule testRule = when credit X1 with {description = /Just/} do
-  cr X2  #1*0.01 (default 0)
+  cr X2  #1*0.01 (default 0р)
 
 @ 2018/06/09  0.5% за снятие с карточки
 {category = "комиссии"; rule = !"one"}
 rule one = when debit карточка with {description = /банкомат/} do
-  dr карточка  #1*0.01 (default 0)
+  dr карточка  #1*0.01 (default 0р)
 
 @ 2018/06/09  -
 {category = "транспорт"}
@@ -2484,16 +2484,16 @@ template test
 
 @ 2018/09/09  test2
 template rec
-reconciliate roubles #1*1.00 (default 0)
+reconciliate roubles #1*1.00 (default 0р)
 
 @ 2018/09/09  0.5%
 rule testRule = when credit X1 with {description = /Just/} do
-  cr X2  #1*0.01 (default 0)
+  cr X2  #1*0.01 (default 0р)
 
 @ 2018/09/09  0.5% за снятие с карточки
 {category = "комиссии"; rule = !"one"}
 rule one = when debit карточка with {description = /банкомат/} do
-  dr карточка  #1*0.01 (default 0)
+  dr карточка  #1*0.01 (default 0р)
 
 @ 2018/09/09  -
 {category = "транспорт"}
@@ -2587,16 +2587,16 @@ template test
 
 @ 2018/12/09  test2
 template rec
-reconciliate roubles #1*1.00 (default 0)
+reconciliate roubles #1*1.00 (default 0р)
 
 @ 2018/12/09  0.5%
 rule testRule = when credit X1 with {description = /Just/} do
-  cr X2  #1*0.01 (default 0)
+  cr X2  #1*0.01 (default 0р)
 
 @ 2018/12/09  0.5% за снятие с карточки
 {category = "комиссии"; rule = !"one"}
 rule one = when debit карточка with {description = /банкомат/} do
-  dr карточка  #1*0.01 (default 0)
+  dr карточка  #1*0.01 (default 0р)
 
 @ 2018/12/09  -
 {category = "транспорт"}
@@ -2690,16 +2690,16 @@ template test
 
 @ 2019/03/09  test2
 template rec
-reconciliate roubles #1*1.00 (default 0)
+reconciliate roubles #1*1.00 (default 0р)
 
 @ 2019/03/09  0.5%
 rule testRule = when credit X1 with {description = /Just/} do
-  cr X2  #1*0.01 (default 0)
+  cr X2  #1*0.01 (default 0р)
 
 @ 2019/03/09  0.5% за снятие с карточки
 {category = "комиссии"; rule = !"one"}
 rule one = when debit карточка with {description = /банкомат/} do
-  dr карточка  #1*0.01 (default 0)
+  dr карточка  #1*0.01 (default 0р)
 
 @ 2019/03/09  -
 {category = "транспорт"}
@@ -2793,16 +2793,16 @@ template test
 
 @ 2019/06/09  test2
 template rec
-reconciliate roubles #1*1.00 (default 0)
+reconciliate roubles #1*1.00 (default 0р)
 
 @ 2019/06/09  0.5%
 rule testRule = when credit X1 with {description = /Just/} do
-  cr X2  #1*0.01 (default 0)
+  cr X2  #1*0.01 (default 0р)
 
 @ 2019/06/09  0.5% за снятие с карточки
 {category = "комиссии"; rule = !"one"}
 rule one = when debit карточка with {description = /банкомат/} do
-  dr карточка  #1*0.01 (default 0)
+  dr карточка  #1*0.01 (default 0р)
 
 @ 2019/06/09  -
 {category = "транспорт"}
@@ -2896,16 +2896,16 @@ template test
 
 @ 2019/09/09  test2
 template rec
-reconciliate roubles #1*1.00 (default 0)
+reconciliate roubles #1*1.00 (default 0р)
 
 @ 2019/09/09  0.5%
 rule testRule = when credit X1 with {description = /Just/} do
-  cr X2  #1*0.01 (default 0)
+  cr X2  #1*0.01 (default 0р)
 
 @ 2019/09/09  0.5% за снятие с карточки
 {category = "комиссии"; rule = !"one"}
 rule one = when debit карточка with {description = /банкомат/} do
-  dr карточка  #1*0.01 (default 0)
+  dr карточка  #1*0.01 (default 0р)
 
 @ 2019/09/09  -
 {category = "транспорт"}
@@ -2999,16 +2999,16 @@ template test
 
 @ 2019/12/09  test2
 template rec
-reconciliate roubles #1*1.00 (default 0)
+reconciliate roubles #1*1.00 (default 0р)
 
 @ 2019/12/09  0.5%
 rule testRule = when credit X1 with {description = /Just/} do
-  cr X2  #1*0.01 (default 0)
+  cr X2  #1*0.01 (default 0р)
 
 @ 2019/12/09  0.5% за снятие с карточки
 {category = "комиссии"; rule = !"one"}
 rule one = when debit карточка with {description = /банкомат/} do
-  dr карточка  #1*0.01 (default 0)
+  dr карточка  #1*0.01 (default 0р)
 
 @ 2019/12/09  -
 {category = "транспорт"}
@@ -3102,16 +3102,16 @@ template test
 
 @ 2020/03/09  test2
 template rec
-reconciliate roubles #1*1.00 (default 0)
+reconciliate roubles #1*1.00 (default 0р)
 
 @ 2020/03/09  0.5%
 rule testRule = when credit X1 with {description = /Just/} do
-  cr X2  #1*0.01 (default 0)
+  cr X2  #1*0.01 (default 0р)
 
 @ 2020/03/09  0.5% за снятие с карточки
 {category = "комиссии"; rule = !"one"}
 rule one = when debit карточка with {description = /банкомат/} do
-  dr карточка  #1*0.01 (default 0)
+  dr карточка  #1*0.01 (default 0р)
 
 @ 2020/03/09  -
 {category = "транспорт"}
@@ -3205,16 +3205,16 @@ template test
 
 @ 2020/06/09  test2
 template rec
-reconciliate roubles #1*1.00 (default 0)
+reconciliate roubles #1*1.00 (default 0р)
 
 @ 2020/06/09  0.5%
 rule testRule = when credit X1 with {description = /Just/} do
-  cr X2  #1*0.01 (default 0)
+  cr X2  #1*0.01 (default 0р)
 
 @ 2020/06/09  0.5% за снятие с карточки
 {category = "комиссии"; rule = !"one"}
 rule one = when debit карточка with {description = /банкомат/} do
-  dr карточка  #1*0.01 (default 0)
+  dr карточка  #1*0.01 (default 0р)
 
 @ 2020/06/09  -
 {category = "транспорт"}
@@ -3308,16 +3308,16 @@ template test
 
 @ 2020/09/09  test2
 template rec
-reconciliate roubles #1*1.00 (default 0)
+reconciliate roubles #1*1.00 (default 0р)
 
 @ 2020/09/09  0.5%
 rule testRule = when credit X1 with {description = /Just/} do
-  cr X2  #1*0.01 (default 0)
+  cr X2  #1*0.01 (default 0р)
 
 @ 2020/09/09  0.5% за снятие с карточки
 {category = "комиссии"; rule = !"one"}
 rule one = when debit карточка with {description = /банкомат/} do
-  dr карточка  #1*0.01 (default 0)
+  dr карточка  #1*0.01 (default 0р)
 
 @ 2020/09/09  -
 {category = "транспорт"}
@@ -3411,16 +3411,16 @@ template test
 
 @ 2020/12/09  test2
 template rec
-reconciliate roubles #1*1.00 (default 0)
+reconciliate roubles #1*1.00 (default 0р)
 
 @ 2020/12/09  0.5%
 rule testRule = when credit X1 with {description = /Just/} do
-  cr X2  #1*0.01 (default 0)
+  cr X2  #1*0.01 (default 0р)
 
 @ 2020/12/09  0.5% за снятие с карточки
 {category = "комиссии"; rule = !"one"}
 rule one = when debit карточка with {description = /банкомат/} do
-  dr карточка  #1*0.01 (default 0)
+  dr карточка  #1*0.01 (default 0р)
 
 @ 2020/12/09  -
 {category = "транспорт"}
@@ -3514,16 +3514,16 @@ template test
 
 @ 2021/03/09  test2
 template rec
-reconciliate roubles #1*1.00 (default 0)
+reconciliate roubles #1*1.00 (default 0р)
 
 @ 2021/03/09  0.5%
 rule testRule = when credit X1 with {description = /Just/} do
-  cr X2  #1*0.01 (default 0)
+  cr X2  #1*0.01 (default 0р)
 
 @ 2021/03/09  0.5% за снятие с карточки
 {category = "комиссии"; rule = !"one"}
 rule one = when debit карточка with {description = /банкомат/} do
-  dr карточка  #1*0.01 (default 0)
+  dr карточка  #1*0.01 (default 0р)
 
 @ 2021/03/09  -
 {category = "транспорт"}
@@ -3617,16 +3617,16 @@ template test
 
 @ 2021/06/09  test2
 template rec
-reconciliate roubles #1*1.00 (default 0)
+reconciliate roubles #1*1.00 (default 0р)
 
 @ 2021/06/09  0.5%
 rule testRule = when credit X1 with {description = /Just/} do
-  cr X2  #1*0.01 (default 0)
+  cr X2  #1*0.01 (default 0р)
 
 @ 2021/06/09  0.5% за снятие с карточки
 {category = "комиссии"; rule = !"one"}
 rule one = when debit карточка with {description = /банкомат/} do
-  dr карточка  #1*0.01 (default 0)
+  dr карточка  #1*0.01 (default 0р)
 
 @ 2021/06/09  -
 {category = "транспорт"}
@@ -3720,16 +3720,16 @@ template test
 
 @ 2021/09/09  test2
 template rec
-reconciliate roubles #1*1.00 (default 0)
+reconciliate roubles #1*1.00 (default 0р)
 
 @ 2021/09/09  0.5%
 rule testRule = when credit X1 with {description = /Just/} do
-  cr X2  #1*0.01 (default 0)
+  cr X2  #1*0.01 (default 0р)
 
 @ 2021/09/09  0.5% за снятие с карточки
 {category = "комиссии"; rule = !"one"}
 rule one = when debit карточка with {description = /банкомат/} do
-  dr карточка  #1*0.01 (default 0)
+  dr карточка  #1*0.01 (default 0р)
 
 @ 2021/09/09  -
 {category = "транспорт"}
@@ -3823,16 +3823,16 @@ template test
 
 @ 2021/12/09  test2
 template rec
-reconciliate roubles #1*1.00 (default 0)
+reconciliate roubles #1*1.00 (default 0р)
 
 @ 2021/12/09  0.5%
 rule testRule = when credit X1 with {description = /Just/} do
-  cr X2  #1*0.01 (default 0)
+  cr X2  #1*0.01 (default 0р)
 
 @ 2021/12/09  0.5% за снятие с карточки
 {category = "комиссии"; rule = !"one"}
 rule one = when debit карточка with {description = /банкомат/} do
-  dr карточка  #1*0.01 (default 0)
+  dr карточка  #1*0.01 (default 0р)
 
 @ 2021/12/09  -
 {category = "транспорт"}
@@ -3926,16 +3926,16 @@ template test
 
 @ 2022/03/09  test2
 template rec
-reconciliate roubles #1*1.00 (default 0)
+reconciliate roubles #1*1.00 (default 0р)
 
 @ 2022/03/09  0.5%
 rule testRule = when credit X1 with {description = /Just/} do
-  cr X2  #1*0.01 (default 0)
+  cr X2  #1*0.01 (default 0р)
 
 @ 2022/03/09  0.5% за снятие с карточки
 {category = "комиссии"; rule = !"one"}
 rule one = when debit карточка with {description = /банкомат/} do
-  dr карточка  #1*0.01 (default 0)
+  dr карточка  #1*0.01 (default 0р)
 
 @ 2022/03/09  -
 {category = "транспорт"}
@@ -4029,16 +4029,16 @@ template test
 
 @ 2022/06/09  test2
 template rec
-reconciliate roubles #1*1.00 (default 0)
+reconciliate roubles #1*1.00 (default 0р)
 
 @ 2022/06/09  0.5%
 rule testRule = when credit X1 with {description = /Just/} do
-  cr X2  #1*0.01 (default 0)
+  cr X2  #1*0.01 (default 0р)
 
 @ 2022/06/09  0.5% за снятие с карточки
 {category = "комиссии"; rule = !"one"}
 rule one = when debit карточка with {description = /банкомат/} do
-  dr карточка  #1*0.01 (default 0)
+  dr карточка  #1*0.01 (default 0р)
 
 @ 2022/06/09  -
 {category = "транспорт"}
@@ -4132,16 +4132,16 @@ template test
 
 @ 2022/09/09  test2
 template rec
-reconciliate roubles #1*1.00 (default 0)
+reconciliate roubles #1*1.00 (default 0р)
 
 @ 2022/09/09  0.5%
 rule testRule = when credit X1 with {description = /Just/} do
-  cr X2  #1*0.01 (default 0)
+  cr X2  #1*0.01 (default 0р)
 
 @ 2022/09/09  0.5% за снятие с карточки
 {category = "комиссии"; rule = !"one"}
 rule one = when debit карточка with {description = /банкомат/} do
-  dr карточка  #1*0.01 (default 0)
+  dr карточка  #1*0.01 (default 0р)
 
 @ 2022/09/09  -
 {category = "транспорт"}
@@ -4235,16 +4235,16 @@ template test
 
 @ 2022/12/09  test2
 template rec
-reconciliate roubles #1*1.00 (default 0)
+reconciliate roubles #1*1.00 (default 0р)
 
 @ 2022/12/09  0.5%
 rule testRule = when credit X1 with {description = /Just/} do
-  cr X2  #1*0.01 (default 0)
+  cr X2  #1*0.01 (default 0р)
 
 @ 2022/12/09  0.5% за снятие с карточки
 {category = "комиссии"; rule = !"one"}
 rule one = when debit карточка with {description = /банкомат/} do
-  dr карточка  #1*0.01 (default 0)
+  dr карточка  #1*0.01 (default 0р)
 
 @ 2022/12/09  -
 {category = "транспорт"}
@@ -4338,16 +4338,16 @@ template test
 
 @ 2023/03/09  test2
 template rec
-reconciliate roubles #1*1.00 (default 0)
+reconciliate roubles #1*1.00 (default 0р)
 
 @ 2023/03/09  0.5%
 rule testRule = when credit X1 with {description = /Just/} do
-  cr X2  #1*0.01 (default 0)
+  cr X2  #1*0.01 (default 0р)
 
 @ 2023/03/09  0.5% за снятие с карточки
 {category = "комиссии"; rule = !"one"}
 rule one = when debit карточка with {description = /банкомат/} do
-  dr карточка  #1*0.01 (default 0)
+  dr карточка  #1*0.01 (default 0р)
 
 @ 2023/03/09  -
 {category = "транспорт"}
@@ -4441,16 +4441,16 @@ template test
 
 @ 2023/06/09  test2
 template rec
-reconciliate roubles #1*1.00 (default 0)
+reconciliate roubles #1*1.00 (default 0р)
 
 @ 2023/06/09  0.5%
 rule testRule = when credit X1 with {description = /Just/} do
-  cr X2  #1*0.01 (default 0)
+  cr X2  #1*0.01 (default 0р)
 
 @ 2023/06/09  0.5% за снятие с карточки
 {category = "комиссии"; rule = !"one"}
 rule one = when debit карточка with {description = /банкомат/} do
-  dr карточка  #1*0.01 (default 0)
+  dr карточка  #1*0.01 (default 0р)
 
 @ 2023/06/09  -
 {category = "транспорт"}
@@ -4544,16 +4544,16 @@ template test
 
 @ 2023/09/09  test2
 template rec
-reconciliate roubles #1*1.00 (default 0)
+reconciliate roubles #1*1.00 (default 0р)
 
 @ 2023/09/09  0.5%
 rule testRule = when credit X1 with {description = /Just/} do
-  cr X2  #1*0.01 (default 0)
+  cr X2  #1*0.01 (default 0р)
 
 @ 2023/09/09  0.5% за снятие с карточки
 {category = "комиссии"; rule = !"one"}
 rule one = when debit карточка with {description = /банкомат/} do
-  dr карточка  #1*0.01 (default 0)
+  dr карточка  #1*0.01 (default 0р)
 
 @ 2023/09/09  -
 {category = "транспорт"}
@@ -4647,16 +4647,16 @@ template test
 
 @ 2023/12/09  test2
 template rec
-reconciliate roubles #1*1.00 (default 0)
+reconciliate roubles #1*1.00 (default 0р)
 
 @ 2023/12/09  0.5%
 rule testRule = when credit X1 with {description = /Just/} do
-  cr X2  #1*0.01 (default 0)
+  cr X2  #1*0.01 (default 0р)
 
 @ 2023/12/09  0.5% за снятие с карточки
 {category = "комиссии"; rule = !"one"}
 rule one = when debit карточка with {description = /банкомат/} do
-  dr карточка  #1*0.01 (default 0)
+  dr карточка  #1*0.01 (default 0р)
 
 @ 2023/12/09  -
 {category = "транспорт"}
@@ -4750,16 +4750,16 @@ template test
 
 @ 2024/03/09  test2
 template rec
-reconciliate roubles #1*1.00 (default 0)
+reconciliate roubles #1*1.00 (default 0р)
 
 @ 2024/03/09  0.5%
 rule testRule = when credit X1 with {description = /Just/} do
-  cr X2  #1*0.01 (default 0)
+  cr X2  #1*0.01 (default 0р)
 
 @ 2024/03/09  0.5% за снятие с карточки
 {category = "комиссии"; rule = !"one"}
 rule one = when debit карточка with {description = /банкомат/} do
-  dr карточка  #1*0.01 (default 0)
+  dr карточка  #1*0.01 (default 0р)
 
 @ 2024/03/09  -
 {category = "транспорт"}
@@ -4853,16 +4853,16 @@ template test
 
 @ 2024/06/09  test2
 template rec
-reconciliate roubles #1*1.00 (default 0)
+reconciliate roubles #1*1.00 (default 0р)
 
 @ 2024/06/09  0.5%
 rule testRule = when credit X1 with {description = /Just/} do
-  cr X2  #1*0.01 (default 0)
+  cr X2  #1*0.01 (default 0р)
 
 @ 2024/06/09  0.5% за снятие с карточки
 {category = "комиссии"; rule = !"one"}
 rule one = when debit карточка with {description = /банкомат/} do
-  dr карточка  #1*0.01 (default 0)
+  dr карточка  #1*0.01 (default 0р)
 
 @ 2024/06/09  -
 {category = "транспорт"}
@@ -4956,16 +4956,16 @@ template test
 
 @ 2024/09/09  test2
 template rec
-reconciliate roubles #1*1.00 (default 0)
+reconciliate roubles #1*1.00 (default 0р)
 
 @ 2024/09/09  0.5%
 rule testRule = when credit X1 with {description = /Just/} do
-  cr X2  #1*0.01 (default 0)
+  cr X2  #1*0.01 (default 0р)
 
 @ 2024/09/09  0.5% за снятие с карточки
 {category = "комиссии"; rule = !"one"}
 rule one = when debit карточка with {description = /банкомат/} do
-  dr карточка  #1*0.01 (default 0)
+  dr карточка  #1*0.01 (default 0р)
 
 @ 2024/09/09  -
 {category = "транспорт"}
@@ -5059,16 +5059,16 @@ template test
 
 @ 2024/12/09  test2
 template rec
-reconciliate roubles #1*1.00 (default 0)
+reconciliate roubles #1*1.00 (default 0р)
 
 @ 2024/12/09  0.5%
 rule testRule = when credit X1 with {description = /Just/} do
-  cr X2  #1*0.01 (default 0)
+  cr X2  #1*0.01 (default 0р)
 
 @ 2024/12/09  0.5% за снятие с карточки
 {category = "комиссии"; rule = !"one"}
 rule one = when debit карточка with {description = /банкомат/} do
-  dr карточка  #1*0.01 (default 0)
+  dr карточка  #1*0.01 (default 0р)
 
 @ 2024/12/09  -
 {category = "транспорт"}
@@ -5162,16 +5162,16 @@ template test
 
 @ 2025/03/09  test2
 template rec
-reconciliate roubles #1*1.00 (default 0)
+reconciliate roubles #1*1.00 (default 0р)
 
 @ 2025/03/09  0.5%
 rule testRule = when credit X1 with {description = /Just/} do
-  cr X2  #1*0.01 (default 0)
+  cr X2  #1*0.01 (default 0р)
 
 @ 2025/03/09  0.5% за снятие с карточки
 {category = "комиссии"; rule = !"one"}
 rule one = when debit карточка with {description = /банкомат/} do
-  dr карточка  #1*0.01 (default 0)
+  dr карточка  #1*0.01 (default 0р)
 
 @ 2025/03/09  -
 {category = "транспорт"}

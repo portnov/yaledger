@@ -31,7 +31,7 @@ reports = [("balances",  Report Balances),
 main :: IO ()
 main = do
   dataDir <- getUserDataDir "yaledger"
-  let argv = words "-C test.accounts -M test.map -f -fbenchmark.yaledger -e 2030/01/01 turnovers -t"
+  let argv = words "-C examples/default.accounts -M examples/test.map -f -fexamples/benchmark.yaledger -e 2030/01/01 turnovers -t"
   options <- parseCmdLine argv
   case options of
     Help -> return ()
@@ -51,6 +51,7 @@ main = do
                  C.bench "run" $ C.whnfIO ( do
                    runYaLedger (chartOfAccounts options)
                        (accountMap options)
+                       (currenciesList options)
                        (parserConfigs options)
                        (reportsInterval options)
                        (query options)
