@@ -15,7 +15,25 @@ category:            Data
 build-type:          Simple
 cabal-version:       >=1.8
 
+Flag debug
+  default: False
+  description: enable debug output
+
+Flag stack-traces
+  default: False
+  description: enable exception stack traces
+
 library
+  if flag(debug)
+    GHC-Options: -DDEBUG
+    if !os(windows)
+      CC-Options: "-DDEBUG"
+    else
+      CC-Options: "-DNDEBUG"
+
+  if flag(stack-traces)
+    GHC-Options: -F -pgmF MonadLoc
+
   exposed-modules: YaLedger.Attributes
                    YaLedger.Correspondence
                    YaLedger.Exceptions
@@ -24,6 +42,7 @@ library
                    YaLedger.Strings
                    YaLedger.Main
                    YaLedger.Monad
+                   YaLedger.Logger
                    YaLedger.Parser.Common
                    YaLedger.Parser.CSV
                    YaLedger.Parser
@@ -41,6 +60,7 @@ library
                    YaLedger.Reports.Details
                    YaLedger.Reports.IncomeStatement
                    YaLedger.Reports.Postings
+                   YaLedger.Reports.Turnovers
                    YaLedger.Rules
                    YaLedger.Templates
                    YaLedger.Tree
@@ -75,6 +95,16 @@ library
                        xdg-userdirs >= 0.1.0.0
 
 executable yaledger
+  if flag(debug)
+    GHC-Options: -DDEBUG
+    if !os(windows)
+      CC-Options: "-DDEBUG"
+    else
+      CC-Options: "-DNDEBUG"
+
+  if flag(stack-traces)
+    GHC-Options: -F -pgmF MonadLoc
+
   main-is:             yaledger.hs
   -- other-modules:       
   build-depends:       base ==4.5.*, mtl ==2.1.*,

@@ -1,7 +1,7 @@
 {-# LANGUAGE GADTs, RecordWildCards, ScopedTypeVariables, FlexibleContexts, FlexibleInstances #-}
-{- OPTIONS_GHC -F -pgmF MonadLoc #-}
 
-module YaLedger.Processor where
+module YaLedger.Processor
+  (processRecords) where
 
 import Control.Applicative ((<$>))
 import Control.Monad.State
@@ -20,6 +20,7 @@ import YaLedger.Rules
 import YaLedger.Logger
 import YaLedger.Processor.Duplicates
 
+-- | Merge two sorted lists into one sorted.
 merge :: Ord a => [a] -> [a] -> [a]
 merge xs [] = xs
 merge [] ys = ys
@@ -28,39 +29,50 @@ merge (x:xs) (y:ys) =
     then x: merge xs (y:ys)
     else y: merge (x:xs) ys
 
-mergeAll :: Ord a => [[a]] -> [a]
-mergeAll = foldr1 merge
-
+-- | Process one (unchecked yet) entry.
 processEntry :: (Throws NoSuchRate l,
                  Throws NoCorrespondingAccountFound l,
                  Throws InvalidAccountType l,
                  Throws NoSuchTemplate l,
                  Throws InsufficientFunds l,
                  Throws InternalError l)
-               => DateTime
-               -> SourcePos
-               -> Attributes
-               -> Entry Amount Unchecked
+               => DateTime                -- ^ Date/time of entry
+               -> SourcePos               -- ^ Location of entry in source file
+               -> Attributes              -- ^ Entry attributes
+               -> Entry Amount Unchecked  -- ^ Entry itself
                -> Ledger l ()
 processEntry date pos attrs uentry = do
+  -- First, check the entry
   entry@(CEntry dt cr rd) <- checkEntry attrs uentry
+
+  -- Process debit postings
   forM dt $ \p -> do
       let account = debitPostingAccount p
       debit  account (Ext date pos attrs p)
+      -- Add link to this entry for last balance (caused by previous call of `debit')
       modifyLastItem (\b -> b {causedBy = Just entry}) (accountBalances account)
+      -- Run all needed rules
       runRules date attrs p processTransaction
+
+  -- Process credit postings
   forM cr $ \p -> do
       let account = creditPostingAccount p
       credit account (Ext date pos attrs p)
+      -- Add link to this entry for last balance (caused by previous call of `credit')
       modifyLastItem (\b -> b {causedBy = Just entry}) (accountBalances account)
+      -- Run all needed rules
       runRules date attrs p processTransaction
+
+  -- What to do with rates difference?
   case rd of
-    OneCurrency -> return ()
+    OneCurrency -> return () -- There is no any difference
     CreditDifference p -> do
         let account = creditPostingAccount p
         credit (creditPostingAccount p) (Ext date pos attrs p)
         modifyLastItem (\b -> b {causedBy = Just entry}) (accountBalances account)
         runRules date attrs p processTransaction
+    -- Dor debit difference, there might be many postings,
+    -- caused by debit redirection
     DebitDifference  ps -> forM_ ps $ \ p -> do
           let account = debitPostingAccount p
           debit  (debitPostingAccount  p) (Ext date pos attrs p)
@@ -68,6 +80,7 @@ processEntry date pos attrs uentry = do
           runRules date attrs p processTransaction
   return ()
 
+-- | Get next record
 getNext :: Monad m => StateT [a] m (Maybe a)
 getNext = do
   list <- get
@@ -77,7 +90,11 @@ getNext = do
               put xs
               return (Just x)
 
-getNextP :: (Monad m, Eq a) => (a -> Bool) -> (a -> Bool) -> StateT [a] m (Maybe a)
+-- | Get next record, for which predicate is True
+getNextP :: (Monad m, Eq a)
+         => (a -> Bool)            -- ^ Is this record ok?
+         -> (a -> Bool)            -- ^ Should we delete this record?
+         -> StateT [a] m (Maybe a)
 getNextP p doDelete = do
   list <- get
   case filter p list of
@@ -88,6 +105,7 @@ getNextP p doDelete = do
           else return ()
         return (Just x)
 
+-- | Process one record.
 processRecord :: (Throws InternalError l,
                   Throws InsufficientFunds l)
               => StateT [Ext Record] (EMT l LedgerMonad) [Ext (Transaction Amount)]
@@ -126,6 +144,7 @@ periodic _    _                = False
 isStop name (StopPeriodic x) = name == x
 isStop _    _                = False
 
+-- | Process all records.
 processAll :: (Throws InternalError l,
                Throws InsufficientFunds l)
            => StateT [Ext Record] (EMT l LedgerMonad) [Ext (Transaction Amount)]
@@ -138,6 +157,7 @@ processAll = do
          other <- processAll
          return $ merge other trans
 
+-- | Process all records.
 processRecords :: (Throws NoSuchRate l,
                    Throws NoCorrespondingAccountFound l,
                    Throws InvalidAccountType l,
@@ -145,9 +165,9 @@ processRecords :: (Throws NoSuchRate l,
                    Throws InsufficientFunds l,
                    Throws DuplicatedRecord l,
                    Throws InternalError l)
-               => DateTime
-               -> [DeduplicationRule]
-               -> [Ext Record]
+               => DateTime                   -- ^ Process records with date <= this
+               -> [DeduplicationRule]        -- ^ Rules to deduplicate records
+               -> [Ext Record]               -- ^ All records
                -> Ledger l ()
 processRecords endDate rules list = do
   deduplicated <- deduplicate rules (sort list)
@@ -157,6 +177,7 @@ processRecords endDate rules list = do
   forM_ (takeWhile (\t -> getDate t <= endDate) list') $
       processTransaction
 
+-- | Process one transaction
 processTransaction :: (Throws NoSuchRate l,
                        Throws NoCorrespondingAccountFound l,
                        Throws InvalidAccountType l,

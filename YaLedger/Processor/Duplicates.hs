@@ -1,5 +1,4 @@
-{-# LANGUAGE GADTs, FlexibleContexts #-}
-{- OPTIONS_GHC -F -pgmF MonadLoc #-}
+{-# LANGUAGE GADTs, FlexibleContexts, PatternGuards #-}
 module YaLedger.Processor.Duplicates where
 
 import Control.Applicative ((<$>))

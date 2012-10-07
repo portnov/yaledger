@@ -1,5 +1,4 @@
 {-# LANGUAGE ScopedTypeVariables, FlexibleContexts, OverlappingInstances, GADTs, RecordWildCards, TypeFamilies #-}
-{- # OPTIONS_GHC -F -pgmF MonadLoc #-}
 
 module YaLedger.Reports.Turnovers where
 

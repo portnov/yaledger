@@ -1,5 +1,4 @@
 {-# LANGUAGE EmptyDataDecls, MultiParamTypeClasses, FlexibleContexts, FlexibleInstances, TypeOperators, ScopedTypeVariables, ExistentialQuantification, OverlappingInstances, TypeFamilies #-}
-{- # OPTIONS_GHC -F -pgmF MonadLoc #-}
 module YaLedger.Types.Reports
   (ReportClass (..), ReportParameter (..),
    Report (..),

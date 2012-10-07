@@ -14,14 +14,13 @@ import Control.Applicative ((<$>))
 import Control.Monad
 import Control.Monad.State
 import Control.Monad.Exception
+import Control.Monad.Loc
 import Data.Char
 import Data.Maybe
 import qualified Data.Map as M
 import Data.List
 import Data.Dates
 import System.Environment
-import System.Environment.XDG.BaseDir
-import System.FilePath
 import System.Console.GetOpt
 import Text.Parsec hiding (try)
 
@@ -149,16 +148,12 @@ lookupInit key list = [v | (k,v) <- list, key `isPrefixOf` k]
 defaultMain :: [(String, Report)] -> IO ()
 defaultMain list = do
   argv <- getArgs
-  dataDir <- getUserDataDir "yaledger"
   options <- parseCmdLine argv
   case options of
     Help -> return ()
     _ -> do
          let report = head $ reportParams options
              params = tail $ reportParams options
-             inputPaths = if null (files options)
-                            then [dataDir </> "default.yaledger"]
-                            else files options
          case lookupInit report list of
            [] -> putStrLn $ "No such report: " ++ report ++
                             "\nSupported reports are: " ++
