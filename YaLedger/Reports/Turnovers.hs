@@ -45,17 +45,17 @@ data TRecord v = TRecord {
   trTotals   :: Maybe v }
   deriving (Eq, Show)
 
-sumTurnovers calcTotals ag list = do
+sumTurnovers mbDate calcTotals ag list = do
   let c = agCurrency ag
   list' <- forM list $ \tr -> do
-                cr' :# _ <- convert c (trCredit tr)
-                dt' :# _ <- convert c (trDebit tr)
-                inc' :# _ <- convert c (trIncSaldo tr)
-                out' :# _ <- convert c (trOutSaldo tr)
+                cr' :# _  <- convert mbDate c (trCredit tr)
+                dt' :# _  <- convert mbDate c (trDebit tr)
+                inc' :# _ <- convert mbDate c (trIncSaldo tr)
+                out' :# _ <- convert mbDate c (trOutSaldo tr)
                 t'  <- case trTotals tr of
                          Nothing -> return Nothing
                          Just t -> do
-                                   x :# _ <- convert c t
+                                   x :# _ <- convert mbDate c t
                                    return (Just x)
                 return $ TRecord {
                            trCredit = cr',
@@ -108,7 +108,7 @@ turnovers' qry options mbPath = do
               Nothing   -> gets lsCoA
               Just path -> getCoAItem (gets lsPosition) (gets lsCoA) path
     let calcTotals = TShowTotals `elem` options
-    tree <- mapTreeM (sumTurnovers calcTotals) (allTurnovers calcTotals qry) coa
+    tree <- mapTreeM (sumTurnovers (qEnd qry) calcTotals) (allTurnovers calcTotals qry) coa
     let tree' = if TNoZeros `elem` options
                   then filterLeafs noZeroTurns tree
                   else tree

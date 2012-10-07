@@ -43,7 +43,7 @@ processEntry :: (Throws NoSuchRate l,
                -> Ledger l ()
 processEntry date pos attrs uentry = do
   -- First, check the entry
-  entry@(CEntry dt cr rd) <- checkEntry attrs uentry
+  entry@(CEntry dt cr rd) <- checkEntry date attrs uentry
 
   -- Process debit postings
   forM dt $ \p -> do
@@ -196,9 +196,10 @@ processTransaction (Ext date pos attrs (TReconciliate acc x)) = do
                  pos
                  (M.insert "category" (Exactly "reconciliation") attrs)
                  entry
-processTransaction (Ext _ pos _ (TSetRate rates)) = do
+processTransaction (Ext date pos attrs (TSetRate rates)) = do
     setPos pos
-    modify $ \st -> st {lsRates = rates ++ lsRates st}
+    let rates' = map (Ext date pos attrs) rates
+    modify $ \st -> st {lsRates = rates' ++ lsRates st}
 processTransaction (Ext date pos attrs (TCallTemplate name args)) = do
     setPos pos
     (tplAttrs, template) <- getTemplate name

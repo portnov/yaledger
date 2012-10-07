@@ -63,8 +63,8 @@ incomeStatement' qry options mbPath = do
     outcomes' <- treeSaldo qry outcomes
 
     let defcur = getCurrency (amount incomes')
-    incomeD  :# _ <- convert defcur (amount incomes')
-    outcomeD :# _ <- convert defcur (amount outcomes')
+    incomeD  :# _ <- convert (qEnd qry) defcur (amount incomes')
+    outcomeD :# _ <- convert (qEnd qry) defcur (amount outcomes')
 
     let incomesS  = lines (show $ filterLeafs nz incomes')
         outcomesS = lines (show $ filterLeafs nz outcomes')

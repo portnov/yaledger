@@ -5,7 +5,7 @@ module YaLedger.Kernel
    CanCredit (..), CanDebit (..),
    negateAmount, differenceType,
    getCurrentBalance,
-   convert, convert', convertPosting,
+   convert, convertPosting,
    convertPosting', convertDecimal,
    checkQuery, checkRecord, isAdmin,
    creditPostings, debitPostings,
@@ -25,6 +25,7 @@ import Control.Monad
 import Control.Monad.State
 import Control.Monad.Exception
 import Control.Monad.Loc
+import Data.Maybe
 import Data.List
 import Data.Dates
 import Data.Decimal
@@ -149,12 +150,16 @@ differenceType x
   | otherwise = EDebit
 
 lookupRate :: (Throws NoSuchRate l)
-           => Currency
+           => Maybe DateTime
+           -> Currency
            -> Currency
            -> Ledger l Double
-lookupRate from to = do
+lookupRate mbDate from to = do
+    now <- gets lsStartDate
+    let date = fromMaybe now mbDate
     rates <- gets lsRates
-    case go rates from to rates of
+    let goodRates = [getContent rate | rate <- rates, getDate rate <= date]
+    case go goodRates from to goodRates of
       Nothing -> throwP (NoSuchRate from to)
       Just rate -> return rate
   where
@@ -175,19 +180,14 @@ lookupRate from to = do
       | otherwise = go ar f t rs
 
 convert :: (Throws NoSuchRate l)
-        => Currency -> Amount -> Ledger l Amount
-convert c' (x :# c)
+        => Maybe DateTime -> Currency -> Amount -> Ledger l Amount
+convert mbDate c' (x :# c)
   | c == c' = return (x :# c)
   | otherwise = do
-    rate <- lookupRate c c'
+    rate <- lookupRate mbDate c c'
     return $ (x *. rate) :# c'
 
-convert' :: Currency -> Amount -> Ledger l Amount
-convert' c x = 
-  convert c x
-    `catch`
-      \(_ :: NoSuchRate) -> return x
-
+-- | Check if record \/ entry \/ whatever matches to query
 checkQuery :: Query -> Ext a -> Bool
 checkQuery (Query {..}) (Ext {..}) =
   let p = case qStart of
@@ -311,35 +311,38 @@ uniq [] = []
 uniq (x:xs) = x: uniq (filter (/= x) xs)
 
 convertPosting :: Throws NoSuchRate l
-               => Currency
+               => Maybe DateTime
+               -> Currency
                -> Posting Amount t
                -> Ledger l (Posting Decimal t)
-convertPosting to (DPosting acc a) = do
-  x :# _ <- convert to a
+convertPosting mbDate to (DPosting acc a) = do
+  x :# _ <- convert mbDate to a
   return $ DPosting acc x
-convertPosting to (CPosting acc a) = do
-  x :# _ <- convert to a
+convertPosting mbDate to (CPosting acc a) = do
+  x :# _ <- convert mbDate to a
   return $ CPosting acc x
 
 convertPosting' :: Throws NoSuchRate l
-               => Posting Amount t
+               => Maybe DateTime
+               -> Posting Amount t
                -> Ledger l (Posting Decimal t)
-convertPosting' (DPosting acc a) = do
-  x :# _ <- convert (getCurrency acc) a
+convertPosting' mbDate (DPosting acc a) = do
+  x :# _ <- convert mbDate (getCurrency acc) a
   return $ DPosting acc x
-convertPosting' (CPosting acc a) = do
-  x :# _ <- convert (getCurrency acc) a
+convertPosting' mbDate (CPosting acc a) = do
+  x :# _ <- convert mbDate (getCurrency acc) a
   return $ CPosting acc x
 
 convertDecimal :: Throws NoSuchRate l
-               => Currency
+               => Maybe DateTime
+               -> Currency
                -> Posting Decimal t
                -> Ledger l Decimal
-convertDecimal to (DPosting acc a) = do
-  x :# _ <- convert to (a :# getCurrency acc)
+convertDecimal mbDate to (DPosting acc a) = do
+  x :# _ <- convert mbDate to (a :# getCurrency acc)
   return x
-convertDecimal to (CPosting acc a) = do
-  x :# _ <- convert to (a :# getCurrency acc)
+convertDecimal mbDate to (CPosting acc a) = do
+  x :# _ <- convert mbDate to (a :# getCurrency acc)
   return x
 
 -- | Check an entry:
@@ -354,10 +357,11 @@ checkEntry :: (Throws NoSuchRate l,
                Throws NoCorrespondingAccountFound l,
                Throws InvalidAccountType l,
                Throws InternalError l)
-             => Attributes               -- ^ Transaction attributes
+             => DateTime                 -- ^ Entry date/time
+             -> Attributes               -- ^ Transaction attributes
              -> Entry Amount Unchecked   -- ^ Unchecked entry
              -> Ledger l (Entry Decimal Checked)
-checkEntry attrs (UEntry dt cr mbCorr currs) = do
+checkEntry date attrs (UEntry dt cr mbCorr currs) = do
   defcur <- gets lsDefaultCurrency
   let currencies    = uniq $ map getCurrency cr ++ map getCurrency dt ++ [defcur]
       firstCurrency = head currencies
@@ -368,8 +372,8 @@ checkEntry attrs (UEntry dt cr mbCorr currs) = do
       source        = head accountNames
 
   -- Convert all postings into firstCurrency
-  dt1 <- mapM (convertPosting firstCurrency) dt
-  cr1 <- mapM (convertPosting firstCurrency) cr
+  dt1 <- mapM (convertPosting (Just date) firstCurrency) dt
+  cr1 <- mapM (convertPosting (Just date) firstCurrency) cr
 
   -- And sum them to check if debit == credit
   let dtSum = sumPostings dt1 
@@ -377,8 +381,8 @@ checkEntry attrs (UEntry dt cr mbCorr currs) = do
 
   -- Convert each posting's sum into currency
   -- of posting's account
-  dt' <- mapM convertPosting' dt
-  cr' <- mapM convertPosting' cr
+  dt' <- mapM (convertPosting' $ Just date) dt
+  cr' <- mapM (convertPosting' $ Just date) cr
 
   -- Should we add credit / debit posting
   -- to entry?
@@ -392,7 +396,7 @@ checkEntry attrs (UEntry dt cr mbCorr currs) = do
                                    cqExcept     = accounts,
                                    cqAttributes = M.insert "source" (Optional source) attrs }
                        -- Fill credit / debit entry parts
-                       fillEntry qry dt' cr' mbCorr (diff :# firstCurrency)
+                       fillEntry qry date dt' cr' mbCorr (diff :# firstCurrency)
   let nCurrencies = length $ nub $ sort $
                           map getCurrency cr ++
                           map getCurrency dt ++
@@ -405,8 +409,8 @@ checkEntry attrs (UEntry dt cr mbCorr currs) = do
          debug $ "Credit: " ++ show (getAmount $ head crF) ++
                    ", Debit: " ++ show (getAmount $ head crF)
          -- Convert all postings into default currency
-         crD <- mapM (convertDecimal defcur) crF
-         dtD <- mapM (convertDecimal defcur) dtF
+         crD <- mapM (convertDecimal (Just date) defcur) crF
+         dtD <- mapM (convertDecimal (Just date) defcur) dtF
          debug $ "crD: " ++ show crD ++ ", dtD: " ++ show dtD
 
          let diffD :: Decimal -- In default currency
@@ -423,7 +427,7 @@ checkEntry attrs (UEntry dt cr mbCorr currs) = do
                                   cqCurrencies = [defcur],
                                   cqExcept     = accounts,
                                   cqAttributes = attrs' }
-                      correspondence <- lookupCorrespondence qry (diffD :# defcur) Nothing
+                      correspondence <- lookupCorrespondence qry date (diffD :# defcur) Nothing
                       case correspondence of
                         Right oneAccount -> do
                           if diffD < 0
@@ -434,7 +438,7 @@ checkEntry attrs (UEntry dt cr mbCorr currs) = do
                                  account <- accountAsDebit oneAccount
                                  return $ DebitDifference [ DPosting account diffD ]
                         Left debitPostings -> do
-                          postings <- mapM convertPosting' debitPostings
+                          postings <- mapM (convertPosting' $ Just date) debitPostings
                           return $ DebitDifference postings
          return $ CEntry dtF crF rd
     else return $ CEntry dtF crF OneCurrency
@@ -453,10 +457,11 @@ lookupCorrespondence :: (Throws NoCorrespondingAccountFound l,
                          Throws InternalError l,
                          Throws InvalidAccountType l)
                      => CQuery              -- ^ Query to search for account
+                     -> DateTime            -- ^ Entry date/time
                      -> Amount              -- ^ Amount of credit \/ debit
                      -> Maybe AnyAccount    -- ^ User-specified corresponding account
                      -> Ledger l (Either [Posting Amount Debit] AnyAccount)
-lookupCorrespondence qry amount@(value :# currency) mbCorr = do
+lookupCorrespondence qry date amount@(value :# currency) mbCorr = do
   coa <- gets lsCoA
   amap <- gets lsAccountMap
   let mbAccount = runCQuery qry coa
@@ -475,7 +480,7 @@ lookupCorrespondence qry amount@(value :# currency) mbCorr = do
                 then return (Right acc)
                 else do
                      let accountCurrency = getCurrency account
-                     toDebit :# _ <- convert accountCurrency amount
+                     toDebit :# _ <- convert (Just date) accountCurrency amount
                      currentBalance <- getCurrentBalance account
                      -- toDebit and currentBalance are both in currency of
                      -- found account.
@@ -496,14 +501,14 @@ lookupCorrespondence qry amount@(value :# currency) mbCorr = do
                                                           (Exactly $ getName account)
                                                           (cqAttributes qry)
                                        }
-                            nextHop <- lookupCorrespondence qry'
+                            nextHop <- lookupCorrespondence qry' date
                                            (toRedirect :# accountCurrency)
                                            Nothing
                             case nextHop of
                               Right hop -> do
                                 -- We can debit `hop' acccount by toRedirect
                                 let lastCurrency = getCurrency hop
-                                lastDebit :# _ <- convert lastCurrency (toRedirect :# accountCurrency)
+                                lastDebit :# _ <- convert (Just date) lastCurrency (toRedirect :# accountCurrency)
                                 hop' <- accountAsDebit hop
                                 let last  = DPosting hop' (lastDebit :# lastCurrency)
                                 return $ Left [firstPosting, last]
@@ -520,32 +525,33 @@ fillEntry :: (Throws NoSuchRate l,
               Throws InvalidAccountType l,
               Throws InternalError l)
            => CQuery                    -- ^ Query to search for corresponding account
+           -> DateTime                  -- ^ Entry date/time
            -> [Posting Decimal Debit]   -- ^ Debit postings
            -> [Posting Decimal Credit]  -- ^ Credit postings
            -> Maybe AnyAccount          -- ^ User-specified corresponding account
            -> Amount                    -- ^ Difference (credit - debit)
            -> Ledger l ([Posting Decimal Debit], [Posting Decimal Credit])
-fillEntry qry dt cr mbCorr amount@(value :# _) = do
-  correspondence <- lookupCorrespondence qry amount mbCorr
+fillEntry qry date dt cr mbCorr amount@(value :# _) = do
+  correspondence <- lookupCorrespondence qry date amount mbCorr
   case correspondence of
     Right oneAccount -> do
       if value < 0
          then do
               account <- accountAsCredit oneAccount
               -- Convert value into currency of found account
-              value' :# _ <- convert (getCurrency account) amount
+              value' :# _ <- convert (Just date) (getCurrency account) amount
               let e = CPosting account (-value')
               -- Will fill rates difference later
               return (dt, e:cr)
          else do
               account <- accountAsDebit oneAccount
               -- Convert value into currency of found account
-              value' :# _ <- convert (getCurrency account) amount
+              value' :# _ <- convert (Just date) (getCurrency account) amount
               let e = DPosting account value'
               -- Will fill rates difference later
               return (e:dt, cr)
     Left debitPostings -> do
-      postings <- mapM convertPosting' debitPostings
+      postings <- mapM (convertPosting' $ Just date) debitPostings
       return (dt ++ postings, cr)
 
 -- | Reconciliate one account; set it's current balance
@@ -566,7 +572,7 @@ reconciliate date account amount = do
               qAttributes = M.empty }
 
   currentBalance :# accountCurrency <- saldo qry account
-  actualBalance :# _ <- convert (getCurrency account) amount
+  actualBalance :# _ <- convert (Just date) (getCurrency account) amount
 
   -- diff is in accountCurrency
   let diff = actualBalance - currentBalance
@@ -583,13 +589,14 @@ reconciliate date account amount = do
 -- | Calculate sum of amounts in accounts group.
 sumGroup :: (Throws InternalError l,
              Throws NoSuchRate l)
-         => AccountGroupData
+         => Maybe DateTime
+         -> AccountGroupData
          -> [Amount]
          -> Ledger l Amount
-sumGroup ag ams = do
+sumGroup mbDate ag ams = do
   setPos $ newPos ("accounts group " ++ agName ag) 0 0
   let c = agCurrency ag
-  ams' <- mapM (convert c) ams
+  ams' <- mapM (convert mbDate c) ams
   let res = sum [x | x :# _ <- ams']
   return $ res :# c
 
@@ -599,5 +606,5 @@ treeSaldo :: (Throws InternalError l,
           => Query
           -> ChartOfAccounts
           -> Ledger l (Tree Amount Amount)
-treeSaldo qry coa = mapTreeM sumGroup (saldo qry) coa
+treeSaldo qry coa = mapTreeM (sumGroup $ qEnd qry) (saldo qry) coa
 

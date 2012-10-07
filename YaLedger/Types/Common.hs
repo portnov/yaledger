@@ -67,7 +67,7 @@ data Rate =
       rateReversible   :: Bool }
   deriving (Eq, Show)
 
-type Rates = [Rate]
+type Rates = [Ext Rate]
 
 type AccountID = Integer
 

@@ -1,5 +1,4 @@
 {-# LANGUAGE GADTs, RecordWildCards, FlexibleContexts #-}
-{-# OPTIONS_GHC -F -pgmF MonadLoc #-}
 module YaLedger.Rules where
 
 import Control.Monad.State
@@ -18,13 +17,14 @@ import YaLedger.Correspondence
 import YaLedger.Templates
 
 matchC :: Throws NoSuchRate l
-       => Posting Decimal t
+       => DateTime
+       -> Posting Decimal t
        -> Condition
        -> Ledger l Bool
-matchC (CPosting acc x) cond = check ECredit acc x cond
-matchC (DPosting acc x) cond = check EDebit  acc x cond
+matchC date (CPosting acc x) cond = check ECredit date acc x cond
+matchC date (DPosting acc x) cond = check EDebit  date acc x cond
 
-check t acc x (Condition {..}) = do
+check t date acc x (Condition {..}) = do
   coa <- gets lsCoA
   let accID = getID acc
   let grps = fromMaybe [] $ groupIDs accID coa
@@ -42,7 +42,7 @@ check t acc x (Condition {..}) = do
                                 LessThan s -> ((<), s)
                                 Equals s   -> ((==), s)
                                 _ -> error "Impossible."
-                condValue :# _ <- convert accountCurrency v
+                condValue :# _ <- convert (Just date) accountCurrency v
                 return $ x `op` condValue
     else return False
 
@@ -59,7 +59,7 @@ runRules :: (Throws NoSuchRate l,
 runRules date pAttrs p run = do
   rules <- gets lsRules
   forM_ rules $ \(name, attrs, When cond tran) -> do
-    y <- p `matchC` cond
+    y <- matchC date p cond
     if y && (pAttrs `matchAll` cAttributes cond)
       then do
            let attrs' = M.insert "rule" (Exactly name) (pAttrs `M.union` attrs)
