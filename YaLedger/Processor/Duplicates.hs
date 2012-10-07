@@ -3,13 +3,11 @@
 module YaLedger.Processor.Duplicates where
 
 import Control.Applicative ((<$>))
-import Control.Monad
 import Control.Monad.Exception
 import Control.Monad.Loc
 import qualified Data.Map as M
 import Data.Dates
 import Data.Decimal
-import System.Log.Logger
 
 import YaLedger.Types
 import YaLedger.Correspondence (matchAll)
@@ -131,23 +129,23 @@ setAttributes :: [SetAttribute] -> Ext Record -> Ext Record -> Ext Record
 setAttributes sets newRecord oldRecord = foldl apply oldRecord sets
   where
     apply :: Ext Record -> SetAttribute -> Ext Record
-    apply rec (targetName := src)
-      | targetName == "date" = rec {getDate = getDate newRecord}
+    apply record (targetName := src)
+      | targetName == "date" = record {getDate = getDate newRecord}
       | SExactly "date" <- src = 
-          setAttr targetName (Exactly $ prettyPrint $ getDate newRecord) rec
+          setAttr targetName (Exactly $ prettyPrint $ getDate newRecord) record
       | SOptional "date" <- src = 
-          setAttr targetName (Optional $ prettyPrint $ getDate newRecord) rec
+          setAttr targetName (Optional $ prettyPrint $ getDate newRecord) record
       | SExactly sourceName <- src = 
           case getAttr sourceName newRecord of
-            Nothing -> rec
-            Just value -> setAttr targetName (Exactly value) rec
+            Nothing -> record
+            Just value -> setAttr targetName (Exactly value) record
       | SOptional sourceName <- src = 
           case getAttr sourceName newRecord of
-            Nothing -> rec
-            Just value -> setAttr targetName (Optional value) rec
+            Nothing -> record
+            Just value -> setAttr targetName (Optional value) record
       | SFixed string <- src = 
-          setAttr targetName (Exactly string) rec
-      | otherwise = rec
+          setAttr targetName (Exactly string) record
+      | otherwise = record
 
 getAttr :: String -> Ext Record -> Maybe String
 getAttr key rec = getString <$> M.lookup key (getAttributes rec)

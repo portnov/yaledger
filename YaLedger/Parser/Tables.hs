@@ -16,7 +16,6 @@ import System.FilePath
 import System.Environment.XDG.BaseDir
 
 import YaLedger.Types
-import YaLedger.Tree
 
 data RowsFilter =
   RowsFilter {

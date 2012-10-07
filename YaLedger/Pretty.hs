@@ -1,7 +1,6 @@
 {-# LANGUAGE GADTs, TypeSynonymInstances, FlexibleInstances, FlexibleContexts, RecordWildCards #-}
 module YaLedger.Pretty where
 
-import Data.Maybe
 import Data.Dates
 import Data.List
 import Data.Decimal

@@ -13,8 +13,6 @@ module YaLedger.Logger
 import Control.Monad.Exception
 import Control.Monad.Loc
 import System.Log.Logger
-import System.Log.Handler.Simple
-import System.IO
 import System.IO.Unsafe
 
 import YaLedger.Monad

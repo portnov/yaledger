@@ -3,8 +3,6 @@ module YaLedger.Parser.Transactions where
 
 import Control.Applicative hiding (many, (<|>), optional)
 import Data.Either
-import Data.Decimal
-import Data.Maybe
 import Data.List
 import Data.Dates
 import qualified Data.Map as M
@@ -12,12 +10,9 @@ import Text.Parsec
 import Text.Printf
 
 import YaLedger.Types
-import YaLedger.Tree
 import YaLedger.Templates
 import YaLedger.Kernel.Common
 import YaLedger.Parser.Common
-
-import Debug.Trace
 
 data PState = PState {
   getCoA :: ChartOfAccounts,

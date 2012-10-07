@@ -4,7 +4,6 @@
 module YaLedger.Exceptions where
 
 import Control.Monad.Exception
-import Control.Monad.Exception.Base
 import Control.Monad.Loc
 import Data.List (intercalate)
 import Data.Decimal

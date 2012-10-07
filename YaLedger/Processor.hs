@@ -9,18 +9,15 @@ import Control.Monad.Exception
 import Control.Monad.Loc
 import Data.List
 import Data.Dates
-import Data.Decimal
 import qualified Data.Map as M
 
 import YaLedger.Types
 import YaLedger.Monad
 import YaLedger.Exceptions
-import YaLedger.Correspondence
 import YaLedger.Kernel
 import YaLedger.Templates
 import YaLedger.Rules
 import YaLedger.Logger
-import YaLedger.Pretty
 import YaLedger.Processor.Duplicates
 
 merge :: Ord a => [a] -> [a] -> [a]
@@ -186,5 +183,4 @@ processTransaction (Ext date pos attrs (TCallTemplate name args)) = do
     (tplAttrs, template) <- getTemplate name
     tran <- fillTemplate template args
     processTransaction (Ext date pos (attrs `M.union` tplAttrs) tran)
-processTransaction x = fail $ show x
 

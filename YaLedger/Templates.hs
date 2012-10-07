@@ -3,15 +3,12 @@
 module YaLedger.Templates where
 
 import Control.Applicative
-import Control.Monad
 import Control.Monad.Reader
 import Control.Monad.State
 import Control.Monad.Exception
-import Control.Monad.Exception.Base
 import qualified Data.Map as M
 import Data.Maybe
 import Data.Decimal
-import Text.Printf
 
 import YaLedger.Types
 import YaLedger.Exceptions

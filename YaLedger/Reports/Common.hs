@@ -15,7 +15,6 @@ import YaLedger.Strings
 import YaLedger.Pretty
 import YaLedger.Monad
 import YaLedger.Exceptions
-import YaLedger.Logger
 
 isNotZero :: Amount -> Bool
 isNotZero (x :# _) = x /= 0

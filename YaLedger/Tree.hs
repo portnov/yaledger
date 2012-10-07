@@ -11,8 +11,6 @@ import Data.List.Utils (split)
 
 import YaLedger.Strings
 
-import Debug.Trace
-
 type Path = [String]
 
 data Tree n a =

@@ -10,7 +10,6 @@ module YaLedger.Types.Reports
 import Control.Applicative ((<$>))
 import Control.Monad.State
 import Control.Monad.Exception
-import Control.Monad.Exception.Base
 import Control.Monad.Loc
 import Data.Dates
 import System.Console.GetOpt
@@ -21,7 +20,6 @@ import YaLedger.Types.Ledger
 import YaLedger.Types.Transactions
 import YaLedger.Monad
 import YaLedger.Kernel.Common
-import YaLedger.Logger
 
 newtype Parser l a = Parser {
     runParser :: [String] -> Ledger l (a, [String])

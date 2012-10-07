@@ -1,11 +1,10 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, GeneralizedNewtypeDeriving, FlexibleContexts, FlexibleInstances, ScopedTypeVariables #-}
+{-# OPTIONS_GHC -F -pgmF MonadLoc #-}
 
 module YaLedger.Monad where
 
 import Control.Monad.State
-import Control.Monad.Trans
 import Control.Monad.Exception
-import Control.Monad.Exception.Base
 import Control.Monad.Loc
 import Data.Dates
 import qualified Data.Map as M

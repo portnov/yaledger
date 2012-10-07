@@ -3,7 +3,6 @@ module YaLedger.Parser.HTML where
 
 import Control.Applicative
 import Control.Monad
-import Data.List
 import qualified Data.Text.Lazy as T
 import qualified Data.Text.Lazy.Encoding as E
 import qualified Data.ByteString.Lazy as L

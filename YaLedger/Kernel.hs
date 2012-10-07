@@ -1,5 +1,5 @@
 {-# LANGUAGE GADTs, RecordWildCards, ScopedTypeVariables, FlexibleContexts, FlexibleInstances #-}
-{- # OPTIONS_GHC -F -pgmF MonadLoc #-}
+{- OPTIONS_GHC -F -pgmF MonadLoc #-}
 
 module YaLedger.Kernel
   (module YaLedger.Kernel.Common,
@@ -25,14 +25,11 @@ import Control.Applicative ((<$>))
 import Control.Monad
 import Control.Monad.State
 import Control.Monad.Exception
-import Control.Monad.Exception.Base
 import Control.Monad.Loc
-import Control.Monad.Trans
 import Data.List
 import Data.Dates
 import Data.Decimal
 import qualified Data.Map as M
-import Text.Regex.PCRE
 
 import YaLedger.Types
 import YaLedger.Monad

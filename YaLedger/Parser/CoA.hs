@@ -10,7 +10,6 @@ import qualified Data.Map as M
 import Text.Parsec
 
 import YaLedger.Types
-import YaLedger.Tree
 import YaLedger.Parser.Common
 
 data PState = PState {

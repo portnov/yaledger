@@ -4,7 +4,6 @@ module YaLedger.Rules where
 
 import Control.Monad.State
 import Control.Monad.Exception
-import Control.Monad.Exception.Base
 import Control.Monad.Loc
 import Data.Maybe
 import Data.Decimal

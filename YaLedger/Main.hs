@@ -14,17 +14,14 @@ import Control.Applicative ((<$>))
 import Control.Monad
 import Control.Monad.State
 import Control.Monad.Exception
-import Control.Monad.Exception.Base
 import Data.Char
 import Data.Maybe
 import qualified Data.Map as M
 import Data.List
-import Data.Generics
 import Data.Dates
 import System.Environment
 import System.Environment.XDG.BaseDir
 import System.FilePath
-import System.FilePath.Glob
 import System.Console.GetOpt
 import Text.Parsec hiding (try)
 
@@ -33,7 +30,6 @@ import YaLedger.Exceptions
 import YaLedger.Types.Reports
 import YaLedger.Monad
 import YaLedger.Parser
-import YaLedger.Parser.CSV
 import YaLedger.Parser.Common (pAttribute)
 import YaLedger.Kernel
 import YaLedger.Processor
@@ -41,7 +37,6 @@ import YaLedger.Config
 import YaLedger.Logger
 import YaLedger.Pretty
 import YaLedger.Reports.Common
-import YaLedger.Reports.Balance
 
 parsePair :: String -> Either ParseError (String, AttributeValue)
 parsePair str = runParser pAttribute () str str

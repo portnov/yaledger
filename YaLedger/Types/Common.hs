@@ -21,12 +21,10 @@ module YaLedger.Types.Common
 
 import Data.Decimal
 import Data.IORef
-import qualified Data.Map as M
 import Data.Dates
 import Text.Printf
 import Text.Parsec.Pos
 
-import YaLedger.Tree
 import YaLedger.Attributes
 
 data Checked

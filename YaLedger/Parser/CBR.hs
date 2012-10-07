@@ -7,10 +7,6 @@ import Control.Applicative hiding ((<|>), many)
 import Control.Monad
 import Data.List
 import qualified Data.Map as M
-import qualified Data.Text.Lazy as T
-import qualified Data.Text.Lazy.Encoding as E
-import qualified Data.ByteString.Lazy as L
-import qualified Codec.Text.IConv as IConv
 import Data.Tree.NTree.TypeDefs
 import Text.XML.HXT.Core
 import Data.Yaml
@@ -21,11 +17,10 @@ import Text.Printf
 import Text.Parsec
 
 import YaLedger.Types hiding (getChildren)
-import YaLedger.Config
 import YaLedger.Parser.Tables (loadParserConfig)
-import YaLedger.Parser.Common
 import qualified YaLedger.Parser.Transactions as T
 import YaLedger.Pretty
+import YaLedger.Config () -- we need some instances for FromJSON
 
 roubles :: Currency
 roubles = "р"

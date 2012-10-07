@@ -1,15 +1,10 @@
 module YaLedger.Parser.Map where
 
 import Control.Applicative ((<$>))
-import Control.Monad.State
-import Control.Failure
-import Data.Maybe
 import Data.List
 import Text.Parsec
-import Text.Printf
 
 import YaLedger.Types
-import YaLedger.Tree
 import YaLedger.Kernel.Common
 import YaLedger.Parser.Common
 

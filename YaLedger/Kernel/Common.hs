@@ -3,14 +3,10 @@
 -- require Ledger monad.
 module YaLedger.Kernel.Common where
 
-import Control.Applicative ((<$>))
-import Control.Monad
 import Control.Failure
 
 import YaLedger.Types
 import YaLedger.Exceptions
-
-import Debug.Trace
 
 -- | Filter list of CoA items by account type
 filterByAccountType :: AccountGroupType -> [ChartOfAccounts] -> [ChartOfAccounts]

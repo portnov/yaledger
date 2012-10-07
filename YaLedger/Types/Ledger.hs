@@ -3,7 +3,6 @@
 module YaLedger.Types.Ledger where
 
 import qualified Data.Map as M
-import Data.Either
 import Data.Decimal
 import Data.List
 import Text.Printf

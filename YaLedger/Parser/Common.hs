@@ -6,18 +6,13 @@ import Control.Applicative ((<$>))
 import Control.Failure
 import Control.Exception hiding (try)
 import Data.Functor.Identity
-import Data.Maybe
-import Data.List
 import Data.Decimal
 import qualified Data.Map as M
 import Text.Parsec
 import qualified Text.Parsec.Token as P
 import Text.Parsec.Language
-import Text.Printf
 
 import YaLedger.Types
-
-import Debug.Trace
 
 instance Exception e => Failure e Identity where
   failure e = fail $ show e

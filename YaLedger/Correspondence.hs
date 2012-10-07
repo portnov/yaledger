@@ -4,9 +4,7 @@ module YaLedger.Correspondence where
 
 import Control.Monad
 import Data.Maybe
-import Data.List
 import qualified Data.Map as M
-import Text.Printf
 
 import YaLedger.Types
 
