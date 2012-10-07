@@ -127,7 +127,7 @@ parseRates str cids = do
 
 pRates :: T.Parser [Ext Record]
 pRates =
-  T.ext (Transaction <$> T.pSetRate) `sepEndBy` many newline
+  T.ext T.pSetRate `sepEndBy` many newline
 
 loadCache :: ChartOfAccounts -> FilePath -> IO [Ext Record]
 loadCache coa cachePath = do
@@ -140,7 +140,7 @@ loadCache coa cachePath = do
 getChecks :: [Ext Record] -> [(DateTime, Currency)]
 getChecks recs = concatMap go recs
   where
-    go (Ext date _ _ (Transaction (TSetRate rates))) =
+    go (Ext date _ _ (SetRate rates)) =
       [(date, rateCurrencyFrom r) | r <-  rates]
     go _ = error "Impossible: CBR.getChecks.go"
 
@@ -154,7 +154,7 @@ loadCBR configPath coa cachePath = do
              doc <- getCBRXML date
              pairs <- parseRates doc (map currencyCode grs)
              let rates = map (bind grs) pairs
-             return $ Ext date nowhere M.empty $ Transaction $ TSetRate $
+             return $ Ext date nowhere M.empty $ SetRate $
                         map convert rates
     let records = cache ++ new
     writeFile cachePath $ unlines $ map prettyPrint records

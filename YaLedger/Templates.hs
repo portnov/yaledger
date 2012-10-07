@@ -45,12 +45,13 @@ instance ATemplate (Transaction Param) where
   subst (TEntry entry) = TEntry <$> subst entry
   subst (TReconciliate p a) = TReconciliate p <$> subst a
   subst (TCallTemplate n t) = return $ TCallTemplate n t
-  subst (TSetRate rate)     = return (TSetRate rate)
 
 instance ATemplate (Entry Param Unchecked) where
   type Result (Entry Param Unchecked) = Entry Amount Unchecked
 
-  nParams (UEntry dt cr _ _) = sum (map nParams dt) + sum (map nParams cr)
+  nParams (UEntry dt cr _ _) =
+    let ms x = if null x then 0 else maximum x
+    in ms (map nParams dt) `max` ms (map nParams cr)
 
   subst (UEntry dt cr a cs) = UEntry <$> mapM subst dt <*> mapM subst cr <*> return a <*> return cs
 

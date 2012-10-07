@@ -80,13 +80,13 @@ pRecord = try (ext pTemplate)
       <|> try (ext pRule)
       <|> try (ext pPeriodic)
       <|> try (ext pStop)
+      <|> try (ext pSetRate)
       <|> ext (Transaction <$> pTransaction pAmount)
 
 pTransaction :: Parser v -> Parser (Transaction v)
 pTransaction p =
         try (pEntry p)
     <|> try (pReconciliate p)
-    <|> try pSetRate
     <|> pCall
 
 pTemplate :: Parser Record
@@ -231,8 +231,8 @@ pReconciliate p = do
   x <- p
   return $ TReconciliate account x
 
-pSetRate :: Parser (Transaction v)
-pSetRate = TSetRate <$> many1 (do
+pSetRate :: Parser Record
+pSetRate = SetRate <$> many1 (do
     reserved "rate"
     spaces
     try implicit <|> explicit )

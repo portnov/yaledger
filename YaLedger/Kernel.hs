@@ -212,7 +212,6 @@ checkRecord qry rec =
     isAdmin (getContent rec) || checkQuery qry rec
 
 isAdmin :: Record -> Bool
-isAdmin (Transaction (TSetRate _)) = True
 isAdmin (Transaction _) = False
 isAdmin _               = True
 

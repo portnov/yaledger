@@ -13,6 +13,7 @@ data Record =
   | RuleR String Condition (Transaction Param)
   | Periodic String DateInterval (Transaction Amount)
   | StopPeriodic String
+  | SetRate [Rate]
   | Transaction (Transaction Amount)
   deriving (Eq, Show)
 
@@ -20,7 +21,6 @@ data Transaction v =
     TEntry (Entry v Unchecked)
   | TReconciliate AnyAccount v
   | TCallTemplate String [Amount]
-  | TSetRate [Rate]
   deriving (Eq, Show)
 
 data Query = Query {

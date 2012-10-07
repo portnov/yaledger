@@ -137,6 +137,12 @@ processRecord = do
       lift $ debug $ "Periodic " ++ name ++ ": " ++ show (length result)
       return result
 
+    Just (Ext date pos attrs (SetRate rates)) -> do
+      lift $ setPos pos
+      let rates' = map (Ext date pos attrs) rates
+      lift $ modify $ \st -> st {lsRates = rates' ++ lsRates st}
+      return []
+
 periodic name (Periodic x _ _) = name == x
 periodic name (StopPeriodic x) = name == x
 periodic _    _                = False
@@ -196,10 +202,6 @@ processTransaction (Ext date pos attrs (TReconciliate acc x)) = do
                  pos
                  (M.insert "category" (Exactly "reconciliation") attrs)
                  entry
-processTransaction (Ext date pos attrs (TSetRate rates)) = do
-    setPos pos
-    let rates' = map (Ext date pos attrs) rates
-    modify $ \st -> st {lsRates = rates' ++ lsRates st}
 processTransaction (Ext date pos attrs (TCallTemplate name args)) = do
     setPos pos
     (tplAttrs, template) <- getTemplate name
