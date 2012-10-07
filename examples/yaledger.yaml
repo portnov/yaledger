@@ -1,0 +1,10 @@
+files: [ "/home/portnov/Документы/yaledger/*" ]
+parsers:
+  csv: CUB.yaml
+  html: compass.yaml
+deduplicate:
+ - check-attributes: [ date, {amount: 5}, credit-account, debit-account ]
+   action:
+     set-attributes:
+       cleared: ?date
+

@@ -1,0 +1,19 @@
+selector: 'table.MsoNormalTable'
+encoding: CP1251
+dateformat: "DD/MM/YYYY"
+currency: "р"
+filter:
+  - field: 1
+    regexp: "\\d+\\/\\d+\\/\\d+"
+  - field: 4
+    regexp: "\\d+"
+date:
+  field: 1
+  regexp: "\\d+\\/\\d+\\/\\d+"
+amount:
+  field: 4
+account: обед
+description:
+  field: 2
+  optional: true
+
