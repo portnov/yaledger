@@ -1,6 +1,12 @@
 {-# LANGUAGE RecordWildCards #-}
-
-module YaLedger.Correspondence where
+-- | Functions for searching corresponding accounts
+module YaLedger.Correspondence
+  (matchT, match, matchAll,
+   isOptional,
+   filterCoA, runCQuery,
+   groupIDs, lookupAMap,
+   inRange
+  ) where
 
 import Control.Monad
 import Data.Maybe
@@ -8,36 +14,43 @@ import qualified Data.Map as M
 
 import YaLedger.Types
 
-nonsignificantAttributes :: [String]
-nonsignificantAttributes =
-  ["description", "source"]
-
+-- | Match account type
 matchT :: PostingType -> AccountGroupType -> Bool
 matchT _       AGFree   = True
 matchT ECredit AGCredit = True
 matchT EDebit  AGDebit  = True
 matchT _       _        = False
 
+-- | Check if attribute value is optional
 isOptional :: AttributeValue -> Bool
 isOptional (Optional _) = True
 isOptional _            = False
 
-match :: Attributes -> Attributes -> Bool
+-- | Match attributes set
+match :: Attributes  -- ^ Set of attributes (of account, for example)
+      -> Attributes  -- ^ Attributes query (attributes of entry, for example)
+      -> Bool
 match attrs qry =
   let check (name, value) = case M.lookup name attrs of
                               Nothing -> isOptional value
                               Just av  -> matchAV value av
   in  all check $ M.assocs qry
 
-matchAll :: Attributes -> Attributes -> Bool
+-- | Match all attributes
+matchAll :: Attributes -- ^ Set of attributes (of account, for example)
+         -> Attributes -- ^ Attributes query (attributes of entry, for example)
+         -> Bool
 matchAll attrs qry =
   let check (name, value) = case M.lookup name qry of
                               Nothing  -> isOptional value
                               Just av  -> matchAV value av
   in  all check (M.assocs attrs) && all (`elem` M.keys attrs) (M.keys qry)
 
-additionalAttributes :: Attributes -> AnyAccount -> Int
-additionalAttributes as a = 
+-- | Number of matching optional attributes from given set
+optionalAttributes :: Attributes  -- ^ Attributes query
+                   -> AnyAccount
+                   -> Int
+optionalAttributes as a = 
     go (filter (\(_,value) -> isOptional value) $ M.assocs as) a
   where
     go []     _   = 1
@@ -48,19 +61,16 @@ additionalAttributes as a =
                      then 1 + go as acc
                      else     go as acc
 
-filterByAddAttributes :: Attributes -> [AnyAccount] -> [AnyAccount]
+-- | Filter list of accounts by optional attributes
+filterByAddAttributes :: Attributes   -- ^ Attributes query
+                      -> [AnyAccount]
+                      -> [AnyAccount]
 filterByAddAttributes as accs =
-  let scores = [(acc, additionalAttributes as acc) | acc <- accs]
+  let scores = [(acc, optionalAttributes as acc) | acc <- accs]
       m      = maximum (map snd scores)
   in  [acc | (acc, score) <- scores, score == m]
 
-first :: (a -> Maybe b) -> [a] -> Maybe b
-first _ [] = Nothing
-first fn (x:xs) =
-    case fn x of
-      Just y  -> Just y
-      Nothing -> first fn xs
-
+-- | Filter chart of accounts using 'CQuery'
 filterCoA :: CQuery -> ChartOfAccounts -> [AnyAccount]
 filterCoA qry@(CQuery {..}) (Branch {..}) =
     if (cqType `matchT` agType branchData) || (agType branchData == AGFree)
@@ -77,6 +87,7 @@ filterCoA (CQuery {..}) (Leaf {..}) =
              else []
       else []
 
+-- | Search an account by 'CQuery'
 runCQuery :: CQuery -> ChartOfAccounts -> Maybe AnyAccount
 runCQuery qry coa =
   case filterCoA qry coa of

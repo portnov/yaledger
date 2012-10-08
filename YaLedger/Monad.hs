@@ -1,5 +1,8 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, GeneralizedNewtypeDeriving, FlexibleContexts, FlexibleInstances, ScopedTypeVariables #-}
-
+-- | 'Ledger' monad and utility functions.
+--
+-- Ledger monad is basically EMT l (StateT 'LedgerState' IO) a.
+--
 module YaLedger.Monad where
 
 import Control.Monad.State
@@ -19,16 +22,18 @@ newtype LedgerMonad a = LedgerMonad (StateT LedgerState IO a)
 
 type Ledger l a = EMT l LedgerMonad a
 
+-- | Ledger state
 data LedgerState = LedgerState {
-    lsStartDate :: DateTime,
+    lsStartDate       :: DateTime,
     lsDefaultCurrency :: Currency,
-    lsCoA :: ChartOfAccounts,
-    lsAccountMap :: AccountMap,
-    lsTemplates :: M.Map String (Attributes, Transaction Param),
-    lsRules :: [(String, Attributes, Rule)],
-    lsRates :: Rates,
-    lsLoadedRecords :: [Ext Record],
-    lsPosition :: SourcePos
+    lsCoA             :: ChartOfAccounts,
+    lsAccountMap      :: AccountMap,
+    lsTemplates       :: M.Map String (Attributes, Transaction Param),
+    lsRules           :: [(String, Attributes, Rule)],
+    lsRates           :: Rates,
+    lsLoadedRecords   :: [Ext Record],
+    -- | Source location of current transaction
+    lsPosition        :: SourcePos
   }
   deriving (Eq, Show)
 
@@ -51,6 +56,7 @@ emptyLedgerState coa amap records = do
              lsPosition = newPos "<nowhere>" 0 0
            }
 
+-- | Wrap IO action into EMT monad
 wrapIO :: (MonadIO m, Throws InternalError l)
        => IO a
        -> EMT l m a
@@ -60,6 +66,7 @@ throwP e = do
   pos <- gets lsPosition
   throw (e pos)
 
+-- | Set current source location
 setPos :: SourcePos -> Ledger l ()
 setPos pos =
   modify $ \st -> st {lsPosition = pos}
@@ -83,8 +90,9 @@ readIOList iolist = wrapIO (readIORef iolist)
 appendIOList :: (MonadIO m, Throws InternalError l) => IOList a -> a -> EMT l m ()
 appendIOList iolist x = wrapIO $ modifyIORef iolist (x:)
 
+-- | Update last item of 'IOList'
 plusIOList :: (MonadIO m, Throws InternalError l)
-           => a
+           => a          -- ^ Default value (put it to list if it's empty)
            -> (a -> a)
            -> IOList a
            -> EMT l m ()

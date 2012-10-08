@@ -1,5 +1,5 @@
 {-# LANGUAGE GADTs, RecordWildCards, ScopedTypeVariables, FlexibleContexts, FlexibleInstances #-}
-
+-- | Ledger kernel
 module YaLedger.Kernel
   (module YaLedger.Kernel.Common,
    CanCredit (..), CanDebit (..),
@@ -38,6 +38,7 @@ import YaLedger.Correspondence
 import YaLedger.Kernel.Common
 import YaLedger.Logger
 
+-- | Accounts that could be credited
 class CanCredit a where
   credit :: (Throws InternalError l,
              Throws InsufficientFunds l)
@@ -45,6 +46,7 @@ class CanCredit a where
          -> Ext (Posting Decimal Credit)
          -> Ledger l ()
 
+-- | Accounts that could be debited
 class CanDebit a where
   debit :: (Throws InternalError l,
             Throws InsufficientFunds l)
@@ -88,10 +90,11 @@ instance CanDebit (FreeOr Debit Account) where
   debit (Left  a) p = debit a p
   debit (Right a) p = debit a p
 
+-- | Add posting value to balances history
 balancePlus :: forall l t.
                (Throws InternalError l, Sign t)
-            => Ext (Posting Decimal t)
-            -> History Balance Checked
+            => Ext (Posting Decimal t)   -- ^ Posting
+            -> History Balance Checked   -- ^ Balances history
             -> Ledger l ()
 balancePlus p history = do
   let s = fromIntegral (sign (undefined :: t))
@@ -110,9 +113,11 @@ whenJust :: (Monad m) => Maybe a -> (a -> m ()) -> m ()
 whenJust Nothing  _  = return ()
 whenJust (Just a) fn = fn a
 
+-- | Get current balance of account.
+-- Value is returned in currency of account.
 getCurrentBalance :: (IsAccount a,
                       Throws InternalError l)
-                  => a
+                  => a                 -- ^ Any sort of account
                   -> Ledger l Decimal
 getCurrentBalance acc = do
   balances <- readIOList (accountBalances acc)
@@ -120,11 +125,13 @@ getCurrentBalance acc = do
              [] -> 0
              (b:_) -> balanceValue (getContent b)
 
+-- | Check if balance account would be OK.
+-- Issue INFO:, WARNING:, or exception.
 checkBalance :: (Throws InternalError l,
                  Throws InsufficientFunds l,
                  IsAccount a)
-             => Decimal
-             -> a
+             => Decimal        -- ^ Account balance
+             -> a              -- ^ Any sort of account
              -> Ledger l ()
 checkBalance targetBalance acc = do
   let bc = accountChecks acc
@@ -149,10 +156,11 @@ differenceType x
   | x < 0     = ECredit
   | otherwise = EDebit
 
+-- | Lookup for active exchange rate
 lookupRate :: (Throws NoSuchRate l)
-           => Maybe DateTime
-           -> Currency
-           -> Currency
+           => Maybe DateTime    -- ^ Date to search exchange rate for. Nothing for current date.
+           -> Currency          -- ^ Source currency
+           -> Currency          -- ^ Target currency
            -> Ledger l Double
 lookupRate mbDate from to = do
     now <- gets lsStartDate
@@ -179,8 +187,12 @@ lookupRate mbDate from to = do
             return (x / y)
       | otherwise = go ar f t rs
 
+-- | Convert 'Amount' to another currency
 convert :: (Throws NoSuchRate l)
-        => Maybe DateTime -> Currency -> Amount -> Ledger l Amount
+        => Maybe DateTime    -- ^ Date of which exchange rate should be used
+        -> Currency          -- ^ Target currency
+        -> Amount
+        -> Ledger l Amount
 convert mbDate c' (x :# c)
   | c == c' = return (x :# c)
   | otherwise = do
@@ -209,14 +221,19 @@ checkQuery (Query {..}) (Ext {..}) =
 
   in  p && q && r
 
+-- | Similar to 'checkQuery', but this is True for all
+-- admin records
 checkRecord :: Query -> Ext Record -> Bool
 checkRecord qry rec =
     isAdmin (getContent rec) || checkQuery qry rec
 
+-- | Check if record is administrative
+-- (non-financial)
 isAdmin :: Record -> Bool
 isAdmin (Transaction _) = False
 isAdmin _               = True
 
+-- | Get history of account's credit postings
 creditPostings :: Throws InternalError l
                => AnyAccount
                -> Ledger l (History (Posting Decimal) Credit)
@@ -224,6 +241,7 @@ creditPostings (WCredit _ (CAccount {..})) = return creditAccountPostings
 creditPostings (WDebit  _ (DAccount {..})) = newIOList
 creditPostings (WFree   _ (FAccount {..})) = return freeAccountCreditPostings
 
+-- | Get history of account's debit postings
 debitPostings :: Throws InternalError l
               => AnyAccount
               -> Ledger l (History (Posting Decimal) Debit)
@@ -268,9 +286,21 @@ debitTurnovers qry account = do
   let turnovers = sumPostings postings
   return (turnovers :# c)
 
+-- | Sum values of postings.
+-- NB: does not use currencies. This should be
+-- used only for postings that are known to be 
+-- in one currency.
 sumPostings :: [Posting Decimal t] -> Decimal
 sumPostings es = sum (map postingValue es)
 
+first :: (a -> Maybe b) -> [a] -> Maybe b
+first _ [] = Nothing
+first fn (x:xs) =
+    case fn x of
+      Just y  -> Just y
+      Nothing -> first fn xs
+
+-- | Lookup for account by it's ID
 accountByID :: AccountID -> ChartOfAccounts -> Maybe AnyAccount
 accountByID i (Branch _ ag children)
   | i `inRange` agRange ag = do
@@ -286,6 +316,8 @@ accountByID i (Leaf _ acc)
   | getID acc == i = Just acc
   | otherwise      = Nothing
 
+-- | Return same account as FreeOr Credit Account,
+-- or throw an exception.
 accountAsCredit :: (Throws InvalidAccountType l)
                 => AnyAccount
                 -> Ledger l (FreeOr Credit Account)
@@ -293,6 +325,8 @@ accountAsCredit (WDebit  _ a) = throwP $ InvalidAccountType (getName a) AGDebit 
 accountAsCredit (WCredit _ a) = return $ Right a
 accountAsCredit (WFree   _ a) = return $ Left a
 
+-- | Return same account as FreeOr Debit Account,
+-- or throw an exception.
 accountAsDebit :: (Throws InvalidAccountType l)
                 => AnyAccount
                 -> Ledger l (FreeOr Debit Account)
@@ -300,20 +334,17 @@ accountAsDebit (WCredit _ a) = throwP $ InvalidAccountType (getName a) AGCredit 
 accountAsDebit (WDebit  _ a) = return $ Right a
 accountAsDebit (WFree   _ a) = return $ Left a
 
-accountByIDM :: AccountID -> Ledger l AnyAccount
-accountByIDM aid = do
-  coa <- gets lsCoA
-  case accountByID aid coa of
-   Nothing -> fail $ "Internal error: no such account: " ++ show aid
-   Just acc -> return acc
-
+-- | Similar to Data.List.nub, but removes ALL duplications.
+-- O(n^2).
 uniq :: (Eq a) => [a] -> [a]
 uniq [] = []
 uniq (x:xs) = x: uniq (filter (/= x) xs)
 
+-- | Convert a posting to another currency.
+-- In returned posting, amount is in target currency.
 convertPosting :: Throws NoSuchRate l
-               => Maybe DateTime
-               -> Currency
+               => Maybe DateTime      -- ^ Date of exchange rates
+               -> Currency            -- ^ Target currency
                -> Posting Amount t
                -> Ledger l (Posting Decimal t)
 convertPosting mbDate to (DPosting acc a) = do
@@ -323,8 +354,9 @@ convertPosting mbDate to (CPosting acc a) = do
   x :# _ <- convert mbDate to a
   return $ CPosting acc x
 
+-- | Convert a posting to currency of it's account.
 convertPosting' :: Throws NoSuchRate l
-               => Maybe DateTime
+               => Maybe DateTime        -- ^ Date of exchange rates
                -> Posting Amount t
                -> Ledger l (Posting Decimal t)
 convertPosting' mbDate (DPosting acc a) = do
@@ -334,6 +366,7 @@ convertPosting' mbDate (CPosting acc a) = do
   x :# _ <- convert mbDate (getCurrency acc) a
   return $ CPosting acc x
 
+-- | Convert Posting Decimal. Returns only an amount in target currency.
 convertDecimal :: Throws NoSuchRate l
                => Maybe DateTime
                -> Currency

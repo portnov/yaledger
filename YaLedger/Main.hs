@@ -5,6 +5,7 @@ module YaLedger.Main
    module YaLedger.Monad,
    LedgerOptions (..),
    parseCmdLine,
+   allParsers,
    defaultMain,
    lookupInit,
    runYaLedger
@@ -39,21 +40,25 @@ import YaLedger.Logger
 import YaLedger.Pretty
 import YaLedger.Reports.Common
 
+-- | Parrse NAME=VALUE attribute syntax
 parsePair :: String -> Either ParseError (String, AttributeValue)
 parsePair str = runParser pAttribute () str str
 
+-- | Parse PARSER=CONFIG syntax
 parseParserConfig :: String -> Maybe (String, FilePath)
 parseParserConfig str =
   case span (/= '=') str of
     (key, '=':value) -> Just (key, value)
     _ -> Nothing
 
+-- | Parse debug level (debug, warning etc)
 parseDebug :: String -> Maybe Priority
 parseDebug str =
   case reads (map toUpper str) of
     [(x, "")] -> Just x
     _ -> Nothing
 
+-- | Parse command line
 parseCmdLine :: [String] -> IO LedgerOptions
 parseCmdLine argv = do
   now <-  getCurrentDateTime
@@ -148,11 +153,15 @@ parseCmdLine argv = do
                  else return $ res { reportParams = params }
     (_,_,errs) -> fail $ concat errs ++ usageInfo header options
 
+-- | Lookup for items with keys starting with given prefix
 lookupInit :: String -> [(String, a)] -> [a]
 lookupInit key list = [v | (k,v) <- list, key `isPrefixOf` k]
 
-defaultMain :: [(String, Report)] -> IO ()
-defaultMain list = do
+-- | Default `main' function
+defaultMain :: [(String, String, InputParser)] -- ^ List of parsers to support: (parser name, files mask, parser)
+            -> [(String, Report)]              -- ^ List of reports to support: (report name, report)
+            -> IO ()
+defaultMain parsers list = do
   argv <- getArgs
   options <- parseCmdLine argv
   case options of
@@ -166,7 +175,8 @@ defaultMain list = do
                             unwords (map fst list)
            [fn] -> do
                setupLogger (logSeverity options)
-               runYaLedger (chartOfAccounts options)
+               runYaLedger parsers
+                   (chartOfAccounts options)
                    (accountMap options)
                    (currenciesList options)
                    (parserConfigs options)
@@ -188,15 +198,15 @@ showInterval qry =
     showMD s Nothing = s
     showMD _ (Just date) = prettyPrint date
 
-runYaLedger (Just coaPath) (Just mapPath) (Just cpath) configs mbInterval qry rules inputPaths report params = do
+runYaLedger parsers (Just coaPath) (Just mapPath) (Just cpath) configs mbInterval qry rules inputPaths report params = do
   currs <- loadCurrencies cpath
   let currsMap = M.fromList [(cSymbol c, c) | c <- currs]
   coa <- readCoA currsMap coaPath
   amap <- readAMap coa mapPath
-  records <- parseInputFiles configs currsMap coa inputPaths
+  records <- parseInputFiles parsers configs currsMap coa inputPaths
   runLedger coa amap records $ runEMT $
     processYaLedger qry mbInterval rules (filter (checkRecord qry) records) report params
-runYaLedger _ _ _ _ _ _ _ _ _ _ = error "Impossible: no coa or map file."
+runYaLedger _ _ _ _ _ _ _ _ _ _ _ = error "Impossible: no coa or map file."
 
 processYaLedger qry mbInterval rules records report params = do
   now <- gets lsStartDate

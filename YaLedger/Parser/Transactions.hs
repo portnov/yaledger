@@ -1,5 +1,10 @@
 {-# LANGUAGE RecordWildCards #-}
-module YaLedger.Parser.Transactions where
+-- | Parser for `native' transactions journal file
+module YaLedger.Parser.Transactions
+  (loadTransactions,
+   Parser,
+   ext, pSetRate, emptyPState
+  ) where
 
 import Control.Applicative hiding (many, (<|>), optional)
 import Data.Either
@@ -345,4 +350,13 @@ param = try pParam <|> try pBalance <|> (Fixed <$> pAmount)
              Nothing -> return 1.0
              Just _  -> float
       return $ FromBalance c
+
+-- | Read transactions from `native' format file (*.yaledger)
+loadTransactions :: FilePath -> Currencies -> ChartOfAccounts -> FilePath -> IO [Ext Record]
+loadTransactions _ currs coa path = do
+  content <- readFile path
+  st <- emptyPState coa currs
+  case runParser pRecords st path content of
+    Right res -> return res
+    Left err -> fail $ show err
 

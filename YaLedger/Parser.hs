@@ -1,5 +1,11 @@
-
-module YaLedger.Parser where
+-- | This module contains high-level functions for parsing input files
+module YaLedger.Parser
+  (InputParser,
+   allParsers,
+   parseInputFiles,
+   readCoA,
+   readAMap
+  ) where
 
 import Control.Applicative ((<$>))
 import Control.Monad
@@ -20,25 +26,33 @@ import qualified YaLedger.Parser.CBR as CBR
 
 type InputParser = FilePath -> Currencies -> ChartOfAccounts -> FilePath -> IO [Ext Record]
 
+-- | All supported parsers
 allParsers :: [(String, String, InputParser)]
 allParsers =
-  [("yaledger", "*.yaledger", readTrans),
+  [("yaledger", "*.yaledger", T.loadTransactions),
    ("csv",      "*.csv",      CSV.loadCSV),
    ("html",     "*.html",     HTML.loadHTML),
    ("cbr",      "*.cbr",      CBR.loadCBR)]
 
+-- | Lookup for parser by file mask
 lookupMask :: FilePath -> [(String, String, InputParser)] -> Maybe (String, InputParser)
 lookupMask _ [] = Nothing
 lookupMask file ((name,mask,parser):xs)
   | match (compile mask) file = Just (name, parser)
   | otherwise                 = lookupMask file xs
 
-parseInputFiles :: [(String, FilePath)] -> Currencies -> ChartOfAccounts -> [FilePath] -> IO [Ext Record]
-parseInputFiles configs currs coa masks = do
+-- | Parse all input files using corresponding parsers
+parseInputFiles :: [(String, String, InputParser)] -- ^ List of parsers: (name, files mask, parser)
+                -> [(String, FilePath)]            -- ^ (parser name, config path)
+                -> Currencies                      -- ^ Set of declared currencies
+                -> ChartOfAccounts
+                -> [FilePath]                      -- ^ List of files or masks (*.yaledger)
+                -> IO [Ext Record]
+parseInputFiles parsers configs currs coa masks = do
   inputFiles <- concat <$> mapM glob masks
   infoM rootLoggerName $ "Input files:\n" ++ unlines inputFiles
   records <- forM inputFiles $ \file -> do
-                 case lookupMask (takeFileName file) allParsers of
+                 case lookupMask (takeFileName file) parsers of
                    Nothing -> fail $ "Unknown file type: " ++ file
                    Just (parserName, parser) ->
                      let configFile = fromMaybe (parserName ++ ".yaml") $
@@ -49,6 +63,7 @@ parseInputFiles configs currs coa masks = do
                          return rec
   return $ sort $ concat records
 
+-- | Read chart of accounts from file
 readCoA :: Currencies -> FilePath -> IO ChartOfAccounts
 readCoA currs path = do
   content <- readFile path
@@ -57,18 +72,11 @@ readCoA currs path = do
     Right res -> return res
     Left err -> fail $ show err
 
+-- | Read accounts map from file
 readAMap :: ChartOfAccounts -> FilePath -> IO AccountMap
 readAMap coa path = do
   content <- readFile path
   case runParser Map.pAccountMap (Map.PState coa) path content of
-    Right res -> return res
-    Left err -> fail $ show err
-
-readTrans :: FilePath -> Currencies -> ChartOfAccounts -> FilePath -> IO [Ext Record]
-readTrans _ currs coa path = do
-  content <- readFile path
-  st <- T.emptyPState coa currs
-  case runParser T.pRecords st path content of
     Right res -> return res
     Left err -> fail $ show err
 

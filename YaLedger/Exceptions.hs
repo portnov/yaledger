@@ -1,5 +1,5 @@
 {-# LANGUAGE GADTs, RecordWildCards, ScopedTypeVariables, FlexibleContexts, FlexibleInstances, DeriveDataTypeable, MultiParamTypeClasses, UndecidableInstances #-}
-
+-- | Declaration of exceptions types
 module YaLedger.Exceptions where
 
 import Control.Monad.Exception
