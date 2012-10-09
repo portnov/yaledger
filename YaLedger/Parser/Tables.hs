@@ -13,7 +13,6 @@ import Data.Yaml
 import Data.Dates.Formats hiding (Fixed)
 import Text.Regex.PCRE
 import System.FilePath
-import System.Environment.XDG.BaseDir
 
 import YaLedger.Types
 
@@ -226,16 +225,4 @@ dposting acc x =
     WDebit   _ a -> return [DPosting (Right a) x]
     WFree    _ a -> return [DPosting (Left  a) x]
     WCredit  _ a -> fail $ "Invalid account type: credit instead of debit: " ++ getName a ++ " " ++ show x
-
-loadParserConfig :: FromJSON config => FilePath -> IO config
-loadParserConfig path = do
-  fullPath <- case head path of
-                '/' -> return path
-                _ -> do
-                     configDir <- getUserConfigDir "yaledger"
-                     return (configDir </> path)
-  str <- B.readFile fullPath
-  case decodeEither str of
-    Left err -> fail $ "Cannot parse config file " ++ fullPath ++ ": " ++ err
-    Right pc -> return pc
 

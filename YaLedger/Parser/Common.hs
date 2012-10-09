@@ -7,12 +7,17 @@ import Control.Failure
 import Control.Exception hiding (try)
 import Data.Functor.Identity
 import Data.Decimal
+import qualified Data.ByteString as B
 import qualified Data.Map as M
+import Data.Yaml
 import Text.Parsec
 import qualified Text.Parsec.Token as P
 import Text.Parsec.Language
+import System.FilePath
+import System.Environment.XDG.BaseDir
 
 import YaLedger.Types
+import YaLedger.Logger
 
 instance Exception e => Failure e Identity where
   failure e = fail $ show e
@@ -108,4 +113,17 @@ pPath = try identifier `sepBy1` reservedOp "/"
 currencySymbol :: Monad m => ParsecT String st m String
 currencySymbol =
   (many $ noneOf " \r\n\t\")}->@0123456789.") <?> "Currency symbol"
+
+loadParserConfig :: FromJSON config => FilePath -> IO config
+loadParserConfig path = do
+  fullPath <- case head path of
+                '/' -> return path
+                '.' -> return path
+                _ -> do
+                     configDir <- getUserConfigDir "yaledger"
+                     return (configDir </> path)
+  str <- B.readFile fullPath
+  case decodeEither str of
+    Left err -> fail $ "Cannot parse config file " ++ fullPath ++ ": " ++ err
+    Right pc -> return pc
 

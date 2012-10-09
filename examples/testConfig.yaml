@@ -9,5 +9,10 @@ deduplicate:
      set-attributes:
        cleared: ?date
 
+parsers:
+  csv: ./examples/csv.yaml
+  html: ./examples/html.yaml
+  cbr: ./examples/cbr.yaml
+
 debug: info
 

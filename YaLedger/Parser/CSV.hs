@@ -8,6 +8,7 @@ import Data.Yaml
 import qualified Data.Map as M
 
 import YaLedger.Types
+import YaLedger.Parser.Common (loadParserConfig)
 import YaLedger.Parser.Tables
 
 data ParserConfig = ParserConfig {

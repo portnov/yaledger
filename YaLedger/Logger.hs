@@ -5,6 +5,7 @@ module YaLedger.Logger
    setupLogger,
    debug,
    info, warning, errorMessage,
+   debugIO, infoIO,
    handler,
    trace, traceS
   ) where
@@ -29,6 +30,14 @@ debug str =
   return ()
 #endif
 
+debugIO :: String -> IO ()
+debugIO str =
+#ifdef DEBUG
+  debugM rootLoggerName $ "DEBUG: " ++ str
+#else
+  return ()
+#endif
+
 errorMessage :: Throws InternalError l => String -> Ledger l ()
 errorMessage str =
   wrapIO $ errorM rootLoggerName $ "ERROR: " ++ str
@@ -36,6 +45,10 @@ errorMessage str =
 info :: Throws InternalError l => String -> Ledger l ()
 info str =
   wrapIO $ infoM rootLoggerName $ "INFO: " ++ str
+
+infoIO :: String -> IO ()
+infoIO str =
+  infoM rootLoggerName $ "INFO: " ++ str
 
 warning :: Throws InternalError l => String -> Ledger l ()
 warning str =

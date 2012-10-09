@@ -182,8 +182,10 @@ defaultMain parsers list = do
     Help -> putStrLn $ "Supported reports are: " ++ unwords (map fst list)
     _ -> do
          setupLogger (logSeverity options)
-         infoM rootLoggerName $ "INFO: Using chart of accounts: " ++ fromJust (chartOfAccounts options)
-         infoM rootLoggerName $ "INFO: Using accounts map: " ++ fromJust (accountMap options)
+         infoIO $ "Using chart of accounts: " ++ fromJust (chartOfAccounts options)
+         infoIO $ "Using accounts map: " ++ fromJust (accountMap options)
+         debugIO $ "Using parser configs:\n" ++
+             (unlines $ map (\(name,config) -> name ++ ": " ++ config) (parserConfigs options))
          let report = head $ reportParams options
              params = tail $ reportParams options
          case lookupInit report list of

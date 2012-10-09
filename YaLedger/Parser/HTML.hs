@@ -13,6 +13,7 @@ import Text.HandsomeSoup
 import Data.Yaml
 
 import YaLedger.Types
+import YaLedger.Parser.Common (loadParserConfig)
 import YaLedger.Parser.Tables
 
 data ParserConfig = ParserConfig {

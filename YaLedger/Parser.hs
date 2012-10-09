@@ -14,9 +14,9 @@ import Data.List
 import Text.Parsec
 import System.FilePath
 import System.FilePath.Glob
-import System.Log.Logger
 
 import YaLedger.Types
+import YaLedger.Logger
 import qualified YaLedger.Parser.CoA as CoA
 import qualified YaLedger.Parser.Map  as Map
 import qualified YaLedger.Parser.Transactions as T
@@ -50,7 +50,7 @@ parseInputFiles :: [(String, String, InputParser)] -- ^ List of parsers: (name, 
                 -> IO [Ext Record]
 parseInputFiles parsers configs currs coa masks = do
   inputFiles <- concat <$> mapM glob masks
-  infoM rootLoggerName $ "INFO: Input files:\n" ++ unlines inputFiles
+  infoIO $ "Input files:\n" ++ unlines inputFiles
   records <- forM inputFiles $ \file -> do
                  case lookupMask (takeFileName file) parsers of
                    Nothing -> fail $ "Unknown file type: " ++ file
@@ -59,7 +59,7 @@ parseInputFiles parsers configs currs coa masks = do
                                           lookup parserName configs
                      in  do
                          rec <- parser configFile currs coa file
-                         infoM rootLoggerName $ "INFO: Read " ++ show (length rec) ++ " records from " ++ file
+                         infoIO $ "Read " ++ show (length rec) ++ " records from " ++ file
                          return rec
   return $ sort $ concat records
 
