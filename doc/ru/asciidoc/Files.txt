@@ -3,13 +3,13 @@
 
 YaLedger в общем случае может читать следующие файлы:
 
-* Общий конфигурационный файл +~/.config/yaledger/yaledger.yaml+. Описание параметров конфига см. link:Config[].
-* Файл описания валют, по умолчанию +~/.config/yaledger/currencies.yaml+. Описание параметров см. link:Currencies[].
-* Файл плана счетов, по умолчанию +~/.config/yaledger/default.accounts+. Описание параметров счетов см. link:Accounts[].
-* Файл карты счетов, по умолчанию +~/.config/yaledger/default.map+. Описание формата см. link:AccountsMap[].
+* Общий конфигурационный файл +~/.config/yaledger/yaledger.yaml+. Описание параметров конфига см. link:Config.html[].
+* Файл описания валют, по умолчанию +~/.config/yaledger/currencies.yaml+. Описание параметров см. link:Currencies.html[].
+* Файл плана счетов, по умолчанию +~/.config/yaledger/default.accounts+. Описание параметров счетов см. link:Accounts.html[].
+* Файл карты счетов, по умолчанию +~/.config/yaledger/default.map+. Описание формата см. link:AccountsMap.html[].
 * Собственно исходные файлы с записями о транзакциях. Поддерживаются следующие форматы:
-** «Родной» формат файлов, +*.yaledger+. Описание синтаксиса см. link:Syntax[].
-** link:CSV[]
-** link:HTML[]
-* Файлы +*.cbr+ — используются для link:CBRRates[загрузки курсов валют ЦБ РФ].
+** «Родной» формат файлов, +*.yaledger+. Описание синтаксиса см. link:Syntax.html[].
+** link:CSV.html[]
+** link:HTML.html[]
+* Файлы +*.cbr+ — используются для link:CBRRates.html[загрузки курсов валют ЦБ РФ].
 

@@ -8,3 +8,4 @@ tbank.yaledger
 yaledger
 dist/
 cabal-dev/
+doc/ru/asciidoc/*.html
