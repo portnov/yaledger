@@ -67,7 +67,7 @@ sumTurnovers mbDate calcTotals ag list = do
 allTurnovers calcTotals qry account = do
   cr :# c <- creditTurnovers qry account
   dt :# _ <- debitTurnovers  qry account
-  incomingSaldo <-
+  incomingSaldo :# _ <-
       case qStart qry of
         Nothing -> return (0 :# c)
         Just date -> do
@@ -75,11 +75,11 @@ allTurnovers calcTotals qry account = do
                    qStart = Nothing,
                    qEnd   = Just date }
             saldo startQry account
-  let outgoingSaldo = cr - dt
+  let outgoingSaldo = cr - dt + incomingSaldo
   return $ TRecord {
              trCredit = cr :# c,
              trDebit  = dt :# c,
-             trIncSaldo = incomingSaldo,
+             trIncSaldo = incomingSaldo :# c,
              trOutSaldo = outgoingSaldo :# c,
              trTotals = if calcTotals
                           then Just $ (cr + dt) :# c
