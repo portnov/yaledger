@@ -31,6 +31,8 @@ data LedgerOptions =
       files :: [FilePath],
       query :: Query,
       reportsInterval :: Maybe DateInterval,
+      reportStart :: Maybe DateTime,
+      reportEnd :: Maybe DateTime,
       logSeverity :: Priority,
       parserConfigs :: [(String, FilePath)],
       deduplicationRules :: [DeduplicationRule],
@@ -48,6 +50,8 @@ data SetOption =
   | SetEndDate DateTime
   | SetAllAdmin
   | AddAttribute (String, AttributeValue)
+  | SetReportStart DateTime
+  | SetReportEnd DateTime
   | SetReportsInterval DateInterval
   | SetDebugLevel Priority
   | SetParserConfig (String, FilePath)
@@ -66,6 +70,8 @@ instance Monoid LedgerOptions where
       currenciesList = currenciesList o2 `mplus` currenciesList o1,
       files = if null (files o2) then files o1 else files o2,
       query = query o1 `mappend` query o2,
+      reportStart = reportStart o2 `mplus` reportStart o1,
+      reportEnd = reportEnd o2 `mplus` reportEnd o1,
       reportsInterval = reportsInterval o2 `mplus` reportsInterval o1,
       logSeverity = min (logSeverity o1) (logSeverity o2),
       parserConfigs = parserConfigs o1 ++ parserConfigs o2,
@@ -92,6 +98,8 @@ instance FromJSON LedgerOptions where
       <*> v .:? "currencies"
       <*> v .:?  "files" .!= []
       <*> v .:? "query" .!= mempty
+      <*> v .:? "reports-from"
+      <*> v .:? "reports-to"
       <*> v .:? "reports-interval"
       <*> v .:? "debug" .!= WARNING
       <*> (parseConfigs =<< (v .:? "parsers"))
@@ -226,6 +234,8 @@ getDefaultLedgerOptions = do
                   qEnd   = Just now,
                   qAllAdmin   = False,
                   qAttributes = M.empty },
+        reportStart = Nothing,
+        reportEnd   = Nothing,
         reportsInterval = Nothing,
         logSeverity = WARNING,
         parserConfigs = [],

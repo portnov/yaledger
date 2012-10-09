@@ -74,6 +74,8 @@ apply (SetEndDate date)    opts = opts {query = (query opts) {qEnd = Just date}}
 apply (SetAllAdmin)        opts = opts {query = (query opts) {qAllAdmin = True}}
 apply (AddAttribute (n,v)) opts = let qry = query opts
                                   in  opts {query = qry {qAttributes = M.insert n v (qAttributes qry)}}
+apply (SetReportStart date) opts = opts {reportStart = Just date}
+apply (SetReportEnd   date) opts = opts {reportEnd   = Just date}
 apply (SetReportsInterval i) opts = opts {reportsInterval = Just i}
 apply (SetDebugLevel lvl)  opts = opts {logSeverity = lvl}
 apply (SetParserConfig (n,p)) opts = opts {parserConfigs = (n,p): parserConfigs opts}
@@ -126,6 +128,10 @@ parseCmdLine argv = do
                    "Process only transactions after this date",
        Option "e" ["end"]  (ReqArg (SetEndDate . date) "DATE")
                    "Process only transactions before this date",
+       Option "S" ["report-from"] (ReqArg (SetReportStart . date) "DATE")
+                   "Start report from this date",
+       Option "E" ["report-to"] (ReqArg (SetReportEnd . date) "DATE")
+                   "End report at this date",
        Option "A" ["all-admin"] (NoArg SetAllAdmin)
                    "Process all admin records with any dates and attributes",
        Option "a" ["attribute"] (ReqArg (AddAttribute . attr) "NAME=VALUE")
@@ -193,6 +199,9 @@ defaultMain parsers list = do
                             "\nSupported reports are: " ++
                             unwords (map fst list)
            [fn] -> do
+               let qo = query options
+                   qry = qo {qStart = reportStart options `mplus` qStart qo,
+                             qEnd   = reportEnd   options `mplus` qEnd   qo }
                runYaLedger parsers
                    (chartOfAccounts options)
                    (accountMap options)
@@ -200,6 +209,7 @@ defaultMain parsers list = do
                    (parserConfigs options)
                    (reportsInterval options)
                    (query options)
+                   qry
                    (deduplicationRules options)
                    (files options) fn params
            _ -> putStrLn $ "Ambigous report specification: " ++ report ++
@@ -216,17 +226,17 @@ showInterval qry =
     showMD s Nothing = s
     showMD _ (Just date) = prettyPrint date
 
-runYaLedger parsers (Just coaPath) (Just mapPath) (Just cpath) configs mbInterval qry rules inputPaths report params = do
+runYaLedger parsers (Just coaPath) (Just mapPath) (Just cpath) configs mbInterval qry qryReport rules inputPaths report params = do
   currs <- loadCurrencies cpath
   let currsMap = M.fromList [(cSymbol c, c) | c <- currs]
   coa <- readCoA currsMap coaPath
   amap <- readAMap coa mapPath
   records <- parseInputFiles parsers configs currsMap coa inputPaths
   runLedger coa amap records $ runEMT $
-    processYaLedger qry mbInterval rules (filter (checkRecord qry) records) report params
-runYaLedger _ _ _ _ _ _ _ _ _ _ _ = error "Impossible: no coa or map file."
+    processYaLedger qry mbInterval rules (filter (checkRecord qry) records) qryReport report params
+runYaLedger _ _ _ _ _ _ _ _ _ _ _ _ = error "Impossible: no coa or map file."
 
-processYaLedger qry mbInterval rules records report params = do
+processYaLedger qry mbInterval rules records qryReport report params = do
   now <- gets lsStartDate
   let endDate = fromMaybe now (qEnd qry)
   t <- tryE $ processRecords endDate rules records 
@@ -236,8 +246,8 @@ processYaLedger qry mbInterval rules records report params = do
       now <- wrapIO getCurrentDateTime
       let firstDate = minimum (map getDate records)
       let queries = case mbInterval of
-                      Nothing -> [qry]
-                      Just int -> splitQuery firstDate now qry int
+                      Nothing -> [qryReport]
+                      Just int -> splitQuery firstDate now qryReport int
       forM_ queries $ \query -> do
           wrapIO $ putStrLn $ showInterval query
           runAReport query params report
