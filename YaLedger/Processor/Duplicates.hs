@@ -52,6 +52,7 @@ data DeduplicationRule =
 instance Show DeduplicationRule where
   show dr = showA (drCondition dr) ++ " => " ++ show (drAction dr)
 
+-- | Find matching deduplication rule
 findDRule :: Ext Record -> [DeduplicationRule] -> Maybe ([CheckAttribute], DAction)
 findDRule erecord rules = go  rules
   where
@@ -60,10 +61,12 @@ findDRule erecord rules = go  rules
       | checkDRule erecord r = Just (drCheckAttributes r, drAction r)
       | otherwise = go rs
 
+-- | Check if record is matched by rule
 checkDRule :: Ext Record -> DeduplicationRule -> Bool
 checkDRule erecord rule =
   getAttributes erecord `matchAll` drCondition rule
 
+-- | Get first amount from record, if any
 getRAmount :: Ext Record -> Maybe Amount
 getRAmount r =
   case getContent r of
