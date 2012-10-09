@@ -179,11 +179,11 @@ lookupRate mbDate from to = do
     go ar f t (Implicit cFrom cTo cBase rev: rs)
       | (cFrom == f) && (cTo == t) = do
             x <- go ar f cBase ar
-            y <- go ar cBase t ar
+            y <- go ar t cBase ar
             return (x / y)
       | rev && (cFrom == t) && (cTo == f) = do
-            x <- go ar t cBase ar
-            y <- go ar cBase f ar
+            x <- go ar f cBase ar
+            y <- go ar t cBase ar
             return (x / y)
       | otherwise = go ar f t rs
 
