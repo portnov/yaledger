@@ -50,7 +50,7 @@ parseInputFiles :: [(String, String, InputParser)] -- ^ List of parsers: (name, 
                 -> IO [Ext Record]
 parseInputFiles parsers configs currs coa masks = do
   inputFiles <- concat <$> mapM glob masks
-  infoM rootLoggerName $ "Input files:\n" ++ unlines inputFiles
+  infoM rootLoggerName $ "INFO: Input files:\n" ++ unlines inputFiles
   records <- forM inputFiles $ \file -> do
                  case lookupMask (takeFileName file) parsers of
                    Nothing -> fail $ "Unknown file type: " ++ file
@@ -59,7 +59,7 @@ parseInputFiles parsers configs currs coa masks = do
                                           lookup parserName configs
                      in  do
                          rec <- parser configFile currs coa file
-                         infoM rootLoggerName $ "Read " ++ show (length rec) ++ " records from " ++ file
+                         infoM rootLoggerName $ "INFO: Read " ++ show (length rec) ++ " records from " ++ file
                          return rec
   return $ sort $ concat records
 

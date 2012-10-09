@@ -24,6 +24,7 @@ import YaLedger.Processor.Duplicates
 
 data LedgerOptions =
     LedgerOptions {
+      mainConfigPath :: Maybe FilePath,
       chartOfAccounts :: Maybe FilePath,
       accountMap :: Maybe FilePath,
       currenciesList :: Maybe FilePath,
@@ -37,18 +38,35 @@ data LedgerOptions =
   | Help
   deriving (Eq, Show)
 
+data SetOption =
+    SetConfigPath FilePath
+  | SetCoAPath FilePath
+  | SetAMapPath FilePath
+  | SetCurrenciesPath FilePath
+  | AddFile (Maybe FilePath)
+  | SetStartDate DateTime
+  | SetEndDate DateTime
+  | SetAllAdmin
+  | AddAttribute (String, AttributeValue)
+  | SetReportsInterval DateInterval
+  | SetDebugLevel Priority
+  | SetParserConfig (String, FilePath)
+  | SetHelp
+  deriving (Eq,Show)
+
 instance Monoid LedgerOptions where
   mempty = Help
   mappend Help o = o
   mappend o Help = o
   mappend o1 o2 =
     LedgerOptions {
-      chartOfAccounts = chartOfAccounts o1 `mappend` chartOfAccounts o2,
-      accountMap  = accountMap  o1 `mappend` accountMap o2,
-      currenciesList = currenciesList o1 `mappend` currenciesList o2,
+      mainConfigPath = mainConfigPath o2 `mplus` mainConfigPath o1,
+      chartOfAccounts = chartOfAccounts o2 `mplus` chartOfAccounts o1,
+      accountMap  = accountMap  o2 `mplus` accountMap o1,
+      currenciesList = currenciesList o2 `mplus` currenciesList o1,
       files = if null (files o2) then files o1 else files o2,
       query = query o1 `mappend` query o2,
-      reportsInterval = reportsInterval o1 `mplus` reportsInterval o2,
+      reportsInterval = reportsInterval o2 `mplus` reportsInterval o1,
       logSeverity = min (logSeverity o1) (logSeverity o2),
       parserConfigs = parserConfigs o1 ++ parserConfigs o2,
       deduplicationRules = if null (deduplicationRules o2)
@@ -68,7 +86,8 @@ instance Monoid Query where
 instance FromJSON LedgerOptions where
   parseJSON (Object v) =
     LedgerOptions
-      <$> v .:? "chart-of-accounts"
+      <$> return Nothing
+      <*> v .:? "chart-of-accounts"
       <*> v .:? "accounts-map"
       <*> v .:? "currencies"
       <*> v .:?  "files" .!= []
@@ -197,6 +216,7 @@ getDefaultLedgerOptions = do
   documents <- getUserDir "DOCUMENTS"
   let inputFile = documents </> "yaledger" </> "default.yaledger"
   return $ LedgerOptions {
+        mainConfigPath = Just (configDir </> "yaledger.yaml"),
         chartOfAccounts = Just (configDir </> "default.accounts"),
         accountMap  = Just (configDir </> "default.map"),
         currenciesList = Just (configDir </> "currencies.yaml"),
@@ -212,16 +232,15 @@ getDefaultLedgerOptions = do
         deduplicationRules = [],
         reportParams = ["balance"] }
 
-loadConfig :: IO LedgerOptions
-loadConfig = do
-  defaultLedgerOptions <- getDefaultLedgerOptions
-  configFile <- getUserConfigFile "yaledger" "yaledger.yaml"
+loadConfig :: FilePath -> IO LedgerOptions
+loadConfig configFile = do
+  zero <- getDefaultLedgerOptions
   exist <- doesFileExist configFile
   if not exist
-    then return defaultLedgerOptions
+    then return zero
     else do
         str <- B.readFile configFile
         case decode str of
           Nothing -> fail $ "Cannot parse config file: " ++ configFile
-          Just options -> return (defaultLedgerOptions `mappend` options)
+          Just options -> return (zero `mappend` options)
 

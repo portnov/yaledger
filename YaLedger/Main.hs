@@ -25,6 +25,9 @@ import Data.Dates
 import System.Environment
 import System.Console.GetOpt
 import Text.Parsec hiding (try)
+import System.FilePath
+import System.Environment.XDG.BaseDir
+import System.Log.Logger
 
 import YaLedger.Types
 import YaLedger.Exceptions
@@ -58,99 +61,110 @@ parseDebug str =
     [(x, "")] -> Just x
     _ -> Nothing
 
+-- | Apply SetOption to LedgerOptions
+apply :: SetOption -> LedgerOptions -> LedgerOptions
+apply (SetConfigPath path) opts = opts {mainConfigPath = Just path}
+apply (SetCoAPath path)    opts = opts {chartOfAccounts = Just path}
+apply (SetAMapPath path)   opts = opts {accountMap = Just path}
+apply (SetCurrenciesPath path) opts = opts {currenciesList = Just path}
+apply (AddFile (Just path)) opts = opts {files = path: files opts}
+apply (AddFile Nothing)    opts = opts {files = []}
+apply (SetStartDate date)  opts = opts {query = (query opts) {qStart = Just date}}
+apply (SetEndDate date)    opts = opts {query = (query opts) {qEnd = Just date}}
+apply (SetAllAdmin)        opts = opts {query = (query opts) {qAllAdmin = True}}
+apply (AddAttribute (n,v)) opts = let qry = query opts
+                                  in  opts {query = qry {qAttributes = M.insert n v (qAttributes qry)}}
+apply (SetReportsInterval i) opts = opts {reportsInterval = Just i}
+apply (SetDebugLevel lvl)  opts = opts {logSeverity = lvl}
+apply (SetParserConfig (n,p)) opts = opts {parserConfigs = (n,p): parserConfigs opts}
+apply SetHelp _ = Help
+                         
 -- | Parse command line
 parseCmdLine :: [String] -> IO LedgerOptions
 parseCmdLine argv = do
   now <-  getCurrentDateTime
-  defaultOptions <- loadConfig
-  let coaF file opts =
-          opts {chartOfAccounts = Just file}
-
-      mapF file opts =
-          opts {accountMap = Just file}
-
-      currF file opts =
-          opts {currenciesList = Just file}
-
-      fileF Nothing opts = opts {files = []}
-      fileF (Just file) opts =
-          opts {files = file: files opts}
-
-      startF s opts =
-          case parseDate now s of
-            Right date -> opts {query = (query opts) {qStart = Just date}}
-            Left err -> error $ show err
-
-      endF s opts =
-          case parseDate now s of
-            Right date -> opts {query = (query opts) {qEnd = Just date}}
-            Left err -> error $ show err
-
-      attrF v opts =
+  let attr v =
           case parsePair v of
-            Right (name,value) ->
-              opts {query = (query opts) {
-                  qAttributes = M.insert name value (qAttributes (query opts))
-                  }
-                }
+            Right (name,value) -> (name, value)
             Left err -> error $ show err
 
-      allAdmin opts =
-         opts {query = (query opts) {qAllAdmin = True}}
-
-      intervalF str opts =
+      interval str =
           case runParser pDateInterval () str str of
             Left err -> error $ show err
-            Right int -> opts {reportsInterval = Just int}
+            Right int -> int
 
-      debugF str opts =
+      level str =
           case parseDebug str of
-            Just value -> opts {logSeverity = value}
+            Just value -> value
             Nothing -> error $ "Unknown debug level: " ++ str
 
-      pConfigF str opts =
+      date str = 
+          case parseDate now str of
+            Right date -> date
+            Left err -> error $ show err
+
+      pconfig str =
           case parseParserConfig str of
-            Just (name,value) -> opts {
-                                   parserConfigs = (name,value):parserConfigs opts
-                                 }
+            Just (name,value) -> (name, value)
             Nothing -> error $ "Invalid parser config file specification: "
                                ++ str
                                ++ " (required: PARSER=CONFIGFILE)."
-      helpF _ = Help
+
   let header = "Usage: yaledger [OPTIONS] [REPORT] [REPORT PARAMS]"
   let options = [
-       Option "C" ["coa"] (ReqArg coaF "FILE") "Chart of accounts file to use",
-       Option "M" ["map"]  (ReqArg mapF  "FILE") "Accounts map file to use",
-       Option "c" ["currencies"] (ReqArg currF "FILE") "Currencies list file to use",
-       Option "f" ["file"] (OptArg fileF "FILE(s)") "Input file[s]",
-       Option "s" ["start"] (ReqArg startF "DATE") "Process only transactions after this date",
-       Option "e" ["end"]  (ReqArg endF "DATE") "Process only transactions before this date",
-       Option "A" ["all-admin"] (NoArg allAdmin) "Process all admin records with any dates and attributes",
-       Option "a" ["attribute"]
-                           (ReqArg attrF "NAME=VALUE") "Process only transactions with this attribute",
-       Option "P" ["period"] (ReqArg intervalF "PERIOD") "Output report by PERIOD",
-       Option ""  ["daily"] (NoArg (\opts -> opts {reportsInterval = Just (Days 1)}))
-                              "Alias for --period \"1 day\"",
-       Option ""  ["weekly"] (NoArg (\opts -> opts {reportsInterval = Just (Weeks 1)}))
-                              "Alias for --period \"1 week\"",
-       Option ""  ["monthly"] (NoArg (\opts -> opts {reportsInterval = Just (Months 1)}))
-                              "Alias for --period \"1 month\"",
-       Option ""  ["yearly"] (NoArg (\opts -> opts {reportsInterval = Just (Years 1)}))
-                              "Alias for --period \"1 year\"",
-       Option "d" ["debug"] (ReqArg debugF "LEVEL") "Set debug level to LEVEL",
-       Option "p" ["parser-config"]
-                           (ReqArg pConfigF "PARSER=CONFIGFILE") "Use specified config file for this parser",
-       Option "h" ["help"] (NoArg helpF) "Show this help and exit" ]
+       Option "c" ["config"] (ReqArg SetConfigPath "FILE")
+                   "Use specified config file instead of ~/.config/yaledger/yaledger.yaml",
+       Option "C" ["coa"] (ReqArg SetCoAPath "FILE")
+                   "Chart of accounts file to use",
+       Option "M" ["map"]  (ReqArg SetAMapPath  "FILE")
+                   "Accounts map file to use",
+       Option "r" ["currencies"] (ReqArg SetCurrenciesPath "FILE")
+                   "Currencies list file to use",
+       Option "f" ["file"] (OptArg AddFile "FILE(s)")
+                   "Input file[s]",
+       Option "s" ["start"] (ReqArg (SetStartDate . date) "DATE")
+                   "Process only transactions after this date",
+       Option "e" ["end"]  (ReqArg (SetEndDate . date) "DATE")
+                   "Process only transactions before this date",
+       Option "A" ["all-admin"] (NoArg SetAllAdmin)
+                   "Process all admin records with any dates and attributes",
+       Option "a" ["attribute"] (ReqArg (AddAttribute . attr) "NAME=VALUE")
+                   "Process only transactions with this attribute",
+       Option "P" ["period"] (ReqArg (SetReportsInterval . interval) "PERIOD")
+                   "Output report by PERIOD",
+       Option ""  ["daily"] (NoArg (SetReportsInterval $ Days 1))
+                   "Alias for --period \"1 day\"",
+       Option ""  ["weekly"] (NoArg (SetReportsInterval $ Weeks 1))
+                   "Alias for --period \"1 week\"",
+       Option ""  ["monthly"] (NoArg (SetReportsInterval $ Months 1))
+                   "Alias for --period \"1 month\"",
+       Option ""  ["yearly"] (NoArg (SetReportsInterval $ Years 1))
+                   "Alias for --period \"1 year\"",
+       Option "d" ["debug"] (ReqArg (SetDebugLevel . level) "LEVEL")
+                   "Set debug level to LEVEL",
+       Option "p" ["parser-config"] (ReqArg (SetParserConfig . pconfig) "PARSER=CONFIGFILE")
+                   "Use specified config file for this parser",
+       Option "h" ["help"] (NoArg SetHelp)
+                   "Show this help and exit" ]
   case getOpt RequireOrder options argv of
     (fns, params, []) -> do
-        let res = foldl (flip id) defaultOptions fns
-        case res of
-          Help -> do
-                  putStrLn $ usageInfo header options
-                  return Help
-          _ -> if null params
-                 then return res
-                 else return $ res { reportParams = params }
+      if SetHelp `elem` fns
+        then do
+             putStrLn $ usageInfo header options
+             return Help
+        else do
+          configPath <- case [p | SetConfigPath p <- fns] of
+                          [] -> do
+                                configDir <- getUserConfigDir "yaledger"
+                                return (configDir </> "yaledger.yaml")
+                          (p:_) -> return p
+          defaultOptions <- loadConfig configPath
+          case foldr apply defaultOptions fns of
+            Help -> fail "Impossible: Main.parseCmdLine.Help"
+            opts -> do
+               if null params
+                 then return opts
+                 else return $ opts { reportParams = params }
     (_,_,errs) -> fail $ concat errs ++ usageInfo header options
 
 -- | Lookup for items with keys starting with given prefix
@@ -167,6 +181,9 @@ defaultMain parsers list = do
   case options of
     Help -> putStrLn $ "Supported reports are: " ++ unwords (map fst list)
     _ -> do
+         setupLogger (logSeverity options)
+         infoM rootLoggerName $ "INFO: Using chart of accounts: " ++ fromJust (chartOfAccounts options)
+         infoM rootLoggerName $ "INFO: Using accounts map: " ++ fromJust (accountMap options)
          let report = head $ reportParams options
              params = tail $ reportParams options
          case lookupInit report list of
@@ -174,7 +191,6 @@ defaultMain parsers list = do
                             "\nSupported reports are: " ++
                             unwords (map fst list)
            [fn] -> do
-               setupLogger (logSeverity options)
                runYaLedger parsers
                    (chartOfAccounts options)
                    (accountMap options)

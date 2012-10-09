@@ -1,0 +1,13 @@
+files: [ "examples/default.yaledger" ]
+
+chart-of-accounts: examples/default.accounts
+accounts-map: examples/test.map
+
+deduplicate:
+ - check-attributes: [ date, {amount: 5}, credit-account, debit-account ]
+   action:
+     set-attributes:
+       cleared: ?date
+
+debug: info
+
