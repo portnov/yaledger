@@ -1,22 +1,8 @@
 {-# LANGUAGE ScopedTypeVariables, FlexibleContexts, OverlappingInstances, GADTs, TypeFamilies #-}
-{-# OPTIONS_GHC -F -pgmF MonadLoc #-}
 
 module YaLedger.Reports.Postings where
 
-import Control.Monad.State
-import Control.Monad.Exception
-import Control.Monad.Loc
-import Data.List
-import Data.Decimal
-
-import YaLedger.Types
-import YaLedger.Types.Reports
-import YaLedger.Kernel
-import YaLedger.Monad
-import YaLedger.Strings
-import YaLedger.Pretty
-import YaLedger.Exceptions
-import YaLedger.Logger
+import YaLedger.Reports.API
 
 data Postings = Postings
 

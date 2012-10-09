@@ -1,5 +1,4 @@
 {-# LANGUAGE GADTs, FlexibleContexts #-}
-{-# OPTIONS_GHC -F -pgmF MonadLoc #-}
 
 module YaLedger.Reports.Common where
 

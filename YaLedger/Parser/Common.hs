@@ -114,6 +114,7 @@ currencySymbol :: Monad m => ParsecT String st m String
 currencySymbol =
   (many $ noneOf " \r\n\t\")}->@0123456789.") <?> "Currency symbol"
 
+-- | Load a config from YAML file
 loadParserConfig :: FromJSON config => FilePath -> IO config
 loadParserConfig path = do
   fullPath <- case head path of

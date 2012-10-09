@@ -1,19 +1,8 @@
 {-# LANGUAGE ScopedTypeVariables, FlexibleContexts, OverlappingInstances, TypeFamilies #-}
-{-# OPTIONS_GHC -F -pgmF MonadLoc #-}
 
 module YaLedger.Reports.Cat where
 
-import Control.Monad
-import Control.Monad.State
-import Control.Monad.Exception
-import Control.Monad.Loc
-
-import YaLedger.Types.Reports
-import YaLedger.Kernel
-import YaLedger.Monad
-import YaLedger.Exceptions
-import YaLedger.Logger
-import YaLedger.Pretty
+import YaLedger.Reports.API
 
 data Cat = Cat
 

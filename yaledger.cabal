@@ -51,6 +51,7 @@ library
                    YaLedger.Parser.Transactions
                    YaLedger.Pretty
                    YaLedger.Processor
+                   YaLedger.Reports.API
                    YaLedger.Reports.Common
                    YaLedger.Reports.CoA
                    YaLedger.Reports.Cat
@@ -95,7 +96,7 @@ library
 
 executable yaledger
   if flag(debug)
-    GHC-Options: -DDEBUG
+    CPP-Options: -DDEBUG
     if !os(windows)
       CC-Options: "-DDEBUG"
     else
