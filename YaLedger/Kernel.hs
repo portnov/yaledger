@@ -615,11 +615,11 @@ fillEntry qry date dt cr mbCorr amount@(value :# _) = do
              if (length cr == 1) && null dt
                then do
                  info $ "Debit is " ++ show diffValue ++
-                        ", which is 0.0 in currencies of amounts. Setting credit to zero too."
+                        ", which is 0.0 in currencies of accounts. Setting credit to zero too."
                  return (dt, map setZero cr)
                else do
                  warning $ "Debit difference is " ++ show diffValue ++
-                        ", which is 0.0 in currencies of amounts."
+                        ", which is 0.0 in currencies of accounts."
                  return (dt, cr)
         else return (dt ++ postings, cr)
 

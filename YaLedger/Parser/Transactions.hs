@@ -7,6 +7,7 @@ module YaLedger.Parser.Transactions
   ) where
 
 import Control.Applicative hiding (many, (<|>), optional)
+import Data.Maybe
 import Data.Either
 import Data.List
 import Data.Dates
@@ -49,6 +50,31 @@ getNParams name = do
     Nothing -> fail $ "Template was not defined (yet?): " ++ name
     Just n  -> return n
 
+recordDate :: Parser DateTime
+recordDate = do
+    try datetime <|> timeOnly
+  where
+    datetime = do
+       st <- getState
+       let now = currentDate st
+       dt <- pDate now
+       putState $ st {currentDate = dt}
+       mbT <- optionMaybe $ do
+                comma
+                spaces
+                pTime
+       case mbT of
+         Nothing -> return dt
+         Just t  -> return (dt `addTime` t)
+
+    timeOnly = do
+       st <- getState
+       let now = currentDate st
+       t <- pTime
+       return $ date now `addTime` t
+
+    date d = d {hour = 0, minute = 0, second = 0}
+
 pDateTime' :: DateTime -> Parser DateTime
 pDateTime' now = do
   date <- pDate now
@@ -71,8 +97,7 @@ ext p = do
   pos <- getPosition
   char '@'
   space
-  st <- getState
-  date <- try $ pDateTime' (currentDate st)
+  date <- recordDate
   descr <- optionMaybe $ many1 $ noneOf "\n\r"
   newline
   attrs <- option M.empty $ braces $ pAttributes

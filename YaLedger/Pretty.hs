@@ -34,7 +34,10 @@ instance Pretty Attributes where
         | otherwise = showA x ++ "\n"
 
 instance Pretty DateTime where
-  prettyPrint (DateTime {..}) = printf "%4d/%02d/%02d" year month day
+  prettyPrint (DateTime {..}) =
+    if (hour == 0) && (minute == 0) && (second == 0)
+      then printf "%4d/%02d/%02d" year month day
+      else printf "%4d/%02d/%02d, %02d:%02d:%02d" year month day hour minute second
 
 instance Pretty Record where
   prettyPrint (Template name tran) = 
