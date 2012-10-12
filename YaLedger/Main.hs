@@ -219,13 +219,6 @@ defaultMain parsers list = do
 tryE action =
   (Right <$> action) `catchWithSrcLoc` (\l e -> return (Left (l, e)))
 
-showInterval :: Query -> String
-showInterval qry =
-    "From " ++ showMD "the begining" (qStart qry) ++ " till " ++ showMD "now" (qEnd qry)
-  where
-    showMD s Nothing = s
-    showMD _ (Just date) = prettyPrint date
-
 runYaLedger parsers (Just coaPath) (Just mapPath) (Just cpath) configs mbInterval qry qryReport rules inputPaths report params = do
   currs <- loadCurrencies cpath
   let currsMap = M.fromList [(cSymbol c, c) | c <- currs]
@@ -248,10 +241,9 @@ processYaLedger qry mbInterval rules records qryReport report params = do
       let queries = case mbInterval of
                       Nothing -> [qryReport]
                       Just int -> splitQuery firstDate now qryReport int
-      forM_ queries $ \query -> do
-          wrapIO $ putStrLn $ showInterval query
-          runAReport query params report
-             `catch`
-               (\(e :: InvalidCmdLine) -> do
-                     wrapIO (putStrLn $ show e))
+
+      runAReport queries params report
+         `catch`
+           (\(e :: InvalidCmdLine) -> do
+                 wrapIO (putStrLn $ show e))
 

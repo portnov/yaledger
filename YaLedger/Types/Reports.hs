@@ -19,6 +19,7 @@ import YaLedger.Exceptions
 import YaLedger.Types.Ledger
 import YaLedger.Types.Transactions
 import YaLedger.Monad
+import YaLedger.Pretty
 import YaLedger.Kernel.Common
 
 -- | Simple command line parser monad
@@ -77,10 +78,25 @@ class (ReportParameter (Parameters a)) => ReportClass a where
   runReport :: (Throws InvalidCmdLine l,
                 Throws InternalError l)
             => a             -- ^ Report itself; usually this is a dummy parameter, for typechecker only
-            -> Query         -- ^ Which records to process
+            -> Query         -- ^ Which records to output
             -> [Options a]   -- ^ Report options, parsed by GetOpt
             -> Parameters a  -- ^ Report parameters, parsed by report's specific parser
             -> Ledger l ()
+
+  -- | Run report for list of queries.
+  -- Default implementation just calls runReport
+  -- for each query.
+  runReportL :: (Throws InvalidCmdLine l,
+                Throws InternalError l)
+            => a             -- ^ Report itself; usually this is a dummy parameter, for typechecker only
+            -> [Query]       -- ^ Which records to output
+            -> [Options a]   -- ^ Report options, parsed by GetOpt
+            -> Parameters a  -- ^ Report parameters, parsed by report's specific parser
+            -> Ledger l ()
+  runReportL report queries opts params =
+      forM_ queries $ \qry -> do
+          wrapIO $ putStrLn $ showInterval qry
+          runReport report qry opts params
 
   -- | Description of report and it's parameters/options.
   reportHelp :: a -> String
@@ -129,11 +145,11 @@ instance ReportParameter AnyAccount where
 -- | Run any report
 runAReport :: (Throws InvalidCmdLine l,
                Throws InternalError l)
-           => Query        -- ^ Which records to process
+           => [Query]      -- ^ Which records to output
            -> [String]     -- ^ Report's command line
            -> Report       -- ^ Report itself
            -> Ledger l ()
-runAReport qry cmdline (Report r) = do
+runAReport queries cmdline (Report r) = do
   let ropts = reportOptions r
   if (cmdline == ["-h"]) || (cmdline == ["--help"])
     then do
@@ -152,5 +168,12 @@ runAReport qry cmdline (Report r) = do
                  (_,_, errs) -> do
                    let message = usageInfo (reportHelp r) ropts
                    throw (InvalidCmdLine $ concat errs ++ message)
-      runReport r qry options (fst params)
+      runReportL r queries options (fst params)
+
+showInterval :: Query -> String
+showInterval qry =
+    "From " ++ showMD "the begining" (qStart qry) ++ " till " ++ showMD "now" (qEnd qry)
+  where
+    showMD s Nothing = s
+    showMD _ (Just date) = prettyPrint date
 

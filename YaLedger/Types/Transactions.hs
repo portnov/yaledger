@@ -39,4 +39,3 @@ replicateRecords interval n list = concat [map (shift i) list | i <- [0..n]]
     plus 0 date = date
     plus i date = plus (i-1) date `addInterval` interval
 
-

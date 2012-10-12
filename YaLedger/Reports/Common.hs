@@ -18,15 +18,6 @@ import YaLedger.Exceptions
 isNotZero :: Amount -> Bool
 isNotZero (x :# _) = x /= 0
 
-negateInterval :: DateInterval -> DateInterval
-negateInterval (Days n)   = Days (negate n)
-negateInterval (Weeks n)  = Weeks (negate n)
-negateInterval (Months n) = Months (negate n)
-negateInterval (Years n)  = Years (negate n)
-
-minusInterval :: DateTime -> DateInterval -> DateTime
-minusInterval date int = date `addInterval` negateInterval int
-
 datesBackFrom :: DateTime -> DateInterval -> [DateTime]
 datesBackFrom date int = go date
   where
