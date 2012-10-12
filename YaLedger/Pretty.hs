@@ -33,6 +33,9 @@ instance Pretty Attributes where
         | M.null x = ""
         | otherwise = showA x ++ "\n"
 
+showDate :: DateTime -> String
+showDate (DateTime {..}) = printf "%4d/%02d/%02d" year month day
+
 instance Pretty DateTime where
   prettyPrint (DateTime {..}) =
     if (hour == 0) && (minute == 0) && (second == 0)

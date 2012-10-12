@@ -108,12 +108,12 @@ turnovers' qry options mbPath = do
         totals  = map trTotals nodes
     wrapIO $ putStrLn $ unlines $
       columns $
-        [("ACCOUNT",     ALeft, struct),
-         ("BALANCE C/F", ARight, map show inc),
-         ("CREDIT",      ARight, map show credits),
-         ("DEBIT",       ARight, map show debits),
-         ("BALANCE B/D", ARight,  map show out)] ++
+        [(["ACCOUNT"],     ALeft, struct),
+         (["BALANCE C/F"], ARight, map show inc),
+         (["CREDIT"],      ARight, map show credits),
+         (["DEBIT"],       ARight, map show debits),
+         (["BALANCE B/D"], ARight,  map show out)] ++
         if calcTotals
-          then [("TOTALS", ARight, map (show . fromJust) totals)]
+          then [(["TOTALS"], ARight, map (show . fromJust) totals)]
           else []
                   

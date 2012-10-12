@@ -17,17 +17,30 @@ instance ReportClass Balances where
   defaultOptions _ = []
   reportHelp _ = "Show accounts balances. One optional parameter: account or accounts group."
 
-  runReport _ qry opts mbPath = balance qry opts mbPath
+  runReport _ qry opts mbPath = balance [qry] opts mbPath
+  runReportL _ queries opts mbPath = balance queries opts mbPath
 
-balance qry options mbPath = (do
+showTreeList n qrys tree =
+  let struct = showTreeStructure tree
+      cols = [map (\l -> show (l !! i)) (allNodes tree) | i <- [0..n-1]]
+  in  unlines $ columns $ (["","ACCOUNT",""], ALeft, struct):
+                          [(showI qry, ARight, col) | (col,qry) <- zip cols qrys]
+
+showI :: Query -> [String]
+showI qry = [showD "beginning" (qStart qry), "...", showD "now" (qEnd qry)]
+  where
+    showD s Nothing = s
+    showD _ (Just date) = showDate date
+
+balance queries options mbPath = (do
     coa <- case mbPath of
               Nothing   -> gets lsCoA
               Just path -> getCoAItem (gets lsPosition) (gets lsCoA) path
-    res <- treeSaldo qry coa
-    let res' = if BNoZeros `elem` options
-                  then filterLeafs isNotZero res
-                  else res
-    wrapIO $ print res')
+    results <- treeSaldos queries coa
+    let results' = if BNoZeros `elem` options
+                     then filterLeafs (any isNotZero) results
+                     else results
+    wrapIO $ putStrLn $ showTreeList (length queries) queries results')
   `catchWithSrcLoc`
     (\l (e :: InvalidPath) -> handler l e)
   `catchWithSrcLoc`

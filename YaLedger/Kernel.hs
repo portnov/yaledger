@@ -16,7 +16,7 @@ module YaLedger.Kernel
    checkEntry,
    reconciliate,
    creditTurnovers, debitTurnovers,
-   saldo, treeSaldo
+   saldo, treeSaldo, treeSaldos
   ) where
 
 import Prelude hiding (catch)
@@ -676,4 +676,18 @@ treeSaldo :: (Throws InternalError l,
           -> ChartOfAccounts
           -> Ledger l (Tree Amount Amount)
 treeSaldo qry coa = mapTreeM (sumGroup $ qEnd qry) (saldo qry) coa
+
+-- | Calculate saldos for each account \/ group in CoA.
+treeSaldos :: (Throws InternalError l,
+              Throws NoSuchRate l)
+          => [Query]
+          -> ChartOfAccounts
+          -> Ledger l (Tree [Amount] [Amount])
+treeSaldos queries coa = mapTreeM (sumGroups $ map qEnd queries) saldos coa
+  where
+    saldos acc = forM queries $ \qry -> saldo qry acc
+
+    sumGroups dates ag list =
+      forM (zip dates $ transpose list) $ \(date,ams) ->
+        sumGroup date ag ams
 
