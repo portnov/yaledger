@@ -17,8 +17,16 @@ instance ReportClass Turnovers where
   reportOptions _ =
     [Option "z" ["no-zeros"] (NoArg TNoZeros) "Do not show accounts with zero balance",
      Option "t" ["show-totals"] (NoArg TShowTotals) "Show total turnovers" ]
+
+  runReportL _ queries opts mbPath =
+    turnoversL queries opts mbPath
+      `catchWithSrcLoc`
+        (\l (e :: InvalidPath) -> handler l e)
+      `catchWithSrcLoc`
+        (\l (e :: NoSuchRate) -> handler l e)
+
   runReport _ qry opts mbPath =
-    turnovers' qry opts mbPath
+    turnoversL [qry] opts mbPath
       `catchWithSrcLoc`
         (\l (e :: InvalidPath) -> handler l e)
       `catchWithSrcLoc`
@@ -90,30 +98,70 @@ noZeroTurns tr =
     Nothing -> isNotZero (trCredit tr) || isNotZero (trDebit tr)
     Just t  -> isNotZero t
 
-turnovers' qry options mbPath = do
+turnoversL :: (Throws InvalidPath l,
+               Throws NoSuchRate l,
+               Throws InternalError l)
+           => [Query] -> [TOptions] -> Maybe Path -> Ledger l ()
+turnoversL queries options mbPath = do
     coa <- case mbPath of
               Nothing   -> gets lsCoA
               Just path -> getCoAItem (gets lsPosition) (gets lsCoA) path
-    let calcTotals = TShowTotals `elem` options
-    tree <- mapTreeM (sumTurnovers (qEnd qry) calcTotals) (allTurnovers calcTotals qry) coa
-    let tree' = if TNoZeros `elem` options
-                  then filterLeafs noZeroTurns tree
-                  else tree
-    let struct = showTreeStructure tree'
-        nodes = allNodes tree'
-        credits = map trCredit nodes
-        debits  = map trDebit  nodes
-        inc     = map trIncSaldo nodes
-        out     = map trOutSaldo nodes
-        totals  = map trTotals nodes
-    wrapIO $ putStrLn $ unlines $
-      columns $
-        [(["ACCOUNT"],     ALeft, struct),
-         (["BALANCE C/F"], ARight, map show inc),
-         (["CREDIT"],      ARight, map show credits),
-         (["DEBIT"],       ARight, map show debits),
-         (["BALANCE B/D"], ARight,  map show out)] ++
-        if calcTotals
-          then [(["TOTALS"], ARight, map (show . fromJust) totals)]
-          else []
+    case coa of
+      Leaf {..} -> byOneAccount queries options leafData
+      _ -> forM_ queries $ \qry -> do
+                wrapIO $ putStrLn $ showInterval qry
+                turnovers qry options coa
+
+byOneAccount queries options account = do
+  let calcTotals = TShowTotals `elem` options
+  turns <- forM queries $ \qry ->
+               allTurnovers calcTotals qry account
+  let check
+        | TNoZeros `elem` options = noZeroTurns
+        | otherwise               = const True
+      xs = [(tr,qry) | (tr,qry) <- zip turns queries, check tr]
+      turns'   = map fst xs
+      queries' = map snd xs 
+  let credits = map trCredit turns'
+      debits  = map trDebit  turns'
+      inc     = map trIncSaldo turns'
+      out     = map trOutSaldo turns'
+      totals  = map trTotals   turns'
+      starts  = map qStart queries'
+      ends    = map qEnd   queries'
+  wrapIO $ putStrLn $ unlines $
+    columns $
+      [(["FROM"], ALeft, map showMaybeDate starts),
+       (["TO"],   ALeft, map showMaybeDate ends),
+       (["BALANCE C/F"], ARight, map show inc),
+       (["CREDIT"],      ARight, map show credits),
+       (["DEBIT"],       ARight, map show debits),
+       (["BALANCE B/D"], ARight, map show out)] ++
+      if calcTotals
+        then [(["TOTALS"], ARight, map (show . fromJust) totals)]
+        else []
+
+turnovers qry options coa = do
+  let calcTotals = TShowTotals `elem` options
+  tree <- mapTreeM (sumTurnovers (qEnd qry) calcTotals) (allTurnovers calcTotals qry) coa
+  let tree' = if TNoZeros `elem` options
+                then filterLeafs noZeroTurns tree
+                else tree
+  let struct = showTreeStructure tree'
+      nodes = allNodes tree'
+      credits = map trCredit nodes
+      debits  = map trDebit  nodes
+      inc     = map trIncSaldo nodes
+      out     = map trOutSaldo nodes
+      totals  = map trTotals nodes
+  wrapIO $ putStrLn $ unlines $
+    columns $
+      [(["ACCOUNT"],     ALeft, struct),
+       (["BALANCE C/F"], ARight, map show inc),
+       (["CREDIT"],      ARight, map show credits),
+       (["DEBIT"],       ARight, map show debits),
+       (["BALANCE B/D"], ARight,  map show out)] ++
+      if calcTotals
+        then [(["TOTALS"], ARight, map (show . fromJust) totals)]
+        else []
                   

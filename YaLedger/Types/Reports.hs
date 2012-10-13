@@ -4,7 +4,7 @@ module YaLedger.Types.Reports
   (ReportClass (..), ReportParameter (..),
    Report (..),
    OptDescr (..), ArgDescr (..),
-   showInterval,
+   showInterval, showMaybeDate,
    runAReport
   ) where
 
@@ -170,6 +170,10 @@ runAReport queries cmdline (Report r) = do
                    let message = usageInfo (reportHelp r) ropts
                    throw (InvalidCmdLine $ concat errs ++ message)
       runReportL r queries options (fst params)
+
+showMaybeDate :: Maybe DateTime -> String
+showMaybeDate Nothing = "NA"
+showMaybeDate (Just date) = prettyPrint date
 
 showInterval :: Query -> String
 showInterval qry =

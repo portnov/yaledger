@@ -32,9 +32,6 @@ showI qry = [showD "beginning" (qStart qry), "...", showD "now" (qEnd qry)]
     showD s Nothing = s
     showD _ (Just date) = showDate date
 
-showD Nothing = "NA"
-showD (Just date) = prettyPrint date
-
 balance queries options mbPath = (do
     coa <- case mbPath of
               Nothing   -> gets lsCoA
@@ -53,8 +50,8 @@ byOneAccount queries acc = do
         ends   = map qEnd   queries
     totals <- getCurrentBalance acc
     wrapIO $ putStrLn $ unlines $
-             columns [(["FROM"],    ALeft, map showD starts),
-                      (["TO"],      ALeft, map showD ends),
+             columns [(["FROM"],    ALeft, map showMaybeDate starts),
+                      (["TO"],      ALeft, map showMaybeDate ends),
                       (["BALANCE"], ARight, map show results)] ++ 
              ["    TOTALS: " ++ show totals ++ show (getCurrency acc)]
 
