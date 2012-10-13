@@ -30,8 +30,11 @@ datesBetween start end int =
 intervalsBetween :: DateTime -> DateTime -> DateInterval -> [(DateTime, DateTime)]
 intervalsBetween start end int =
   let dates = datesBetween start end int
-  in  zip dates (tail dates)
-
+      first = if head dates > start
+                then [(start, head dates)]
+                else []
+  in  first ++ zip dates (tail dates)
+      
 splitQuery :: DateTime -> DateTime -> Query -> DateInterval -> [Query]
 splitQuery first now qry int =
   let start = fromMaybe first (qStart qry)
