@@ -115,7 +115,7 @@ whenJust (Just a) fn = fn a
 
 -- | Get current balance of account.
 -- Value is returned in currency of account.
-getCurrentBalance :: (IsAccount a,
+getCurrentBalance :: (HasBalances a,
                       Throws InternalError l)
                   => a                 -- ^ Any sort of account
                   -> Ledger l Decimal

@@ -1,4 +1,4 @@
-{-# LANGUAGE ScopedTypeVariables, FlexibleContexts, OverlappingInstances, TypeFamilies #-}
+{-# LANGUAGE ScopedTypeVariables, FlexibleContexts, OverlappingInstances, TypeFamilies, RecordWildCards #-}
 
 module YaLedger.Reports.Balance where
 
@@ -32,17 +32,36 @@ showI qry = [showD "beginning" (qStart qry), "...", showD "now" (qEnd qry)]
     showD s Nothing = s
     showD _ (Just date) = showDate date
 
+showD Nothing = "NA"
+showD (Just date) = prettyPrint date
+
 balance queries options mbPath = (do
     coa <- case mbPath of
               Nothing   -> gets lsCoA
               Just path -> getCoAItem (gets lsPosition) (gets lsCoA) path
-    results <- treeSaldos queries coa
-    let results' = if BNoZeros `elem` options
-                     then filterLeafs (any isNotZero) results
-                     else results
-    wrapIO $ putStrLn $ showTreeList (length queries) queries results')
+    case coa of
+      Leaf {..} -> byOneAccount queries leafData
+      _         -> byGroup queries options coa )
   `catchWithSrcLoc`
     (\l (e :: InvalidPath) -> handler l e)
   `catchWithSrcLoc`
     (\l (e :: NoSuchRate) -> handler l e)
+
+byOneAccount queries acc = do
+    results <- forM queries $ \qry -> saldo qry acc
+    let starts = map qStart queries
+        ends   = map qEnd   queries
+    totals <- getCurrentBalance acc
+    wrapIO $ putStrLn $ unlines $
+             columns [(["FROM"],    ALeft, map showD starts),
+                      (["TO"],      ALeft, map showD ends),
+                      (["BALANCE"], ARight, map show results)] ++ 
+             ["    TOTALS: " ++ show totals ++ show (getCurrency acc)]
+
+byGroup queries options coa = do
+    results <- treeSaldos queries coa
+    let results' = if BNoZeros `elem` options
+                     then filterLeafs (any isNotZero) results
+                     else results
+    wrapIO $ putStrLn $ showTreeList (length queries) queries results'
 

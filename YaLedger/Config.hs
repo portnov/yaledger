@@ -98,9 +98,9 @@ instance FromJSON LedgerOptions where
       <*> v .:? "currencies"
       <*> v .:?  "files" .!= []
       <*> v .:? "query" .!= mempty
+      <*> v .:? "reports-interval"
       <*> v .:? "reports-from"
       <*> v .:? "reports-to"
-      <*> v .:? "reports-interval"
       <*> v .:? "debug" .!= WARNING
       <*> (parseConfigs =<< (v .:? "parsers"))
       <*> v .:? "deduplicate" .!= []
@@ -250,7 +250,7 @@ loadConfig configFile = do
     then return zero
     else do
         str <- B.readFile configFile
-        case decode str of
-          Nothing -> fail $ "Cannot parse config file: " ++ configFile
-          Just options -> return (zero `mappend` options)
+        case decodeEither str of
+          Left err -> fail $ "Cannot parse config file: " ++ configFile ++ ": " ++ err
+          Right options -> return (zero `mappend` options)
 

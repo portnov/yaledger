@@ -4,6 +4,7 @@ module YaLedger.Types.Reports
   (ReportClass (..), ReportParameter (..),
    Report (..),
    OptDescr (..), ArgDescr (..),
+   showInterval,
    runAReport
   ) where
 
