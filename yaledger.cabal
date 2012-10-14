@@ -48,9 +48,10 @@ library
                    YaLedger.Parser.Map
                    YaLedger.Parser.CoA
                    YaLedger.Parser.Transactions
-                   YaLedger.Output.Pretty
-                   YaLedger.Output.Strings
+                   YaLedger.Output.Tables
+                   YaLedger.Output.ASCII
                    YaLedger.Output.CSV
+                   YaLedger.Output.Pretty
                    YaLedger.Processor
                    YaLedger.Processor.Rules
                    YaLedger.Processor.Templates

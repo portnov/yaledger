@@ -6,7 +6,10 @@ import YaLedger.Reports.API
 
 data Turnovers = Turnovers
 
-data TOptions = TNoZeros | TShowTotals
+data TOptions =
+    TNoZeros
+  | TShowTotals
+  | TCSV (Maybe String)
   deriving (Eq)
 
 instance ReportClass Turnovers where
@@ -16,7 +19,8 @@ instance ReportClass Turnovers where
   reportHelp _ = "Show debit/credit, and, optionally, total turnovers for each account."
   reportOptions _ =
     [Option "z" ["no-zeros"] (NoArg TNoZeros) "Do not show accounts with zero balance",
-     Option "t" ["show-totals"] (NoArg TShowTotals) "Show total turnovers" ]
+     Option "t" ["show-totals"] (NoArg TShowTotals) "Show total turnovers",
+     Option "C" ["csv"] (OptArg TCSV "SEPARATOR") "Output data in CSV format using given fields delimiter (semicolon by default)" ]
 
   runReportL _ queries opts mbPath =
     turnoversL queries opts mbPath
@@ -129,8 +133,10 @@ byOneAccount queries options account = do
       totals  = map trTotals   turns'
       starts  = map qStart queries'
       ends    = map qEnd   queries'
-  wrapIO $ putStrLn $ unlines $
-    columns $
+  let format = case [s | TCSV s <- options] of
+                 []    -> tableColumns ASCII
+                 (x:_) -> tableColumns (CSV x)
+  wrapIO $ putStrLn $ unlines $ format $
       [(["FROM"], ALeft, map showMaybeDate starts),
        (["TO"],   ALeft, map showMaybeDate ends),
        (["BALANCE C/F"], ARight, map show inc),
@@ -147,15 +153,19 @@ turnovers qry options coa = do
   let tree' = if TNoZeros `elem` options
                 then filterLeafs noZeroTurns tree
                 else tree
-  let struct = showTreeStructure tree'
+  let struct = case [s | TCSV s <- options] of
+                 [] -> showTreeStructure tree'
+                 _  -> map (intercalate "/") (allPaths tree')
       nodes = allNodes tree'
       credits = map trCredit nodes
       debits  = map trDebit  nodes
       inc     = map trIncSaldo nodes
       out     = map trOutSaldo nodes
       totals  = map trTotals nodes
-  wrapIO $ putStrLn $ unlines $
-    columns $
+  let format = case [s | TCSV s <- options] of
+                 []    -> tableColumns ASCII
+                 (x:_) -> tableColumns (CSV x)
+  wrapIO $ putStrLn $ unlines $ format $
       [(["ACCOUNT"],     ALeft, struct),
        (["BALANCE C/F"], ARight, map show inc),
        (["CREDIT"],      ARight, map show credits),

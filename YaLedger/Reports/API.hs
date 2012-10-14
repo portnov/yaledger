@@ -21,9 +21,10 @@ module YaLedger.Reports.API
    module YaLedger.Kernel,
    module YaLedger.Logger,
    module YaLedger.Reports.Common,
-   module YaLedger.Output.Strings,
-   module YaLedger.Output.Pretty,
-   module YaLedger.Output.CSV
+   module YaLedger.Output.Tables,
+   module YaLedger.Output.ASCII,
+   module YaLedger.Output.CSV,
+   module YaLedger.Output.Pretty
   ) where
 
 import Control.Applicative
@@ -42,7 +43,8 @@ import YaLedger.Monad
 import YaLedger.Exceptions
 import YaLedger.Logger
 import YaLedger.Reports.Common
-import YaLedger.Output.Strings
-import YaLedger.Output.Pretty
+import YaLedger.Output.Tables
+import YaLedger.Output.ASCII
 import YaLedger.Output.CSV
+import YaLedger.Output.Pretty
 

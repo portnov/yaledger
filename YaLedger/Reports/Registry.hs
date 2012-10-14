@@ -1,20 +1,25 @@
 {-# LANGUAGE ScopedTypeVariables, FlexibleContexts, OverlappingInstances, GADTs, RecordWildCards, TypeFamilies #-}
 
-module YaLedger.Reports.Registry where
+module YaLedger.Reports.Registry
+  (Registry (..)) where
 
 import YaLedger.Reports.API
 
 data Registry = Registry
 
+data ROptions = RCSV (Maybe String)
+
 instance ReportClass Registry where
-  type Options Registry = ()
+  type Options Registry = ROptions
   type Parameters Registry = Maybe Path
-  reportOptions _ = []
-  defaultOptions _ = []
+
   reportHelp _ = "Show all entries in account or group of accounts."
 
-  runReport _ qry _ mbPath = 
-      registry' qry mbPath
+  reportOptions _ =
+    [Option "C" ["csv"] (OptArg RCSV "SEPARATOR") "Output data in CSV format using given fields delimiter (semicolon by default)"]
+
+  runReport _ qry options mbPath = 
+      registry qry options mbPath
     `catchWithSrcLoc`
       (\l (e :: InternalError) -> handler l e)
     `catchWithSrcLoc`
@@ -22,7 +27,7 @@ instance ReportClass Registry where
     `catchWithSrcLoc`
       (\l (e :: NoSuchRate) -> handler l e)
 
-registry' qry mbPath = do
+registry qry options mbPath = do
     coa <- case mbPath of
               Nothing   -> gets lsCoA
               Just path -> getCoAItem (gets lsPosition) (gets lsCoA) path
@@ -35,10 +40,16 @@ registry' qry mbPath = do
       Leaf {leafData = account} -> do
           balances <- readIOList (accountBalances account)
           let balances' = filter (checkQuery qry) balances
-          wrapIO $ putStrLn $ showEntriesBalances totals (nub $ sort balances')
+          let format = case [s | RCSV s <- options] of
+                         []    -> showEntriesBalances ASCII
+                         (x:_) -> showEntriesBalances (CSV x)
+          wrapIO $ putStrLn $ format totals (nub $ sort balances')
       Branch {} -> do
           let accounts = map snd $ leafs coa
           allEntries <- forM accounts getEntries
           let entries = concat $ map (filter $ checkQuery qry) allEntries
-          wrapIO $ putStrLn $ showEntries totals (nub $ sort entries)
+          let format = case [s | RCSV s <- options] of
+                         []    -> showEntries ASCII
+                         (x:_) -> showEntries (CSV x)
+          wrapIO $ putStrLn $ format totals (nub $ sort entries)
   

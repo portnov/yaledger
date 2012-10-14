@@ -10,7 +10,8 @@ import Data.Decimal
 import Data.Dates
 
 import YaLedger.Types
-import YaLedger.Output.Strings
+import YaLedger.Output.Tables
+import YaLedger.Output.ASCII
 import YaLedger.Output.Pretty
 import YaLedger.Monad
 import YaLedger.Exceptions
@@ -72,25 +73,25 @@ posting :: Posting Decimal t -> String
 posting (DPosting acc x) = getName acc ++ ": " ++ show (x :# getCurrency acc)
 posting (CPosting acc x) = getName acc ++ ": " ++ show (x :# getCurrency acc)
 
-showEntries :: Amount -> [Ext (Entry Decimal Checked)] -> String
-showEntries totals list =
+showEntries :: (TableFormat a) => a -> Amount -> [Ext (Entry Decimal Checked)] -> String
+showEntries fmt totals list =
   let l = map showE list
       footer = ["    TOTALS: " ++ show totals]
   in  unlines $
-          grid [(ALeft,  ["DATE"]),
-                (ARight, ["CREDIT"]),
-                (ARight, ["DEBIT"]),
-                (ARight, ["RATES DIFF."])] l ++ footer
+      tableGrid fmt [(ALeft,  ["DATE"]),
+                     (ARight, ["CREDIT"]),
+                     (ARight, ["DEBIT"]),
+                     (ARight, ["RATES DIFF."])] l ++ footer
 
-showEntriesBalances :: Amount -> [Ext (Balance Checked)] -> String
-showEntriesBalances totals list =
+showEntriesBalances :: (TableFormat a) => a -> Amount -> [Ext (Balance Checked)] -> String
+showEntriesBalances fmt totals list =
   let l = map (showB $ getCurrency totals) list
       footer = ["    TOTALS: " ++ show totals]
   in  unlines $
-          grid [(ALeft,  ["DATE"]),
-                (ARight, ["CREDIT"]),
-                (ARight, ["DEBIT"]),
-                (ARight, ["BALANCE B/D"])] l ++ footer
+      tableGrid fmt [(ALeft,  ["DATE"]),
+                     (ARight, ["CREDIT"]),
+                     (ARight, ["DEBIT"]),
+                     (ARight, ["BALANCE B/D"])] l ++ footer
 
 causedByExt :: Ext (Balance Checked) -> Maybe (Ext (Entry Decimal Checked))
 causedByExt (Ext date pos attrs p) =
