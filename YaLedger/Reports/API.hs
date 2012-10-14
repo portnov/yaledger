@@ -22,7 +22,8 @@ module YaLedger.Reports.API
    module YaLedger.Logger,
    module YaLedger.Reports.Common,
    module YaLedger.Output.Strings,
-   module YaLedger.Output.Pretty
+   module YaLedger.Output.Pretty,
+   module YaLedger.Output.CSV
   ) where
 
 import Control.Applicative
@@ -43,4 +44,5 @@ import YaLedger.Logger
 import YaLedger.Reports.Common
 import YaLedger.Output.Strings
 import YaLedger.Output.Pretty
+import YaLedger.Output.CSV
 

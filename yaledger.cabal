@@ -50,6 +50,7 @@ library
                    YaLedger.Parser.Transactions
                    YaLedger.Output.Pretty
                    YaLedger.Output.Strings
+                   YaLedger.Output.CSV
                    YaLedger.Processor
                    YaLedger.Processor.Rules
                    YaLedger.Processor.Templates
