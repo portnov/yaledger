@@ -9,7 +9,24 @@ import YaLedger.Output.Tables
 data CSV = CSV (Maybe String)
 
 csvTable :: Maybe String -> [Column] -> Column
-csvTable sep lists = map (intercalate (fromMaybe ";" sep)) lists
+csvTable mbSep lists = map (intercalate sep . map quote) lists
+  where
+    sep = fromMaybe ";" mbSep
+
+    special = sep ++ "\""
+    spaces  = " \r\n\t"
+
+    quote :: String -> String
+    quote "" = ""
+    quote str
+      | any (`elem` spaces) str = "\"" ++ escape str ++ "\""
+      | otherwise = escape str
+
+    escape :: String -> String
+    escape "" = ""
+    escape (c:cs)
+      | c `elem` special = '\\': c: escape cs
+      | otherwise        = c: escape cs
 
 instance TableFormat CSV where
   tableColumns (CSV sep) list =
