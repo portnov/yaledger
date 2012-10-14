@@ -1,5 +1,5 @@
 {-# LANGUAGE GADTs, RecordWildCards, FlexibleContexts #-}
-module YaLedger.Rules where
+module YaLedger.Processor.Rules where
 
 import Control.Monad.State
 import Control.Monad.Exception
@@ -13,8 +13,8 @@ import YaLedger.Types
 import YaLedger.Monad
 import YaLedger.Exceptions
 import YaLedger.Kernel
-import YaLedger.Correspondence
-import YaLedger.Templates
+import YaLedger.Kernel.Correspondence
+import YaLedger.Processor.Templates
 
 matchC :: Throws NoSuchRate l
        => DateTime

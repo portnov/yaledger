@@ -1,5 +1,5 @@
 {-# LANGUAGE GADTs, TypeSynonymInstances, FlexibleInstances, FlexibleContexts, RecordWildCards #-}
-module YaLedger.Pretty where
+module YaLedger.Output.Pretty where
 
 import Data.Dates
 import Data.List

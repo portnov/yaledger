@@ -16,7 +16,7 @@ import Text.Parsec
 import Text.Printf
 
 import YaLedger.Types
-import YaLedger.Templates
+import YaLedger.Processor.Templates
 import YaLedger.Kernel.Common
 import YaLedger.Parser.Common
 

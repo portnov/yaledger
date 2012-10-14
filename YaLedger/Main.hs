@@ -40,7 +40,7 @@ import YaLedger.Kernel
 import YaLedger.Processor
 import YaLedger.Config
 import YaLedger.Logger
-import YaLedger.Pretty
+import YaLedger.Output.Pretty
 import YaLedger.Reports.Common
 
 -- | Parrse NAME=VALUE attribute syntax

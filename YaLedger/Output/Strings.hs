@@ -1,5 +1,5 @@
 
-module YaLedger.Strings where
+module YaLedger.Output.Strings where
 
 import Data.List
 

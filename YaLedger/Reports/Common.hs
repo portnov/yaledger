@@ -10,8 +10,8 @@ import Data.Decimal
 import Data.Dates
 
 import YaLedger.Types
-import YaLedger.Strings
-import YaLedger.Pretty
+import YaLedger.Output.Strings
+import YaLedger.Output.Pretty
 import YaLedger.Monad
 import YaLedger.Exceptions
 

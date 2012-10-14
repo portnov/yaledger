@@ -15,10 +15,10 @@ import YaLedger.Types
 import YaLedger.Monad
 import YaLedger.Exceptions
 import YaLedger.Kernel
-import YaLedger.Templates
-import YaLedger.Rules
 import YaLedger.Logger
 import YaLedger.Processor.Duplicates
+import YaLedger.Processor.Rules
+import YaLedger.Processor.Templates
 
 -- | Merge two sorted lists into one sorted.
 merge :: Ord a => [a] -> [a] -> [a]

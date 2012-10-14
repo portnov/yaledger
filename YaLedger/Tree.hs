@@ -9,7 +9,7 @@ import Data.Either
 import Data.List
 import Data.List.Utils (split)
 
-import YaLedger.Strings
+import YaLedger.Output.Strings
 
 type Path = [String]
 

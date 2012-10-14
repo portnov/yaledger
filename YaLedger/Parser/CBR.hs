@@ -18,7 +18,7 @@ import Text.Parsec
 
 import YaLedger.Types hiding (getChildren)
 import YaLedger.Parser.Common (loadParserConfig)
-import YaLedger.Pretty
+import YaLedger.Output.Pretty
 import YaLedger.Config () -- we need some instances for FromJSON
 import YaLedger.Parser.Currencies ()
 import qualified YaLedger.Parser.Transactions as T

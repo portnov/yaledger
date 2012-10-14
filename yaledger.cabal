@@ -35,22 +35,25 @@ library
     GHC-Options: -F -pgmF MonadLoc
 
   exposed-modules: YaLedger.Attributes
-                   YaLedger.Correspondence
                    YaLedger.Exceptions
-                   YaLedger.Kernel.Common
                    YaLedger.Kernel
-                   YaLedger.Strings
+                   YaLedger.Kernel.Common
+                   YaLedger.Kernel.Correspondence
                    YaLedger.Main
                    YaLedger.Monad
                    YaLedger.Logger
+                   YaLedger.Parser
                    YaLedger.Parser.Common
                    YaLedger.Parser.CSV
-                   YaLedger.Parser
                    YaLedger.Parser.Map
                    YaLedger.Parser.CoA
                    YaLedger.Parser.Transactions
-                   YaLedger.Pretty
+                   YaLedger.Output.Pretty
+                   YaLedger.Output.Strings
                    YaLedger.Processor
+                   YaLedger.Processor.Rules
+                   YaLedger.Processor.Templates
+                   YaLedger.Processor.Duplicates
                    YaLedger.Reports.API
                    YaLedger.Reports.Common
                    YaLedger.Reports.CoA
@@ -61,8 +64,6 @@ library
                    YaLedger.Reports.IncomeStatement
                    YaLedger.Reports.Postings
                    YaLedger.Reports.Turnovers
-                   YaLedger.Rules
-                   YaLedger.Templates
                    YaLedger.Tree
                    YaLedger.Types.Common
                    YaLedger.Types

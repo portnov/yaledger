@@ -1,6 +1,6 @@
 {-# LANGUAGE RecordWildCards #-}
 -- | Functions for searching corresponding accounts
-module YaLedger.Correspondence
+module YaLedger.Kernel.Correspondence
   (matchT, match, matchAll,
    isOptional,
    filterCoA, runCQuery,

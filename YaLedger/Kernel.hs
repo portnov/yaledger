@@ -34,7 +34,7 @@ import qualified Data.Map as M
 import YaLedger.Types
 import YaLedger.Monad
 import YaLedger.Exceptions
-import YaLedger.Correspondence
+import YaLedger.Kernel.Correspondence
 import YaLedger.Kernel.Common
 import YaLedger.Logger
 

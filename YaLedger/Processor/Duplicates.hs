@@ -9,8 +9,8 @@ import Data.Dates
 import Data.Decimal
 
 import YaLedger.Types
-import YaLedger.Correspondence (matchAll)
-import YaLedger.Pretty
+import YaLedger.Kernel.Correspondence (matchAll)
+import YaLedger.Output.Pretty
 import YaLedger.Exceptions
 import YaLedger.Monad
 import YaLedger.Logger

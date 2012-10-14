@@ -20,7 +20,7 @@ import YaLedger.Exceptions
 import YaLedger.Types.Ledger
 import YaLedger.Types.Transactions
 import YaLedger.Monad
-import YaLedger.Pretty
+import YaLedger.Output.Pretty
 import YaLedger.Kernel.Common
 
 -- | Simple command line parser monad

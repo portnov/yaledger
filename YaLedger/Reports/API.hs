@@ -21,8 +21,8 @@ module YaLedger.Reports.API
    module YaLedger.Kernel,
    module YaLedger.Logger,
    module YaLedger.Reports.Common,
-   module YaLedger.Strings,
-   module YaLedger.Pretty
+   module YaLedger.Output.Strings,
+   module YaLedger.Output.Pretty
   ) where
 
 import Control.Applicative
@@ -41,6 +41,6 @@ import YaLedger.Monad
 import YaLedger.Exceptions
 import YaLedger.Logger
 import YaLedger.Reports.Common
-import YaLedger.Strings
-import YaLedger.Pretty
+import YaLedger.Output.Strings
+import YaLedger.Output.Pretty
 

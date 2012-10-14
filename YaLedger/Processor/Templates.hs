@@ -1,6 +1,6 @@
 {-# LANGUAGE TypeFamilies, FlexibleInstances, FlexibleContexts, GADTs #-}
 
-module YaLedger.Templates where
+module YaLedger.Processor.Templates where
 
 import Control.Applicative
 import Control.Monad.Reader
