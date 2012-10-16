@@ -9,7 +9,7 @@ module YaLedger.Kernel
    convertPosting', convertDecimal,
    checkQuery, checkRecord, isAdmin,
    creditPostings, debitPostings,
-   accountByID,
+   accountByID, accountFullPath,
    sumGroup, sumPostings,
    accountAsCredit,
    accountAsDebit,
@@ -315,6 +315,25 @@ accountByID i (Branch _ ag children)
 accountByID i (Leaf _ acc)
   | getID acc == i = Just acc
   | otherwise      = Nothing
+
+-- | Get fully qualfiied path of account
+accountFullPath :: AccountID -> ChartOfAccounts -> Maybe Path
+accountFullPath i tree = go [] i tree
+  where
+    go p i (Branch groupName ag children)
+      | i `inRange` agRange ag = do
+          let accs = [(getID acc, n) | Leaf n acc <- children]
+          case filter ((== i) . fst) accs of
+            [(_,accName)] -> return (p ++ [groupName, accName])
+            _   -> do
+                   let grps = [(n,grp) | Branch n _ grp <- children]
+                   msum $ map (\(n,g) -> first (go (p ++ [groupName, n]) i) g) grps
+      | otherwise = Nothing
+
+    go p i (Leaf name acc)
+      | getID acc == i = Just (p ++ [name])
+      | otherwise      = Nothing
+
 
 -- | Return same account as FreeOr Credit Account,
 -- or throw an exception.

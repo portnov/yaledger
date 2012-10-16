@@ -30,8 +30,8 @@ cat qry = do
   forM_ (filter (checkQuery qry) records) $ \record ->
       wrapIO $ putStrLn $ prettyPrint record
 
-csvRecord :: Ext Record -> Maybe Row
-csvRecord (Ext {getDate=date, getContent=rec}) = go date rec
+csvRecord :: ChartOfAccounts -> Ext Record -> Maybe Row
+csvRecord coa (Ext {getDate=date, getContent=rec}) = go date rec
   where
     go date (Transaction (TEntry (UEntry {..}))) = Just $
       [[prettyPrint date],
@@ -41,16 +41,18 @@ csvRecord (Ext {getDate=date, getContent=rec}) = go date rec
        map showValue   uEntryDebitPostings ]
     go _ t = Nothing
 
-    showAccount (CPosting acc _) = getName acc
-    showAccount (DPosting acc _) = getName acc
+    showAccount :: Posting Amount t -> String
+    showAccount (CPosting acc _) = maybe "" (intercalate "/") $ accountFullPath (getID acc) coa
+    showAccount (DPosting acc _) = maybe "" (intercalate "/") $ accountFullPath (getID acc) coa
 
     showValue (CPosting _ x) = show x
     showValue (DPosting _ x) = show x
 
 catCSV sep qry = do
+  coa <- gets lsCoA
   allRecords <- gets lsLoadedRecords
   let records = filter (checkQuery qry) allRecords
-      rows = mapMaybe csvRecord allRecords
+      rows = mapMaybe (csvRecord coa) allRecords
   wrapIO $ putStrLn $ unlines $
            tableGrid (CSV sep) [(ALeft, ["DATE"]),
                                 (ALeft, ["CREDIT ACCOUNT"]),
