@@ -1,25 +1,60 @@
-{-# LANGUAGE ScopedTypeVariables, FlexibleContexts, OverlappingInstances, TypeFamilies #-}
+{-# LANGUAGE ScopedTypeVariables, FlexibleContexts, OverlappingInstances, TypeFamilies, RecordWildCards, GADTs #-}
 
-module YaLedger.Reports.Cat where
+module YaLedger.Reports.Cat
+  (Cat (..)) where
 
 import YaLedger.Reports.API
 
 data Cat = Cat
 
-instance ReportClass Cat where
-  type Options Cat = ()
-  type Parameters Cat = ()
-  reportOptions _ = []
-  defaultOptions _ = []
-  reportHelp _ = ""
+data COptions = CCSV (Maybe String)
 
-  runReport _ qry _ () = 
-      cat' qry
+instance ReportClass Cat where
+  type Options Cat = COptions
+  type Parameters Cat = ()
+
+  reportOptions _ = 
+    [ Option "C" ["csv"] (OptArg CCSV "SEPARATOR") "Output data in CSV format using given fields delimiter (semicolon by default). Only entries are ouput."]
+
+  reportHelp _ = "Outputs all loaded records (after deduplication, if any)."
+
+  runReport _ qry options () = 
+      case [s | CCSV s <- options] of
+        [] -> cat qry
+        (s:_) -> catCSV s qry
     `catchWithSrcLoc`
       (\l (e :: InternalError) -> handler l e)
 
-cat' qry = do
+cat qry = do
   records <- gets lsLoadedRecords
   forM_ (filter (checkQuery qry) records) $ \record ->
       wrapIO $ putStrLn $ prettyPrint record
+
+csvRecord :: Ext Record -> Maybe Row
+csvRecord (Ext {getDate=date, getContent=rec}) = go date rec
+  where
+    go date (Transaction (TEntry (UEntry {..}))) = Just $
+      [[prettyPrint date],
+       map showAccount uEntryCreditPostings,
+       map showValue   uEntryCreditPostings,
+       map showAccount uEntryDebitPostings,
+       map showValue   uEntryDebitPostings ]
+    go _ t = Nothing
+
+    showAccount (CPosting acc _) = getName acc
+    showAccount (DPosting acc _) = getName acc
+
+    showValue (CPosting _ x) = show x
+    showValue (DPosting _ x) = show x
+
+catCSV sep qry = do
+  allRecords <- gets lsLoadedRecords
+  let records = filter (checkQuery qry) allRecords
+      rows = mapMaybe csvRecord allRecords
+  wrapIO $ putStrLn $ unlines $
+           tableGrid (CSV sep) [(ALeft, ["DATE"]),
+                                (ALeft, ["CREDIT ACCOUNT"]),
+                                (ALeft, ["CREDIT AMOUNT"]),
+                                (ALeft, ["DEBIT ACCOUNT"]),
+                                (ALeft, ["DEBIT AMOUNT"])] rows
 
