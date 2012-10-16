@@ -12,7 +12,7 @@ import Data.Either
 import Data.List
 import Data.Dates
 import qualified Data.Map as M
-import Text.Parsec
+import Text.Parsec hiding (space, spaces)
 import Text.Printf
 
 import YaLedger.Types
@@ -28,6 +28,9 @@ data PState = PState {
   }
 
 type Parser a = Parsec String PState a
+
+space = oneOf " \t"
+spaces = many space
 
 emptyPState :: ChartOfAccounts -> Currencies -> IO PState
 emptyPState coa currs = do
@@ -92,18 +95,28 @@ pRecords = do
   eof
   return rs
 
+insertAttr :: (String -> AttributeValue) -> String -> Maybe String -> Attributes -> Attributes
+insertAttr _ _ Nothing attrs = attrs
+insertAttr constr name (Just value) attrs = M.insert name (constr value) attrs
+
 ext :: Parser a -> Parser (Ext a)
 ext p = do
   pos <- getPosition
   char '@'
   space
   date <- recordDate
-  descr <- optionMaybe $ many1 $ noneOf "\n\r"
+  spaces
+  mbCategory <- optionMaybe $ do
+                  char '('
+                  r <- many1 $ noneOf "\n\r)"
+                  char ')'
+                  return r
+  spaces
+  mbDescription <- optionMaybe $ many1 $ noneOf "\n\r"
   newline
   attrs <- option M.empty $ braces $ pAttributes
-  let attrs' = case descr of
-                 Nothing -> attrs
-                 Just s -> M.insert "description" (Optional s) attrs
+  let attrs' = insertAttr Optional "description" mbDescription $
+               insertAttr Exactly  "category"    mbCategory attrs
   content <- p
   return $ Ext date pos attrs' content
 

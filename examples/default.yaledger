@@ -23,13 +23,11 @@ rule testRule = when credit X1 with {description = /Just/} do
 rule one = when debit карточка with {description = /банкомат/} do
   dr карточка #1*0.005
 
-@ 2012/09/09 -
-{category = "транспорт"}
+@ 2012/09/09 (транспорт) -
 template трамвай
   cr расходы/трамвай #1 (default 15.0р)
 
-@ 2012/09/09
-{category = "test"}
+@ 2012/09/09 (test)
   cr X1 100.0$
   Y1 
 
