@@ -35,18 +35,11 @@ csvRecord coa (Ext {getDate=date, getContent=rec}) = go date rec
   where
     go date (Transaction (TEntry (UEntry {..}))) = Just $
       [[prettyPrint date],
-       map showAccount uEntryCreditPostings,
-       map showValue   uEntryCreditPostings,
-       map showAccount uEntryDebitPostings,
-       map showValue   uEntryDebitPostings ]
+       map (showPostingAccount coa) uEntryCreditPostings,
+       map showPostingValue         uEntryCreditPostings,
+       map (showPostingAccount coa) uEntryDebitPostings,
+       map showPostingValue         uEntryDebitPostings ]
     go _ t = Nothing
-
-    showAccount :: Posting Amount t -> String
-    showAccount (CPosting acc _) = maybe "" (intercalate "/") $ accountFullPath (getID acc) coa
-    showAccount (DPosting acc _) = maybe "" (intercalate "/") $ accountFullPath (getID acc) coa
-
-    showValue (CPosting _ x) = show x
-    showValue (DPosting _ x) = show x
 
 catCSV sep qry = do
   coa <- gets lsCoA

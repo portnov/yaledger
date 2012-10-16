@@ -28,8 +28,9 @@ instance ReportClass Registry where
       (\l (e :: NoSuchRate) -> handler l e)
 
 registry qry options mbPath = do
+    fullCoA <- gets lsCoA
     coa <- case mbPath of
-              Nothing   -> gets lsCoA
+              Nothing   -> return fullCoA
               Just path -> getCoAItem (gets lsPosition) (gets lsCoA) path
     totals <- do
               res <- treeSaldo qry coa
@@ -41,15 +42,15 @@ registry qry options mbPath = do
           balances <- readIOList (accountBalances account)
           let balances' = filter (checkQuery qry) balances
           let format = case [s | RCSV s <- options] of
-                         []    -> showEntriesBalances ASCII
-                         (x:_) -> showEntriesBalances (CSV x)
-          wrapIO $ putStrLn $ format totals (nub $ sort balances')
+                         []    -> showEntriesBalances ASCII totals
+                         (x:_) -> showEntriesBalances' fullCoA (CSV x) (getCurrency account)
+          wrapIO $ putStrLn $ format (nub $ sort balances')
       Branch {} -> do
           let accounts = map snd $ leafs coa
           allEntries <- forM accounts getEntries
           let entries = concat $ map (filter $ checkQuery qry) allEntries
           let format = case [s | RCSV s <- options] of
-                         []    -> showEntries ASCII
-                         (x:_) -> showEntries (CSV x)
-          wrapIO $ putStrLn $ format totals (nub $ sort entries)
+                         []    -> showEntries ASCII totals
+                         (x:_) -> showEntries' fullCoA (CSV x)
+          wrapIO $ putStrLn $ format (nub $ sort entries)
   
