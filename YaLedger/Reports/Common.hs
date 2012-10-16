@@ -47,11 +47,23 @@ splitQuery first now qry int =
       adm   = qAllAdmin qry
   in  map (\(s, e) -> Query (Just s) (Just e) adm attrs) pairs
 
-showPostingAccount :: ChartOfAccounts -> Posting v t -> String
-showPostingAccount coa (CPosting acc _) = maybe "" (intercalate "/") $ accountFullPath (getID acc) coa
-showPostingAccount coa (DPosting acc _) = maybe "" (intercalate "/") $ accountFullPath (getID acc) coa
+trimPath :: Maybe Int -> Path -> String
+trimPath Nothing p = intercalate "/" p
+trimPath (Just n) ps =
+  let rlist = reverse ps
+  in  case takeWhile ((< n) . snd) $ zip rlist $ tail $ scanl (+) 0 $ map length rlist of
+        [] -> head ps
+        xs -> intercalate "/" (map fst xs)
 
-showPostingValue :: Show v => Posting v t -> String
+showPostingAccount :: Maybe Int -> ChartOfAccounts -> Posting v t -> String
+showPostingAccount t coa (CPosting acc _) = maybe "" (trimPath t) $ accountFullPath (getID acc) coa
+showPostingAccount t coa (DPosting acc _) = maybe "" (trimPath t) $ accountFullPath (getID acc) coa
+
+showPostingValueD :: Posting Decimal t -> String
+showPostingValueD (CPosting acc x) = show (x :# getCurrency acc)
+showPostingValueD (DPosting acc x) = show (x :# getCurrency acc)
+
+showPostingValue :: Posting Amount t -> String
 showPostingValue (CPosting _ x) = show x
 showPostingValue (DPosting _ x) = show x
 
@@ -65,11 +77,11 @@ showE (Ext {getDate = date, getContent = (CEntry dt cr rd)}) =
       | rd == OneCurrency = []
       | otherwise = [show rd]
 
-showE' :: ChartOfAccounts -> Ext (Entry Decimal Checked) -> Row
-showE' coa (Ext {getDate = date, getContent = (CEntry dt cr rd)}) =
+showE' :: Maybe Int -> ChartOfAccounts -> Ext (Entry Decimal Checked) -> Row
+showE' t coa (Ext {getDate = date, getContent = (CEntry dt cr rd)}) =
     [prettyPrint date: replicate (m-1) "",
-     map (showPostingAccount coa) cr, map showPostingValue cr,
-     map (showPostingAccount coa) dt, map showPostingValue dt,
+     map (showPostingAccount t coa) cr, map showPostingValueD cr,
+     map (showPostingAccount t coa) dt, map showPostingValueD dt,
      rdS]
   where
     m = max (length cr) (length dt)
@@ -91,8 +103,8 @@ showB currency (Ext {getDate = date, getContent = balance}) =
        map posting cr, map posting dt,
        padding ++ [show bd ++ show currency]]
 
-showB' :: ChartOfAccounts -> Currency -> Ext (Balance Checked) -> Row
-showB' coa currency (Ext {getDate = date, getContent = balance}) =
+showB' :: Maybe Int -> ChartOfAccounts -> Currency -> Ext (Balance Checked) -> Row
+showB' t coa currency (Ext {getDate = date, getContent = balance}) =
   let bd = balanceValue balance
       dt :: [Posting Decimal Debit]
       cr :: [Posting Decimal Credit]
@@ -102,8 +114,8 @@ showB' coa currency (Ext {getDate = date, getContent = balance}) =
       m = max (length cr) (length dt)
       padding = replicate (m-1) ""
   in  [prettyPrint date: padding,
-       map (showPostingAccount coa) cr, map showPostingValue cr,
-       map (showPostingAccount coa) dt, map showPostingValue dt,
+       map (showPostingAccount t coa) cr, map showPostingValueD cr,
+       map (showPostingAccount t coa) dt, map showPostingValueD dt,
        padding ++ [show bd ++ show currency]]
 
 posting :: Posting Decimal t -> String
@@ -122,12 +134,12 @@ showEntries fmt totals list =
 
 showEntries' :: (TableFormat a) => ChartOfAccounts -> a -> [Ext (Entry Decimal Checked)] -> String
 showEntries' coa fmt list =
-  let l = map (showE' coa) list
+  let l = map (showE' (maxFieldWidth fmt) coa) list
   in  unlines $
       tableGrid fmt [(ALeft,  ["DATE"]),
-                     (ARight, ["CREDIT ACCOUNT"]),
+                     (ALeft,  ["CREDIT ACCOUNT"]),
                      (ARight, ["CREDIT AMOUNT"]),
-                     (ARight, ["DEBIT ACCOUNT"]),
+                     (ALeft,  ["DEBIT ACCOUNT"]),
                      (ARight, ["DEBIT AMOUNT"]),
                      (ARight, ["RATES DIFF."])] l
 
@@ -143,12 +155,12 @@ showEntriesBalances fmt totals list =
 
 showEntriesBalances' :: (TableFormat a) => ChartOfAccounts -> a -> Currency -> [Ext (Balance Checked)] -> String
 showEntriesBalances' coa fmt currency list =
-  let l = map (showB' coa currency) list
+  let l = map (showB' (maxFieldWidth fmt) coa currency) list
   in  unlines $
       tableGrid fmt [(ALeft,  ["DATE"]),
-                     (ARight, ["CREDIT ACCOUNT"]),
+                     (ALeft,  ["CREDIT ACCOUNT"]),
                      (ARight, ["CREDIT AMOUNT"]),
-                     (ARight, ["DEBIT ACCOUNT"]),
+                     (ALeft,  ["DEBIT ACCOUNT"]),
                      (ARight, ["DEBIT AMOUNT"]),
                      (ARight, ["BALANCE B/D"])] l
 

@@ -35,10 +35,10 @@ csvRecord coa (Ext {getDate=date, getContent=rec}) = go date rec
   where
     go date (Transaction (TEntry (UEntry {..}))) = Just $
       [[prettyPrint date],
-       map (showPostingAccount coa) uEntryCreditPostings,
-       map showPostingValue         uEntryCreditPostings,
-       map (showPostingAccount coa) uEntryDebitPostings,
-       map showPostingValue         uEntryDebitPostings ]
+       map (showPostingAccount Nothing coa) uEntryCreditPostings,
+       map showPostingValue                 uEntryCreditPostings,
+       map (showPostingAccount Nothing coa) uEntryDebitPostings,
+       map showPostingValue                 uEntryDebitPostings ]
     go _ t = Nothing
 
 catCSV sep qry = do

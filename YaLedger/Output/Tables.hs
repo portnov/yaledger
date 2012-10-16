@@ -9,7 +9,11 @@ type Row = [Column]
 
 class TableFormat a where
   tableColumns :: a -> [([String], Align, Column)] -> Column
+
   tableGrid :: a -> [(Align, [String])] -> [Row] -> Column
+
+  maxFieldWidth :: a -> Maybe Int
+  maxFieldWidth _ = Nothing
 
 padColumns :: Row -> Row
 padColumns columns =

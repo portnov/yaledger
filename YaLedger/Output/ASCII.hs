@@ -91,7 +91,9 @@ instance TableFormat ASCII where
         rows' = map padColumns rows :: [Row]
         cols = foldr1 (zipWith (++)) rows' :: Row
         wds = [maximum $ map length (h ++ column) | (h,column) <- zip headers cols]
-        colsAligned = [map (align (w+2) ACenter) col | (w,col) <- zip wds cols]
+        colsAligned = [map (align (w+2) a) col | (w,col,a) <- zip3 wds cols aligns]
         headersAligned = [map (align (w+2) ACenter) h | (w,h) <- zip wds headers]
     in  tableColumns ASCII $ zip3 headersAligned aligns colsAligned
+
+  maxFieldWidth ASCII = Just 24
 

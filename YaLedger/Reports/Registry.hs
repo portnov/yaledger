@@ -50,7 +50,7 @@ registry qry options mbPath = do
           allEntries <- forM accounts getEntries
           let entries = concat $ map (filter $ checkQuery qry) allEntries
           let format = case [s | RCSV s <- options] of
-                         []    -> showEntries ASCII totals
+                         []    -> showEntries' fullCoA ASCII
                          (x:_) -> showEntries' fullCoA (CSV x)
           wrapIO $ putStrLn $ format (nub $ sort entries)
   
