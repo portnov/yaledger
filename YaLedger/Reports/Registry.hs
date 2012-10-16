@@ -42,15 +42,15 @@ registry qry options mbPath = do
           balances <- readIOList (accountBalances account)
           let balances' = filter (checkQuery qry) balances
           let format = case [s | RCSV s <- options] of
-                         []    -> showEntriesBalances ASCII totals
-                         (x:_) -> showEntriesBalances' fullCoA (CSV x) (getCurrency account)
+                         []    -> showEntriesBalances' fullCoA ASCII totals
+                         (x:_) -> showEntriesBalances' fullCoA (CSV x) totals
           wrapIO $ putStrLn $ format (nub $ sort balances')
       Branch {} -> do
           let accounts = map snd $ leafs coa
           allEntries <- forM accounts getEntries
           let entries = concat $ map (filter $ checkQuery qry) allEntries
           let format = case [s | RCSV s <- options] of
-                         []    -> showEntries' fullCoA ASCII
-                         (x:_) -> showEntries' fullCoA (CSV x)
+                         []    -> showEntries' fullCoA ASCII totals
+                         (x:_) -> showEntries' fullCoA (CSV x) totals
           wrapIO $ putStrLn $ format (nub $ sort entries)
   

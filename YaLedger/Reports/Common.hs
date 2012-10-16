@@ -132,16 +132,17 @@ showEntries fmt totals list =
                      (ARight, ["DEBIT"]),
                      (ARight, ["RATES DIFF."])] l ++ footer
 
-showEntries' :: (TableFormat a) => ChartOfAccounts -> a -> [Ext (Entry Decimal Checked)] -> String
-showEntries' coa fmt list =
+showEntries' :: (TableFormat a) => ChartOfAccounts -> a -> Amount -> [Ext (Entry Decimal Checked)] -> String
+showEntries' coa fmt totals list =
   let l = map (showE' (maxFieldWidth fmt) coa) list
+      footer = ["    TOTALS: " ++ show totals]
   in  unlines $
       tableGrid fmt [(ALeft,  ["DATE"]),
                      (ALeft,  ["CREDIT ACCOUNT"]),
                      (ARight, ["CREDIT AMOUNT"]),
                      (ALeft,  ["DEBIT ACCOUNT"]),
                      (ARight, ["DEBIT AMOUNT"]),
-                     (ARight, ["RATES DIFF."])] l
+                     (ARight, ["RATES DIFF."])] l ++ footer
 
 showEntriesBalances :: (TableFormat a) => a -> Amount -> [Ext (Balance Checked)] -> String
 showEntriesBalances fmt totals list =
@@ -153,16 +154,17 @@ showEntriesBalances fmt totals list =
                      (ARight, ["DEBIT"]),
                      (ARight, ["BALANCE B/D"])] l ++ footer
 
-showEntriesBalances' :: (TableFormat a) => ChartOfAccounts -> a -> Currency -> [Ext (Balance Checked)] -> String
-showEntriesBalances' coa fmt currency list =
-  let l = map (showB' (maxFieldWidth fmt) coa currency) list
+showEntriesBalances' :: (TableFormat a) => ChartOfAccounts -> a -> Amount -> [Ext (Balance Checked)] -> String
+showEntriesBalances' coa fmt totals list =
+  let l = map (showB' (maxFieldWidth fmt) coa (getCurrency totals)) list
+      footer = ["    TOTALS: " ++ show totals]
   in  unlines $
       tableGrid fmt [(ALeft,  ["DATE"]),
                      (ALeft,  ["CREDIT ACCOUNT"]),
                      (ARight, ["CREDIT AMOUNT"]),
                      (ALeft,  ["DEBIT ACCOUNT"]),
                      (ARight, ["DEBIT AMOUNT"]),
-                     (ARight, ["BALANCE B/D"])] l
+                     (ARight, ["BALANCE B/D"])] l ++ footer
 
 causedByExt :: Ext (Balance Checked) -> Maybe (Ext (Entry Decimal Checked))
 causedByExt (Ext date pos attrs p) =
