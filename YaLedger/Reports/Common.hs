@@ -53,7 +53,7 @@ trimPath (Just n) ps =
   let rlist = reverse ps
   in  case takeWhile ((< n) . snd) $ zip rlist $ tail $ scanl (+) 0 $ map length rlist of
         [] -> head ps
-        xs -> intercalate "/" (map fst xs)
+        xs -> intercalate "/" (reverse $ map fst xs)
 
 showPostingAccount :: Maybe Int -> ChartOfAccounts -> Posting v t -> String
 showPostingAccount t coa (CPosting acc _) = maybe "" (trimPath t) $ accountFullPath (getID acc) coa
