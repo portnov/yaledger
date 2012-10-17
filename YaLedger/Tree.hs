@@ -7,7 +7,6 @@ import Control.Monad
 import Data.Maybe
 import Data.Either
 import Data.List
-import Data.List.Utils (split)
 
 import YaLedger.Output.Tables
 import YaLedger.Output.ASCII
@@ -63,8 +62,15 @@ instance (Show n, Show a) => Show (Tree n a) where
 
 type Forest n a = [Tree n a]
 
+split :: Char -> String -> [String]
+split _ [] = []
+split c str =
+  case break (== c) str of
+    (rem,"") -> [rem]
+    (x, _:xs) -> x: split c xs
+
 mkPath :: String -> Path
-mkPath str = split "/" str
+mkPath str = split '/' str
 
 getChildren :: Tree n a -> Forest n a
 getChildren (Branch {branchChildren = children}) = children

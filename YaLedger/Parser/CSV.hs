@@ -3,7 +3,6 @@ module YaLedger.Parser.CSV where
 
 import Control.Applicative
 import Control.Monad
-import Data.String.Utils
 import Data.Yaml
 import qualified Data.Map as M
 
@@ -12,7 +11,7 @@ import YaLedger.Parser.Common (loadParserConfig)
 import YaLedger.Parser.Tables
 
 data ParserConfig = ParserConfig {
-    pcSeparator  :: String,
+    pcSeparator  :: Char,
     pcGeneric    :: GenericParserConfig
     }
   deriving (Eq, Show)
@@ -20,10 +19,10 @@ data ParserConfig = ParserConfig {
 instance FromJSON ParserConfig where
   parseJSON (Object v) =
     ParserConfig
-      <$> v .:? "separator" .!= ","
+      <$> v .:? "separator" .!= ','
       <*> parseGenericConfig [] v
 
-csvCells :: String -> String -> [[String]]
+csvCells :: Char -> String -> [[String]]
 csvCells sep str = map parseRow $ lines str
   where
     parseRow = split sep
