@@ -1,0 +1,55 @@
+group Root {
+  currency = "$";
+  group X (credit) {
+    account X1;
+    account X2;
+    account X3;
+    account X4;
+  };
+  group Y (debit) {
+    category = "Y";
+    account Y1;
+    account Y2 {
+      description = /test/;
+    };
+    account Y3 {
+      category = /TEST/;
+    };
+    account Y4 {
+      category = "described";
+    };
+    account Y5 {
+      source = "X4";
+    };
+    account Y6 {
+      source = !"X4";
+      category = "withsource";
+    };
+    account Y7 {
+      category = "withsource";
+    };
+  };
+  group Z {
+    account Y4;
+    account Z1 {
+      category = /TEST/;
+    };
+    account Z2 (credit);
+    account Z3 (debit);
+    account Z4 {
+      rule = "testRule";
+    };
+    account Z5 {
+      redirect;
+      info = 70;
+      warning = 10;
+    };
+    account Z6 {
+      redirect;
+      redirectedFrom = *;
+    };
+    account Z7 {
+      redirectedFrom = *;
+    };
+  };
+};

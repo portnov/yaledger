@@ -1,0 +1,32 @@
+@ 2012/09/09 (test)
+  cr X1 100.0$
+  Y1 
+
+@ 2012/09/09 Correspondence test.
+  dr Y1 50.0$
+
+@ 2012/09/11 ---
+{category = "TEST regexps"}
+  cr X1 3$
+
+@ 2012/09/12 test
+  dr Y2 6400.0$
+
+@ 2012/09/13
+  cr X3 2.0$
+
+@ 2012/09/16
+  cr X2 3.0$
+
+@ 2012/09/16 Just a test.
+  cr X1 2.0$
+
+@ 2012/09/17 Another test.
+  cr X1 3$
+
+@ 2012/09/18 Another test.
+  cr X4 3$
+
+@ 2012/09/18 (withsource)
+  cr X4 3$
+

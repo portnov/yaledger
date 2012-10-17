@@ -8,6 +8,7 @@ module YaLedger.Main
    allParsers,
    defaultMain,
    lookupInit,
+   initialize,
    runYaLedger
   ) where
 
@@ -177,15 +178,15 @@ parseCmdLine argv = do
 lookupInit :: String -> [(String, a)] -> [a]
 lookupInit key list = [v | (k,v) <- list, key `isPrefixOf` k]
 
--- | Default `main' function
-defaultMain :: [(String, String, InputParser)] -- ^ List of parsers to support: (parser name, files mask, parser)
-            -> [(String, Report)]              -- ^ List of reports to support: (report name, report)
-            -> IO ()
-defaultMain parsers list = do
-  argv <- getArgs
+initialize parsers reports argv = do
   options <- parseCmdLine argv
+  let qo = query options
+      qry = qo {qStart = reportStart options `mplus` qStart qo,
+                qEnd   = reportEnd   options `mplus` qEnd   qo }
   case options of
-    Help -> putStrLn $ "Supported reports are: " ++ unwords (map fst list)
+    Help -> do
+         putStrLn $ "Supported reports are: " ++ unwords (map fst reports)
+         return Nothing
     _ -> do
          setupLogger (logSeverity options)
          infoIO $ "Using chart of accounts: " ++ fromJust (chartOfAccounts options)
@@ -194,27 +195,39 @@ defaultMain parsers list = do
              (unlines $ map (\(name,config) -> name ++ ": " ++ config) (parserConfigs options))
          let report = head $ reportParams options
              params = tail $ reportParams options
-         case lookupInit report list of
-           [] -> putStrLn $ "No such report: " ++ report ++
+         case lookupInit report reports of
+           [] -> do
+                 putStrLn $ "No such report: " ++ report ++
                             "\nSupported reports are: " ++
-                            unwords (map fst list)
-           [fn] -> do
-               let qo = query options
-                   qry = qo {qStart = reportStart options `mplus` qStart qo,
-                             qEnd   = reportEnd   options `mplus` qEnd   qo }
-               runYaLedger parsers
-                   (chartOfAccounts options)
-                   (accountMap options)
-                   (currenciesList options)
-                   (parserConfigs options)
-                   (reportsInterval options)
-                   (query options)
-                   qry
-                   (deduplicationRules options)
-                   (files options) fn params
-           _ -> putStrLn $ "Ambigous report specification: " ++ report ++
+                            unwords (map fst reports)
+                 return Nothing
+           [fn] -> return $ Just (qry, fn, options, params)
+           _ -> do
+                putStrLn $ "Ambigous report specification: " ++ report ++
                            "\nSupported reports are: " ++
-                           unwords (map fst list)
+                           unwords (map fst reports)
+                return Nothing
+
+-- | Default `main' function
+defaultMain :: [(String, String, InputParser)] -- ^ List of parsers to support: (parser name, files mask, parser)
+            -> [(String, Report)]              -- ^ List of reports to support: (report name, report)
+            -> IO ()
+defaultMain parsers reports = do
+  argv <- getArgs
+  init <- initialize parsers reports argv
+  case init of
+    Nothing -> return ()
+    Just (qry, report, options, params) ->
+      runYaLedger parsers
+         (chartOfAccounts options)
+         (accountMap options)
+         (currenciesList options)
+         (parserConfigs options)
+         (reportsInterval options)
+         (query options)
+         qry
+         (deduplicationRules options)
+         (files options) report params
 
 tryE action =
   (Right <$> action) `catchWithSrcLoc` (\l e -> return (Left (l, e)))

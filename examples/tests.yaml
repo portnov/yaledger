@@ -1,0 +1,12 @@
+files: [ "../examples/tests.yaledger" ]
+
+chart-of-accounts: ../examples/tests.accounts
+accounts-map: ../examples/tests.map
+
+parsers:
+  csv: ../examples/csv.yaml
+  html: ../examples/html.yaml
+  cbr: ../examples/cbr.yaml
+
+debug: info
+

@@ -62,11 +62,11 @@ instance (Show n, Show a) => Show (Tree n a) where
 
 type Forest n a = [Tree n a]
 
-split :: Char -> String -> [String]
+split :: Eq a => a -> [a] -> [[a]]
 split _ [] = []
 split c str =
   case break (== c) str of
-    (rem,"") -> [rem]
+    (rem,[]) -> [rem]
     (x, _:xs) -> x: split c xs
 
 mkPath :: String -> Path
