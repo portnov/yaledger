@@ -139,9 +139,9 @@ showEntries' coa fmt totals list =
   in  unlines $
       tableGrid fmt [(ALeft,  ["DATE"]),
                      (ALeft,  ["CREDIT ACCOUNT"]),
-                     (ARight, ["CREDIT AMOUNT"]),
+                     (ARight, ["AMOUNT"]),
                      (ALeft,  ["DEBIT ACCOUNT"]),
-                     (ARight, ["DEBIT AMOUNT"]),
+                     (ARight, ["AMOUNT"]),
                      (ARight, ["RATES DIFF."])] l ++ footer
 
 showEntriesBalances :: (TableFormat a) => a -> Amount -> [Ext (Balance Checked)] -> String
@@ -161,9 +161,9 @@ showEntriesBalances' coa fmt totals list =
   in  unlines $
       tableGrid fmt [(ALeft,  ["DATE"]),
                      (ALeft,  ["CREDIT ACCOUNT"]),
-                     (ARight, ["CREDIT AMOUNT"]),
+                     (ARight, ["AMOUNT"]),
                      (ALeft,  ["DEBIT ACCOUNT"]),
-                     (ARight, ["DEBIT AMOUNT"]),
+                     (ARight, ["AMOUNT"]),
                      (ARight, ["BALANCE B/D"])] l ++ footer
 
 causedByExt :: Ext (Balance Checked) -> Maybe (Ext (Entry Decimal Checked))
