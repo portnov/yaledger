@@ -15,6 +15,7 @@ import System.Directory
 import System.Environment.XDG.BaseDir
 import System.Environment.XDG.UserDir
 import Text.Parsec hiding ((<|>))
+import System.IO.Unsafe (unsafePerformIO)
 
 import YaLedger.Types.Transactions
 import YaLedger.Attributes
@@ -183,9 +184,10 @@ instance FromJSON Query where
 
 instance FromJSON DateTime where
   parseJSON (String text) =
-    case parseDate (DateTime 2012 1 1 0 0 0) (T.unpack text) of
-      Left err -> fail $ show err
-      Right date -> return date
+    let now = unsafePerformIO getCurrentDateTime
+    in case parseDate now (T.unpack text) of
+         Left err -> fail $ show err
+         Right date -> return date
 
 parseAttrs :: Object -> Parser Attributes
 parseAttrs obj = do
