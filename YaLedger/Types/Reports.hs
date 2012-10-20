@@ -19,7 +19,7 @@ import YaLedger.Tree
 import YaLedger.Exceptions
 import YaLedger.Types.Ledger
 import YaLedger.Types.Transactions
-import YaLedger.Monad
+import YaLedger.Types.Monad
 import YaLedger.Output.Pretty
 import YaLedger.Kernel.Common
 

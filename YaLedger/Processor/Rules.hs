@@ -11,7 +11,6 @@ import qualified Data.Map as M
 import Data.Dates
 
 import YaLedger.Types
-import YaLedger.Monad
 import YaLedger.Exceptions
 import YaLedger.Kernel
 import YaLedger.Kernel.Correspondence

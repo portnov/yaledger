@@ -17,7 +17,6 @@ module YaLedger.Reports.API
    module YaLedger.Types,
    module YaLedger.Exceptions,
    module YaLedger.Types.Reports,
-   module YaLedger.Monad,
    module YaLedger.Kernel,
    module YaLedger.Logger,
    module YaLedger.Reports.Common,
@@ -36,7 +35,6 @@ import Data.Decimal
 import YaLedger.Types
 import YaLedger.Types.Reports
 import YaLedger.Kernel
-import YaLedger.Monad
 import YaLedger.Exceptions
 import YaLedger.Logger
 import YaLedger.Reports.Common

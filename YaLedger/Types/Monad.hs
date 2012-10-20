@@ -3,7 +3,7 @@
 --
 -- Ledger monad is basically EMT l (StateT 'LedgerState' IO) a.
 --
-module YaLedger.Monad where
+module YaLedger.Types.Monad where
 
 import Control.Monad.State
 import Control.Monad.Exception

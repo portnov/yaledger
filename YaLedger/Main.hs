@@ -2,7 +2,6 @@
 module YaLedger.Main
   (module YaLedger.Types,
    module YaLedger.Types.Reports,
-   module YaLedger.Monad,
    LedgerOptions (..),
    parseCmdLine,
    allParsers,
@@ -33,7 +32,6 @@ import System.Log.Logger
 import YaLedger.Types
 import YaLedger.Exceptions
 import YaLedger.Types.Reports
-import YaLedger.Monad
 import YaLedger.Parser
 import YaLedger.Parser.Common (pAttribute)
 import YaLedger.Parser.Currencies

@@ -17,7 +17,6 @@ import Data.Decimal
 
 import YaLedger.Types
 import YaLedger.Exceptions
-import YaLedger.Monad
 import YaLedger.Kernel (getCurrentBalance)
 
 type SubstState = M.Map Int Amount

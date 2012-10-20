@@ -32,7 +32,6 @@ import Data.Decimal
 import qualified Data.Map as M
 
 import YaLedger.Types
-import YaLedger.Monad
 import YaLedger.Exceptions
 import YaLedger.Kernel.Correspondence
 import YaLedger.Kernel.Common

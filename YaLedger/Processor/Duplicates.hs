@@ -13,7 +13,6 @@ import YaLedger.Types
 import YaLedger.Kernel.Correspondence (matchAll)
 import YaLedger.Output.Pretty
 import YaLedger.Exceptions
-import YaLedger.Monad
 import YaLedger.Logger
 
 -- | Find matching deduplication rule

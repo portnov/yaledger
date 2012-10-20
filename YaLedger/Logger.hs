@@ -18,7 +18,7 @@ import System.Log.Logger
 import System.IO.Unsafe
 #endif
 
-import YaLedger.Monad
+import YaLedger.Types
 import YaLedger.Exceptions
 
 setupLogger :: Priority -> IO ()

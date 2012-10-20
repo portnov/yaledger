@@ -40,7 +40,6 @@ library
                    YaLedger.Kernel.Correspondence
                    YaLedger.Config
                    YaLedger.Main
-                   YaLedger.Monad
                    YaLedger.Logger
                    YaLedger.Parser
                    YaLedger.Parser.Common
@@ -71,8 +70,9 @@ library
                    YaLedger.Reports.Postings
                    YaLedger.Reports.Turnovers
                    YaLedger.Tree
-                   YaLedger.Types.Common
                    YaLedger.Types
+                   YaLedger.Types.Common
+                   YaLedger.Types.Monad
                    YaLedger.Types.Ledger
                    YaLedger.Types.Map
                    YaLedger.Types.Reports
