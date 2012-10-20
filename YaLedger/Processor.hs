@@ -134,7 +134,7 @@ processRecord = do
       let listFrom start =
               Ext start pos attrs tran: listFrom (start `addInterval` interval)
       let result = prune $ listFrom date
-      lift $ debug $ "Periodic " ++ name ++ ": " ++ show (length result)
+      -- lift $ debug $ "Periodic " ++ name ++ ": " ++ show (length result)
       return result
 
     Just (Ext date pos attrs (SetRate rates)) -> do

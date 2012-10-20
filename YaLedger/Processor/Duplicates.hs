@@ -126,15 +126,18 @@ matchBy checks newRecord oldRecords = go oldRecords
         (Just (a1 :# c1), Just (a2 :# c2)) -> 
           if c1 /= c2
             then False
-            else (max a1 a2) *. (fromIntegral x / 100.0) > (abs $ a1 - a2)
+            else traceS ("A: " ++ show a1 ++ ", " ++ show a2) $
+                 if x == 0
+                   then a1 == a2
+                   else (max a1 a2) *. (fromIntegral x / 100.0) > (abs $ a1 - a2)
         _ -> False
     matches oldRecord CCreditAccount =
       case (getCreditAccount newRecord, getCreditAccount oldRecord) of
-        (Just aid1, Just aid2) -> aid1 == aid2
+        (Just aid1, Just aid2) -> trace ("CACC: " ++ show aid1 ++ ", " ++ show aid2) $ aid1 == aid2
         _                      -> False
     matches oldRecord CDebitAccount =
       case (getDebitAccount newRecord, getDebitAccount oldRecord) of
-        (Just aid1, Just aid2) -> aid1 == aid2
+        (Just aid1, Just aid2) -> trace ("DACC: " ++ show aid1 ++ ", " ++ show aid2) $ aid1 == aid2
         (Nothing, Nothing)     -> True
         _                      -> False
     matches oldRecord (CAttribute name) =

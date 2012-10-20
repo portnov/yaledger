@@ -252,9 +252,9 @@ data AnyAccount =
   deriving (Eq)
 
 instance Show AnyAccount where
-  show (WFree   attrs x) = "free: "   ++ show x ++ " " ++ showA attrs
-  show (WCredit attrs x) = "credit: " ++ show x ++ " " ++ showA attrs
-  show (WDebit  attrs x) = "debit: "  ++ show x ++ " " ++ showA attrs
+  show (WFree   attrs x) = "free: "   ++ show (getID x) ++ ": " ++ show x ++ " " ++ showA attrs
+  show (WCredit attrs x) = "credit: " ++ show (getID x) ++ ": " ++ show x ++ " " ++ showA attrs
+  show (WDebit  attrs x) = "debit: "  ++ show (getID x) ++ ": " ++ show x ++ " " ++ showA attrs
 
 instance Named AnyAccount where
   getName (WFree _ x) = getName x

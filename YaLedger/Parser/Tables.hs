@@ -161,7 +161,14 @@ convertRow pc currs coa path rowN row = do
       account2 = case pcAccount2 pc of
                    Just fc -> Just $ field fc row
                    Nothing -> Nothing
-      as = [(name, (if fcOptional fc then Optional else Exactly) $ field fc row)
+      attribute fc value =
+        case fc of
+          FixedValue ('?':str) -> Optional str
+          FixedValue str       -> Exactly str
+          _ -> if fcOptional fc
+                 then Optional value
+                 else Exactly  value
+      as = [(name, attribute fc $ field fc row)
             | (name, fc) <- pcOther pc,
               name `notElem` reservedFields]
       attrs = M.fromList [p | p@(n,v) <- as, v `notElem` [Exactly "", Optional ""]]
