@@ -74,3 +74,7 @@ instance Exception TestFailed
 failTest name message = do
   throwP (TestFailed name message)
 
+runTest name test = do
+    test
+    putStrLn $ "Test passed: " ++ name
+

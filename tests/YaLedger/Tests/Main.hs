@@ -28,28 +28,11 @@ main args = do
   init <- initialize parsers reports argv
   case init of
     Nothing -> return ()
-    Just (qry, report, options, params) -> do
+    Just (report, options, params) -> do
       currs <- loadCurrencies (fromJust $ currenciesList options)
       let currsMap = M.fromList [(cSymbol c, c) | c <- currs]
       coa <- readCoA currsMap (fromJust $ chartOfAccounts options)
       amap <- readAMap coa (fromJust $ accountMap options)
       records <- parseInputFiles parsers (parserConfigs options) currsMap coa (files options)
-      accs <- loadAccs "correspondence.txt"
-      let entries = [p | p@(Ext {getContent = Transaction (TEntry _)}) <- records]
-      runLedger coa amap records $ runEMT $ do
-        forM_ (zip entries accs) $ \(rec, list) -> do
-          let cra = map fst list
-              dta = map snd list
-          let Transaction (TEntry entry) = getContent rec
-          setPos (getLocation rec)
-          testCheckEntry (getDate rec) (getAttributes rec) entry cra dta
-            `catchWithSrcLoc`
-              (\l (e :: NoCorrespondingAccountFound) -> handler l e)
-            `catchWithSrcLoc`
-              (\l (e :: NoSuchRate) -> handler l e)
-            `catchWithSrcLoc`
-              (\l (e :: InvalidAccountType) -> handler l e)
-            `catchWithSrcLoc`
-              (\l (e :: TestFailed) -> handler l e)
-        wrapIO $ putStrLn "Correspondence test passed."
+      runTest "correspondence" $ correspondenceTest currs coa amap options records
 
