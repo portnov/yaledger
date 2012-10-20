@@ -33,6 +33,7 @@ data LedgerState = LedgerState {
     lsRules           :: [(String, Attributes, Rule)],
     lsRates           :: Rates,
     lsLoadedRecords   :: [Ext Record],
+    lsConfig          :: LedgerOptions,
     -- | Source location of current transaction
     lsPosition        :: SourcePos
   }
@@ -42,8 +43,8 @@ instance MonadState LedgerState (EMT l LedgerMonad) where
   get = lift get
   put s = lift (put s)
 
-emptyLedgerState :: ChartOfAccounts -> AccountMap -> [Ext Record] -> IO LedgerState
-emptyLedgerState coa amap records = do
+emptyLedgerState :: LedgerOptions -> ChartOfAccounts -> AccountMap -> [Ext Record] -> IO LedgerState
+emptyLedgerState opts coa amap records = do
   now <- getCurrentDateTime
   return $ LedgerState {
              lsStartDate = now,
@@ -54,6 +55,7 @@ emptyLedgerState coa amap records = do
              lsRules = [],
              lsRates = [],
              lsLoadedRecords = records,
+             lsConfig = opts,
              lsPosition = newPos "<nowhere>" 0 0
            }
 
@@ -72,10 +74,10 @@ setPos :: SourcePos -> Ledger l ()
 setPos pos =
   modify $ \st -> st {lsPosition = pos}
 
-runLedger :: ChartOfAccounts -> AccountMap -> [Ext Record] -> LedgerMonad a -> IO a
-runLedger coa amap records action = do
+runLedger :: LedgerOptions -> ChartOfAccounts -> AccountMap -> [Ext Record] -> LedgerMonad a -> IO a
+runLedger opts coa amap records action = do
   let LedgerMonad emt = action
-  st <- emptyLedgerState coa amap records
+  st <- emptyLedgerState opts coa amap records
   -- Use currency of root accounts group as default currency
   (res, _) <- runStateT emt (st {lsDefaultCurrency = agCurrency $ branchData coa})
   return res

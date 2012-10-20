@@ -219,29 +219,30 @@ defaultMain parsers reports = do
   case init of
     Nothing -> return ()
     Just (qry, report, options, params) ->
-      runYaLedger parsers
-         (chartOfAccounts options)
-         (accountMap options)
-         (currenciesList options)
-         (parserConfigs options)
-         (reportsInterval options)
-         (query options)
-         qry
-         (deduplicationRules options)
-         (files options) report params
+      runYaLedger parsers qry options report params
 
 tryE action =
   (Right <$> action) `catchWithSrcLoc` (\l e -> return (Left (l, e)))
 
-runYaLedger parsers (Just coaPath) (Just mapPath) (Just cpath) configs mbInterval qry qryReport rules inputPaths report params = do
+fromJustM msg Nothing = fail msg
+fromJustM _ (Just x)  = return x
+
+runYaLedger parsers qryReport options report params = do
+  coaPath <- fromJustM "No CoA path specified" (chartOfAccounts options)
+  mapPath <- fromJustM "No accounts map path specified" (accountMap options)
+  cpath   <- fromJustM "No currencies list file specified" (currenciesList options)
+  let configs = parserConfigs options
+      mbInterval = reportsInterval options
+      rules = deduplicationRules options
+      inputPaths = files options
+      qry = query options
   currs <- loadCurrencies cpath
   let currsMap = M.fromList [(cSymbol c, c) | c <- currs]
   coa <- readCoA currsMap coaPath
   amap <- readAMap coa mapPath
   records <- parseInputFiles parsers configs currsMap coa inputPaths
-  runLedger coa amap records $ runEMT $
+  runLedger options coa amap records $ runEMT $
     processYaLedger qry mbInterval rules (filter (checkRecord qry) records) qryReport report params
-runYaLedger _ _ _ _ _ _ _ _ _ _ _ _ = error "Impossible: no coa or map file."
 
 processYaLedger qry mbInterval rules records qryReport report params = do
   now <- gets lsStartDate
