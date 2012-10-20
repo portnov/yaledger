@@ -6,7 +6,6 @@ module YaLedger.Types
    module YaLedger.Types.Ledger,
    module YaLedger.Types.Map,
    module YaLedger.Types.Transactions,
-   module YaLedger.Types.Rules,
    module YaLedger.Types.Attributes,
    module YaLedger.Types.Config,
    Rule (..)
@@ -17,10 +16,6 @@ import YaLedger.Types.Common
 import YaLedger.Types.Ledger
 import YaLedger.Types.Map
 import YaLedger.Types.Transactions
-import YaLedger.Types.Rules
 import YaLedger.Types.Attributes
 import YaLedger.Types.Config
-
-data Rule = When Condition (Transaction Param)
-  deriving (Eq, Show)
 

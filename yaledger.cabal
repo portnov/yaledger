@@ -76,7 +76,6 @@ library
                    YaLedger.Types.Ledger
                    YaLedger.Types.Map
                    YaLedger.Types.Reports
-                   YaLedger.Types.Rules
                    YaLedger.Types.Transactions
                    YaLedger.Types.Attributes
                    YaLedger.Types.Config

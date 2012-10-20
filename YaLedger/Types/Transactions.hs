@@ -6,7 +6,6 @@ import Data.Dates
 import YaLedger.Types.Attributes
 import YaLedger.Types.Common
 import YaLedger.Types.Ledger
-import YaLedger.Types.Rules
 
 data Record =
     Template String (Transaction Param)
@@ -28,6 +27,25 @@ data Query = Query {
     qEnd   :: Maybe DateTime,
     qAllAdmin :: Bool,
     qAttributes :: Attributes }
+  deriving (Eq, Show)
+
+data Condition =
+  Condition {
+    cAccounts :: [AccountID],
+    cGroups :: [GroupID],
+    cAction :: Maybe PostingType,
+    cAttributes :: Attributes,
+    cValue  :: ValueCondition }
+  deriving (Eq, Show)
+
+data ValueCondition =
+    AnyValue
+  | MoreThan Amount
+  | LessThan Amount
+  | Equals Amount
+  deriving (Eq, Show)
+
+data Rule = When Condition (Transaction Param)
   deriving (Eq, Show)
 
 replicateRecords :: DateInterval -> Int -> [Ext Record] -> [Ext Record]
