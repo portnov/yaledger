@@ -22,6 +22,7 @@ import Data.Char
 import Data.Maybe
 import qualified Data.Map as M
 import Data.List
+import Data.Monoid
 import Data.Dates
 import System.Environment
 import System.Console.GetOpt
@@ -75,8 +76,10 @@ apply (SetEndDate date)    opts = opts {query = (query opts) {qEnd = Just date}}
 apply (SetAllAdmin)        opts = opts {query = (query opts) {qAllAdmin = True}}
 apply (AddAttribute (n,v)) opts = let qry = query opts
                                   in  opts {query = qry {qAttributes = M.insert n v (qAttributes qry)}}
-apply (SetReportStart date) opts = opts {reportStart = Just date}
-apply (SetReportEnd   date) opts = opts {reportEnd   = Just date}
+apply (SetReportStart date) opts = let qry = reportsQuery opts
+                                   in  opts {reportsQuery = qry {qStart = Just date}}
+apply (SetReportEnd   date) opts = let qry = reportsQuery opts
+                                   in  opts {reportsQuery = qry {qEnd = Just date}}
 apply (SetReportsInterval i) opts = opts {reportsInterval = Just i}
 apply (SetDebugLevel lvl)  opts = opts {logSeverity = lvl}
 apply (SetParserConfig (n,p)) opts = opts {parserConfigs = (n,p): parserConfigs opts}
@@ -180,9 +183,7 @@ lookupInit key list = [v | (k,v) <- list, key `isPrefixOf` k]
 
 initialize parsers reports argv = do
   options <- parseCmdLine argv
-  let qo = query options
-      qry = qo {qStart = reportStart options `mplus` qStart qo,
-                qEnd   = reportEnd   options `mplus` qEnd   qo }
+  let qry = query options `mappend` reportsQuery options
   case options of
     Help -> do
          putStrLn $ "Supported reports are: " ++ unwords (map fst reports)

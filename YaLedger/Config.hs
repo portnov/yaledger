@@ -32,8 +32,7 @@ data LedgerOptions =
       files :: [FilePath],
       query :: Query,
       reportsInterval :: Maybe DateInterval,
-      reportStart :: Maybe DateTime,
-      reportEnd :: Maybe DateTime,
+      reportsQuery :: Query,
       logSeverity :: Priority,
       parserConfigs :: [(String, FilePath)],
       deduplicationRules :: [DeduplicationRule],
@@ -71,8 +70,7 @@ instance Monoid LedgerOptions where
       currenciesList = currenciesList o2 `mplus` currenciesList o1,
       files = if null (files o2) then files o1 else files o2,
       query = query o1 `mappend` query o2,
-      reportStart = reportStart o2 `mplus` reportStart o1,
-      reportEnd = reportEnd o2 `mplus` reportEnd o1,
+      reportsQuery = reportsQuery o1 `mappend` reportsQuery o2,
       reportsInterval = reportsInterval o2 `mplus` reportsInterval o1,
       logSeverity = min (logSeverity o1) (logSeverity o2),
       parserConfigs = parserConfigs o1 ++ parserConfigs o2,
@@ -100,8 +98,7 @@ instance FromJSON LedgerOptions where
       <*> v .:?  "files" .!= []
       <*> v .:? "query" .!= mempty
       <*> v .:? "reports-interval"
-      <*> v .:? "reports-from"
-      <*> v .:? "reports-to"
+      <*> v .:? "reports" .!= mempty
       <*> v .:? "debug" .!= WARNING
       <*> (parseConfigs =<< (v .:? "parsers"))
       <*> v .:? "deduplicate" .!= []
@@ -225,20 +222,20 @@ getDefaultLedgerOptions = do
   configDir <- getUserConfigDir "yaledger"
   documents <- getUserDir "DOCUMENTS"
   let inputFile = documents </> "yaledger" </> "default.yaledger"
+  let emptyQuery =  Query {
+                      qStart = Nothing,
+                      qEnd   = Just now,
+                      qAllAdmin   = False,
+                      qAttributes = M.empty }
   return $ LedgerOptions {
         mainConfigPath = Just (configDir </> "yaledger.yaml"),
         chartOfAccounts = Just (configDir </> "default.accounts"),
         accountMap  = Just (configDir </> "default.map"),
         currenciesList = Just (configDir </> "currencies.yaml"),
         files = [inputFile],
-        query = Query {
-                  qStart = Nothing,
-                  qEnd   = Just now,
-                  qAllAdmin   = False,
-                  qAttributes = M.empty },
-        reportStart = Nothing,
-        reportEnd   = Nothing,
+        query = emptyQuery,
         reportsInterval = Nothing,
+        reportsQuery = emptyQuery,
         logSeverity = WARNING,
         parserConfigs = [],
         deduplicationRules = [],
