@@ -22,7 +22,6 @@ import YaLedger.Types.Config
 import YaLedger.Attributes
 import YaLedger.Logger
 import YaLedger.Parser.Common (pAttributeValue)
-import YaLedger.Processor.Duplicates
 
 instance Monoid LedgerOptions where
   mempty = Help

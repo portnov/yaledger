@@ -12,7 +12,6 @@ import Data.Dates
 
 import YaLedger.Types
 import YaLedger.Output.Tables
-import YaLedger.Output.ASCII
 import YaLedger.Output.Pretty
 import YaLedger.Monad
 import YaLedger.Kernel

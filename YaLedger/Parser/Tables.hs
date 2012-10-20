@@ -5,14 +5,12 @@ import Control.Applicative
 import Control.Monad
 import qualified Data.Text as T
 import qualified Data.HashMap.Strict as H
-import qualified Data.ByteString as B
 import qualified Data.Map as M
 import Data.Decimal
 import Data.String
 import Data.Yaml
 import Data.Dates.Formats hiding (Fixed)
 import Text.Regex.PCRE
-import System.FilePath
 
 import YaLedger.Types
 

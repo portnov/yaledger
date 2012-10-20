@@ -17,7 +17,6 @@ import System.FilePath
 import System.Environment.XDG.BaseDir
 
 import YaLedger.Types
-import YaLedger.Logger
 
 instance Exception e => Failure e Identity where
   failure e = fail $ show e

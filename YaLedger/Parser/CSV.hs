@@ -4,7 +4,6 @@ module YaLedger.Parser.CSV where
 import Control.Applicative
 import Control.Monad
 import Data.Yaml
-import qualified Data.Map as M
 
 import YaLedger.Types
 import YaLedger.Parser.Common (loadParserConfig)

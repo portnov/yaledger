@@ -7,7 +7,6 @@ module YaLedger.Parser.Transactions
   ) where
 
 import Control.Applicative hiding (many, (<|>), optional)
-import Data.Maybe
 import Data.Either
 import Data.List
 import Data.Dates

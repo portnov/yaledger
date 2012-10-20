@@ -2,17 +2,10 @@
 module YaLedger.Parser.Currencies where
 
 import Control.Applicative
-import Data.Either
-import Data.List
-import Data.Dates
-import qualified Data.Map as M
 import Data.Yaml
-import Text.Printf
 
 import YaLedger.Types
-import YaLedger.Kernel.Common
 import YaLedger.Parser.Common
-import YaLedger.Parser.Tables
 
 instance FromJSON Currency where
   parseJSON (Object v) =
