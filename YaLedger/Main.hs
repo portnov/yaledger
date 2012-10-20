@@ -172,9 +172,10 @@ parseCmdLine argv = do
           case foldr apply defaultOptions fns of
             Help -> fail "Impossible: Main.parseCmdLine.Help"
             opts -> do
+               let opts' = opts {reportsQuery = query opts `mappend` reportsQuery opts}
                if null params
-                 then return opts
-                 else return $ opts { reportParams = params }
+                 then return opts'
+                 else return $ opts' { reportParams = params }
     (_,_,errs) -> fail $ concat errs ++ usageInfo header options
 
 -- | Lookup for items with keys starting with given prefix
@@ -183,7 +184,6 @@ lookupInit key list = [v | (k,v) <- list, key `isPrefixOf` k]
 
 initialize parsers reports argv = do
   options <- parseCmdLine argv
-  let qry = query options `mappend` reportsQuery options
   case options of
     Help -> do
          putStrLn $ "Supported reports are: " ++ unwords (map fst reports)
@@ -202,7 +202,7 @@ initialize parsers reports argv = do
                             "\nSupported reports are: " ++
                             unwords (map fst reports)
                  return Nothing
-           [fn] -> return $ Just (qry, fn, options, params)
+           [fn] -> return $ Just (fn, options, params)
            _ -> do
                 putStrLn $ "Ambigous report specification: " ++ report ++
                            "\nSupported reports are: " ++
@@ -218,8 +218,8 @@ defaultMain parsers reports = do
   init <- initialize parsers reports argv
   case init of
     Nothing -> return ()
-    Just (qry, report, options, params) ->
-      runYaLedger parsers qry options report params
+    Just (report, options, params) ->
+      runYaLedger parsers options report params
 
 tryE action =
   (Right <$> action) `catchWithSrcLoc` (\l e -> return (Left (l, e)))
@@ -227,7 +227,7 @@ tryE action =
 fromJustM msg Nothing = fail msg
 fromJustM _ (Just x)  = return x
 
-runYaLedger parsers qryReport options report params = do
+runYaLedger parsers options report params = do
   coaPath <- fromJustM "No CoA path specified" (chartOfAccounts options)
   mapPath <- fromJustM "No accounts map path specified" (accountMap options)
   cpath   <- fromJustM "No currencies list file specified" (currenciesList options)
@@ -236,6 +236,7 @@ runYaLedger parsers qryReport options report params = do
       rules = deduplicationRules options
       inputPaths = files options
       qry = query options
+      qryReport = reportsQuery options
   currs <- loadCurrencies cpath
   let currsMap = M.fromList [(cSymbol c, c) | c <- currs]
   coa <- readCoA currsMap coaPath
@@ -251,7 +252,6 @@ processYaLedger qry mbInterval rules records qryReport report params = do
   case t of
     Left (l, e :: SomeException) -> wrapIO $ putStrLn $ showExceptionWithTrace l e
     Right _ -> do
-      now <- wrapIO getCurrentDateTime
       let firstDate = minimum (map getDate records)
       let queries = case mbInterval of
                       Nothing -> [qryReport]
