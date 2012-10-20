@@ -8,7 +8,7 @@ import Data.List
 import Text.Printf
 
 import YaLedger.Tree
-import YaLedger.Attributes
+import YaLedger.Types.Attributes
 import YaLedger.Types.Common
 
 data Posting v t where

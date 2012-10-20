@@ -1,5 +1,5 @@
 
-module YaLedger.Attributes where
+module YaLedger.Types.Attributes where
 
 import Data.List
 import Text.Regex.PCRE

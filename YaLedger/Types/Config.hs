@@ -10,7 +10,7 @@ module YaLedger.Types.Config
 import Data.Dates
 import System.Log.Logger
 
-import YaLedger.Attributes
+import YaLedger.Types.Attributes
 import YaLedger.Types.Transactions
 
 data LedgerOptions =

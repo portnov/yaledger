@@ -19,7 +19,7 @@ import System.IO.Unsafe (unsafePerformIO)
 
 import YaLedger.Types.Transactions
 import YaLedger.Types.Config
-import YaLedger.Attributes
+import YaLedger.Types.Attributes
 import YaLedger.Logger
 import YaLedger.Parser.Common (pAttributeValue)
 

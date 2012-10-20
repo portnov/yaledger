@@ -2,7 +2,7 @@
 
 module YaLedger.Types.Map where
 
-import YaLedger.Attributes
+import YaLedger.Types.Attributes
 import YaLedger.Types.Common
 import YaLedger.Types.Ledger
 

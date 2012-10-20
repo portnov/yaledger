@@ -34,8 +34,7 @@ library
   if flag(stack-traces)
     GHC-Options: -F -pgmF MonadLoc
 
-  exposed-modules: YaLedger.Attributes
-                   YaLedger.Exceptions
+  exposed-modules: YaLedger.Exceptions
                    YaLedger.Kernel
                    YaLedger.Kernel.Common
                    YaLedger.Kernel.Correspondence
@@ -79,6 +78,7 @@ library
                    YaLedger.Types.Reports
                    YaLedger.Types.Rules
                    YaLedger.Types.Transactions
+                   YaLedger.Types.Attributes
                    YaLedger.Types.Config
 
   build-depends:       base >= 4 && < 5, mtl ==2.1.*,

@@ -3,7 +3,7 @@ module YaLedger.Types.Transactions where
 
 import Data.Dates
 
-import YaLedger.Attributes
+import YaLedger.Types.Attributes
 import YaLedger.Types.Common
 import YaLedger.Types.Ledger
 import YaLedger.Types.Rules

@@ -28,7 +28,7 @@ import qualified Data.Map as M
 import Text.Printf
 import Text.Parsec.Pos
 
-import YaLedger.Attributes
+import YaLedger.Types.Attributes
 
 data Checked
 data Unchecked
