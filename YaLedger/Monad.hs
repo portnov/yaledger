@@ -16,6 +16,7 @@ import Text.Parsec.Pos
 import YaLedger.Types
 import YaLedger.Types.Common
 import YaLedger.Exceptions
+import YaLedger.Types.Config
 
 newtype LedgerMonad a = LedgerMonad (StateT LedgerState IO a)
   deriving (Monad, MonadState LedgerState, MonadIO)

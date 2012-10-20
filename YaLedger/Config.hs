@@ -18,45 +18,11 @@ import Text.Parsec hiding ((<|>))
 import System.IO.Unsafe (unsafePerformIO)
 
 import YaLedger.Types.Transactions
+import YaLedger.Types.Config
 import YaLedger.Attributes
 import YaLedger.Logger
 import YaLedger.Parser.Common (pAttributeValue)
 import YaLedger.Processor.Duplicates
-
-data LedgerOptions =
-    LedgerOptions {
-      mainConfigPath :: Maybe FilePath,
-      chartOfAccounts :: Maybe FilePath,
-      accountMap :: Maybe FilePath,
-      currenciesList :: Maybe FilePath,
-      files :: [FilePath],
-      query :: Query,
-      reportsInterval :: Maybe DateInterval,
-      reportsQuery :: Query,
-      logSeverity :: Priority,
-      parserConfigs :: [(String, FilePath)],
-      deduplicationRules :: [DeduplicationRule],
-      reportParams :: [String] }
-  | Help
-  deriving (Eq, Show)
-
-data SetOption =
-    SetConfigPath FilePath
-  | SetCoAPath FilePath
-  | SetAMapPath FilePath
-  | SetCurrenciesPath FilePath
-  | AddFile (Maybe FilePath)
-  | SetStartDate DateTime
-  | SetEndDate DateTime
-  | SetAllAdmin
-  | AddAttribute (String, AttributeValue)
-  | SetReportStart DateTime
-  | SetReportEnd DateTime
-  | SetReportsInterval DateInterval
-  | SetDebugLevel Priority
-  | SetParserConfig (String, FilePath)
-  | SetHelp
-  deriving (Eq,Show)
 
 instance Monoid LedgerOptions where
   mempty = Help

@@ -8,6 +8,7 @@ module YaLedger.Types
    module YaLedger.Types.Map,
    module YaLedger.Types.Transactions,
    module YaLedger.Types.Rules,
+   module YaLedger.Types.Config,
    Rule (..)
   ) where
 
@@ -18,6 +19,7 @@ import YaLedger.Types.Ledger
 import YaLedger.Types.Map
 import YaLedger.Types.Transactions
 import YaLedger.Types.Rules
+import YaLedger.Types.Config
 
 data Rule = When Condition (Transaction Param)
   deriving (Eq, Show)

@@ -79,6 +79,7 @@ library
                    YaLedger.Types.Reports
                    YaLedger.Types.Rules
                    YaLedger.Types.Transactions
+                   YaLedger.Types.Config
 
   build-depends:       base >= 4 && < 5, mtl ==2.1.*,
                        transformers >= 0.3,

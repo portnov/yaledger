@@ -1,10 +1,6 @@
 {-# LANGUAGE GADTs, FlexibleContexts, PatternGuards #-}
 module YaLedger.Processor.Duplicates
-  (SetValue (..), SetAttribute (..),
-   CheckAttribute (..), DAction (..),
-   DeduplicationRule (..),
-   deduplicate
-  ) where
+  (deduplicate) where
 
 import Control.Applicative ((<$>))
 import Control.Monad.Exception
@@ -19,49 +15,6 @@ import YaLedger.Output.Pretty
 import YaLedger.Exceptions
 import YaLedger.Monad
 import YaLedger.Logger
-
--- | Which attribute to set
-data SetAttribute =
-    String := SetValue
-  deriving (Eq, Show)
-
--- | Type of set attribute value
-data SetValue =
-    SExactly String    -- ^ Get value from named attribute, set it 'Exactly'
-  | SOptional String   -- ^ Get value from named attribute, set it 'Optional'
-  | SFixed String      -- ^ Set value to 'Exactly' (given string)
-  deriving (Eq, Show)
-
--- | Attributes to check for duplication
-data CheckAttribute =
-    CDate Integer      -- ^ Date/time. Argument is allowed divergence in days.
-  | CAmount Int        -- ^ Record amount. Argument allowed divergence in percents.
-  | CCreditAccount     -- ^ Credit accounts should match
-  | CDebitAccount      -- ^ Debit accounts should match
-  | CAttribute String  -- ^ This named attribute should match
-  deriving (Eq, Show)
-
--- | What to do with duplicated record
-data DAction =
-    DError                          -- ^ Raise an error and exit
-  | DWarning                        -- ^ Produce a warning
-  | DDuplicate                      -- ^ Leave duplicated record, do nothing
-  | DIgnoreNew                      -- ^ Ignore new record
-  | DDeleteOld                      -- ^ Delete old record
-  | DSetAttributes [SetAttribute]   -- ^ Ignore new record, but set this attributes from new record to old one
-  deriving (Eq, Show)
-
--- | Rule to deduplicate records
-data DeduplicationRule =
-  DeduplicationRule {
-    drCondition :: Attributes              -- ^ Rule is applicable only to records with this attributes
-  , drCheckAttributes :: [CheckAttribute]  -- ^ What attributes to check for duplication
-  , drAction :: DAction                    -- ^ What to do with duplicated record
-  }
-  deriving (Eq)
-
-instance Show DeduplicationRule where
-  show dr = showA (drCondition dr) ++ " => " ++ show (drAction dr)
 
 -- | Find matching deduplication rule
 findDRule :: Ext Record -> [DeduplicationRule] -> Maybe ([CheckAttribute], DAction)
