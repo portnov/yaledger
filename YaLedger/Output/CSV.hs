@@ -33,9 +33,10 @@ instance TableFormat CSV where
     let lists = [(h ++ c) | (h,_,c) <- list]
     in  csvTable sep $ transpose lists
 
+  tableGrid csv colHeaders [] = tableColumns csv (map (\(a,h) -> (h,a,[])) colHeaders)
   tableGrid csv colHeaders rows =
     let headers = map snd colHeaders
         rows'   = map padColumns rows
-        cols    = foldr (zipWith (++)) [] rows'
+        cols    = foldr1 (zipWith (++)) rows'
     in  tableColumns csv $ zip3 headers (repeat ALeft) cols
 
