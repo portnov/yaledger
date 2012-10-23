@@ -36,6 +36,6 @@ instance TableFormat CSV where
   tableGrid csv colHeaders rows =
     let headers = map snd colHeaders
         rows'   = map padColumns rows
-        cols    = foldr1 (zipWith (++)) rows'
+        cols    = foldr (zipWith (++)) [] rows'
     in  tableColumns csv $ zip3 headers (repeat ALeft) cols
 
