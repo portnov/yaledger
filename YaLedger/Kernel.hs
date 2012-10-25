@@ -204,7 +204,7 @@ convert mbDate c' (x :# c)
 checkQuery :: Query -> Ext a -> Bool
 checkQuery (Query {..}) (Ext {..}) =
   let p = case qStart of
-            Just s  -> getDate >= s
+            Just s  -> getDate > s
             Nothing -> True
 
       q = case qEnd of
