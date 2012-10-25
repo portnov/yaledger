@@ -544,6 +544,9 @@ lookupCorrespondence qry date amount@(value :# currency) mbCorr = do
                      if toDebit <= currentBalance
                        then return $ Left [DPosting (Left account) (toDebit :# accountCurrency)]
                        else do
+                            info $ "Account `" ++ getName account ++ "' has current balance only of " ++
+                                   show currentBalance ++ ", while needed to be debited by " ++
+                                   show toDebit ++ "; redirecting part of amount."
                             let toRedirect = toDebit - currentBalance
                             let qry' = CQuery {
                                          -- Search for debit (or free) account
