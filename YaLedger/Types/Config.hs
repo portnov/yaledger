@@ -82,12 +82,13 @@ data DAction =
 -- | Rule to deduplicate records
 data DeduplicationRule =
   DeduplicationRule {
-    drCondition :: Attributes              -- ^ Rule is applicable only to records with this attributes
+    drNewRecordAttrs :: Attributes         -- ^ Rule is applicable only to records with this attributes
+  , drOldRecordAttrs :: Attributes         -- ^ Old records with this attributes are searched 
   , drCheckAttributes :: [CheckAttribute]  -- ^ What attributes to check for duplication
   , drAction :: DAction                    -- ^ What to do with duplicated record
   }
   deriving (Eq)
 
 instance Show DeduplicationRule where
-  show dr = showA (drCondition dr) ++ " => " ++ show (drAction dr)
+  show dr = showA (drNewRecordAttrs dr) ++ " => " ++ show (drAction dr)
 

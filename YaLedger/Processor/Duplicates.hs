@@ -16,18 +16,18 @@ import YaLedger.Exceptions
 import YaLedger.Logger
 
 -- | Find matching deduplication rule
-findDRule :: Ext Record -> [DeduplicationRule] -> Maybe ([CheckAttribute], DAction)
+findDRule :: Ext Record -> [DeduplicationRule] -> Maybe ([CheckAttribute], Attributes, DAction)
 findDRule erecord rules = go  rules
   where
     go [] = Nothing
     go (r:rs)
-      | checkDRule erecord r = Just (drCheckAttributes r, drAction r)
+      | checkDRule erecord r = Just (drCheckAttributes r, drOldRecordAttrs r, drAction r)
       | otherwise = go rs
 
 -- | Check if record is matched by rule
 checkDRule :: Ext Record -> DeduplicationRule -> Bool
 checkDRule erecord rule =
-  getAttributes erecord `matchAll` drCondition rule
+  getAttributes erecord `matchAll` drNewRecordAttrs rule
 
 -- | Get first amount from record, if any
 getRAmount :: Ext Record -> Maybe Amount
@@ -59,14 +59,15 @@ getDebitAccount r =
 -- | Search for record with matching attributes in list.
 -- Returns (Maybe found record, all records except found).
 matchBy :: [CheckAttribute]                 -- ^ Attributes to match
+        -> Attributes                       -- ^ Attributes of old records
         -> Ext Record                       -- ^ New record
         -> [Ext Record]                     -- ^ All other records
         -> (Maybe (Ext Record), [Ext Record])
-matchBy checks newRecord oldRecords = go oldRecords
+matchBy checks oldAttrs newRecord oldRecords = go oldRecords
   where
     go [] = (Nothing, [])
     go (r:rs) = 
-      if all (matches r) checks
+      if checkAttrs oldAttrs r && all (matches r) checks
         then (Just r, rs)
         else let (x, ers) = go rs
              in  (x, r: ers)
@@ -131,6 +132,14 @@ setAttr :: String -> AttributeValue -> Ext Record -> Ext Record
 setAttr name value rec =
     rec {getAttributes = M.insert name value (getAttributes rec)}
 
+checkAttrs :: Attributes -> Ext Record -> Bool
+checkAttrs qry rec = all (matches $ getAttributes rec) (M.assocs qry)
+  where
+    matches attrs (name, avalue) =
+      case M.lookup name attrs of
+        Nothing  -> False
+        Just val -> matchAV val avalue
+
 -- | Apply all deduplication rules
 deduplicate :: (Throws DuplicatedRecord l,
                 Throws InternalError l)
@@ -143,8 +152,8 @@ deduplicate rules records = go (reverse records)
     go (r:rs) =
       case findDRule r rules of
         Nothing -> (r:) <$> go rs
-        Just (checks, action) -> 
-          case matchBy checks r rs of
+        Just (checks, oldAttrs, action) -> 
+          case matchBy checks oldAttrs r rs of
             (Nothing, _) -> (r:) <$> go rs
             (Just old, other) -> 
               case action of

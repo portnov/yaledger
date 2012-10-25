@@ -80,7 +80,8 @@ instance FromJSON DateInterval where
 instance FromJSON DeduplicationRule where
   parseJSON (Object v) =
     DeduplicationRule
-      <$> v .:? "condition" .!= M.empty
+      <$> v .:? "new" .!= M.empty
+      <*> v .:? "old" .!= M.empty
       <*> v .: "check-attributes"
       <*> v .: "action"
   parseJSON _ = fail "Deduplication rule: invalid object"
@@ -168,7 +169,7 @@ parseValue :: Value -> Parser AttributeValue
 parseValue (String text) = do
   let str = T.unpack text
   case runParser pAttributeValue () str str of
-    Left err -> fail $ show err
+    Left _ -> return (Exactly str)
     Right val -> return val
 parseValue _ = fail "Invalid object type in attribute value"
 
