@@ -51,7 +51,7 @@ processEntry date pos attrs uentry = do
       -- Add link to this entry for last balance (caused by previous call of `debit')
       modifyLastItem (\b -> b {causedBy = Just entry}) (accountBalances account)
       -- Run all needed rules
-      runRules date attrs p processTransaction
+      runRules EDebit date attrs p processTransaction
 
   -- Process credit postings
   forM cr $ \p -> do
@@ -60,7 +60,7 @@ processEntry date pos attrs uentry = do
       -- Add link to this entry for last balance (caused by previous call of `credit')
       modifyLastItem (\b -> b {causedBy = Just entry}) (accountBalances account)
       -- Run all needed rules
-      runRules date attrs p processTransaction
+      runRules ECredit date attrs p processTransaction
 
   -- What to do with rates difference?
   case rd of
@@ -69,14 +69,14 @@ processEntry date pos attrs uentry = do
         let account = creditPostingAccount p
         credit (creditPostingAccount p) (Ext date pos attrs p)
         modifyLastItem (\b -> b {causedBy = Just entry}) (accountBalances account)
-        runRules date attrs p processTransaction
+        runRules ECredit date attrs p processTransaction
     -- Dor debit difference, there might be many postings,
     -- caused by debit redirection
     DebitDifference  ps -> forM_ ps $ \ p -> do
           let account = debitPostingAccount p
           debit  (debitPostingAccount  p) (Ext date pos attrs p)
           modifyLastItem (\b -> b {causedBy = Just entry}) (accountBalances account)
-          runRules date attrs p processTransaction
+          runRules EDebit date attrs p processTransaction
   return ()
 
 -- | Get next record
@@ -121,7 +121,14 @@ processRecord = do
       return []
 
     Just (Ext _ _ attrs (RuleR name cond tran)) -> do
-      lift $ modify $ \st -> st {lsRules = (name, attrs, When cond tran):lsRules st}
+      lift $ modify $ \st ->
+                       let old = lsRules st
+                           new = (name, attrs, When cond tran)
+                       in case cAction cond of
+                            Nothing -> st {lsRules = old {creditRules = new: creditRules old,
+                                                          debitRules  = new: debitRules  old} }
+                            Just ECredit -> st {lsRules = old {creditRules = new: creditRules old}}
+                            Just EDebit  -> st {lsRules = old {debitRules  = new: debitRules  old}}
       return []
 
     Just (Ext date pos attrs (Periodic name interval tran)) -> do

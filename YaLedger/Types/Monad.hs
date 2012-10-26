@@ -27,6 +27,12 @@ newtype LedgerMonad a = LedgerMonad (StateT LedgerState IO a)
 
 type Ledger l a = EMT l LedgerMonad a
 
+data Rules = Rules {
+    creditRules :: [(String, Attributes, Rule)]
+  , debitRules  ::  [(String, Attributes, Rule)]
+  }
+  deriving (Eq, Show)
+
 -- | Ledger state
 data LedgerState = LedgerState {
     lsStartDate       :: DateTime,
@@ -34,7 +40,7 @@ data LedgerState = LedgerState {
     lsCoA             :: ChartOfAccounts,
     lsAccountMap      :: AccountMap,
     lsTemplates       :: M.Map String (Attributes, Transaction Param),
-    lsRules           :: [(String, Attributes, Rule)],
+    lsRules           :: Rules,
     lsRates           :: Rates,
     lsLoadedRecords   :: [Ext Record],
     lsConfig          :: LedgerOptions,
@@ -56,7 +62,7 @@ emptyLedgerState opts coa amap records = do
              lsCoA = coa,
              lsAccountMap = amap,
              lsTemplates = M.empty,
-             lsRules = [],
+             lsRules = Rules [] [],
              lsRates = [],
              lsLoadedRecords = records,
              lsConfig = opts,

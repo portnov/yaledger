@@ -54,13 +54,16 @@ runRules :: (Throws NoSuchRate l,
              Throws InvalidAccountType l,
              Throws NoSuchTemplate l,
              Throws InternalError l)
-         => DateTime                                   -- ^ Date/time of the posting
+         => PostingType
+         -> DateTime                                   -- ^ Date/time of the posting
          -> Attributes                                 -- ^ Posting attributes
          -> Posting Decimal t                          -- ^ Posting itself
          -> (Ext (Transaction Amount) -> Ledger l ())  -- ^ Function to apply to produced transactions
          -> Ledger l ()
-runRules date pAttrs p run = do
-  rules <- gets lsRules
+runRules pt date pAttrs p run = do
+  rules <- gets (case pt of
+                   ECredit -> creditRules . lsRules
+                   EDebit  -> debitRules  . lsRules )
   forM_ rules $ \(name, attrs, When cond tran) -> do
     y <- matchC date p cond
     if y && (pAttrs `matchAll` cAttributes cond)
