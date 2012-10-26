@@ -1,5 +1,6 @@
 files: [ "../examples/tests.yaledger" ]
 
+currencies: ../examples/currencies.yaml
 chart-of-accounts: ../examples/tests.accounts
 accounts-map: ../examples/tests.map
 

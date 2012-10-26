@@ -9,7 +9,6 @@ import Data.List
 import qualified Data.Map as M
 
 import YaLedger.Types
-import YaLedger.Monad
 import YaLedger.Kernel
 import YaLedger.Main
 import YaLedger.Exceptions

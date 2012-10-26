@@ -8,7 +8,6 @@ import Data.Maybe
 import Data.List
 
 import YaLedger.Types
-import YaLedger.Monad
 import YaLedger.Kernel
 import YaLedger.Main
 import YaLedger.Exceptions

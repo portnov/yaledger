@@ -15,7 +15,6 @@ import Test.QuickCheck hiding (Fixed)
 import Test.QuickCheck.Arbitrary
 
 import YaLedger.Types
-import YaLedger.Monad
 import YaLedger.Exceptions
 
 instance Arbitrary DateTime where

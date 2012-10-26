@@ -7,7 +7,6 @@ import Control.Monad.Exception
 import Data.List
 
 import YaLedger.Types
-import YaLedger.Monad
 import YaLedger.Kernel
 import YaLedger.Logger
 import YaLedger.Exceptions
