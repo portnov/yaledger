@@ -2,10 +2,13 @@
 *.hi
 *.swp
 *~
+*.prof
 CSV
 Test
 tbank.yaledger
 yaledger
+tests/yaledger-tests
+benchmark
 dist/
 cabal-dev/
 doc/ru/asciidoc/*.html
