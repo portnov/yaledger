@@ -520,8 +520,9 @@ lookupCorrespondence :: (Throws NoCorrespondingAccountFound l,
 lookupCorrespondence qry date amount@(value :# currency) mbCorr = do
   coa <- gets lsCoA
   amap <- gets lsAccountMap
+  groupsMap <- gets lsFullGroupsMap
   let mbAccount = runCQuery qry coa
-      mbByMap = lookupAMap coa amap qry (cqExcept qry)
+      mbByMap = lookupAMap groupsMap coa amap qry (cqExcept qry)
   case mbCorr `mplus` mbByMap `mplus` mbAccount of
     Nothing -> throwP (NoCorrespondingAccountFound qry)
     Just acc ->

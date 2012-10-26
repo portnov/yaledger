@@ -4,6 +4,7 @@ module YaLedger.Kernel.Correspondence
   (matchT, match, matchAll,
    isOptional,
    filterCoA, runCQuery,
+   buildGroupsMap,
    groupIDs, lookupAMap,
    inRange
   ) where
@@ -99,10 +100,10 @@ inRange :: Integer -> (Integer, Integer) -> Bool
 inRange i (m, n) = (m < i) && (i <= n)
 
 -- | List of groups IDs of all account's parent groups
-groupIDs :: AccountID         -- ^ Account ID
-         -> ChartOfAccounts
+groupIDs :: ChartOfAccounts
+         -> AccountID         -- ^ Account ID
          -> Maybe [GroupID] -- ^ Groups IDs
-groupIDs i tree = go [] i tree
+groupIDs tree i = go [] i tree
   where
     go :: [GroupID] -> AccountID -> ChartOfAccounts -> Maybe [GroupID]
     go xs i (Branch _ ag children)
@@ -117,14 +118,21 @@ groupIDs i tree = go [] i tree
       | getID acc == i = Just xs
       | otherwise      = Nothing
 
+buildGroupsMap :: ChartOfAccounts -> [AccountID] -> M.Map AccountID [GroupID]
+buildGroupsMap coa aids = M.fromList [(i, grps) | (i, Just grps) <- zip aids (map (groupIDs coa) aids)]
+
 -- | Lookup for corresponding account by account map
-lookupAMap :: ChartOfAccounts
+lookupAMap :: M.Map AccountID [GroupID]
+           -> ChartOfAccounts
            -> AccountMap
            -> CQuery
            -> [AccountID]       -- ^ Account IDs
            -> Maybe AnyAccount
-lookupAMap coa amap qry is = listToMaybe $ catMaybes $ concat [map (good i) amap | i <- is]
+lookupAMap groupsMap coa amap qry is = listToMaybe $ catMaybes $ concat [map (good i) amap | i <- is]
   where
+    groupIDs' :: AccountID -> [GroupID]
+    groupIDs' aid = fromMaybe [] $ M.lookup aid groupsMap
+    
     good :: AccountID -> AMEntry -> Maybe AnyAccount
     good i (AMAccount j :=> ToCoA r)
       | i == j    = runCQuery qry r
@@ -133,12 +141,12 @@ lookupAMap coa amap qry is = listToMaybe $ catMaybes $ concat [map (good i) amap
       | i == j    = runCQuery (qry {cqAttributes = as `M.union` cqAttributes qry}) coa
       | otherwise = Nothing
     good i (AMGroup g :=> ToCoA r) =
-      let gids = fromMaybe [] $ groupIDs i coa
+      let gids = groupIDs' i
       in  if g `elem` gids
             then runCQuery qry r
             else Nothing
     good i (AMGroup g :=> ToAttributes as) =
-      let gids = fromMaybe [] $ groupIDs i coa
+      let gids = groupIDs' i
           qry' = qry {cqAttributes = as `M.union` cqAttributes qry}
       in  if g `elem` gids
             then runCQuery qry' coa

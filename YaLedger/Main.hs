@@ -36,6 +36,7 @@ import YaLedger.Parser
 import YaLedger.Parser.Common (pAttribute)
 import YaLedger.Parser.Currencies
 import YaLedger.Kernel
+import YaLedger.Kernel.Correspondence (buildGroupsMap)
 import YaLedger.Processor
 import YaLedger.Config
 import YaLedger.Logger
@@ -238,7 +239,11 @@ runYaLedger parsers options report params = do
   coa <- readCoA currsMap coaPath
   amap <- readAMap coa mapPath
   records <- parseInputFiles parsers configs currsMap coa inputPaths
-  runLedger options coa amap records $ runEMT $
+  runLedger options coa amap records $ runEMT $ do
+    -- Build full map of groups of accounts.
+    modify $ \st -> st {
+                      lsFullGroupsMap = buildGroupsMap coa [1.. snd (agRange $ branchData coa)]
+                    }
     processYaLedger qry mbInterval rules (filter (checkRecord qry) records) qryReport report params
 
 processYaLedger qry mbInterval rules records qryReport report params = do

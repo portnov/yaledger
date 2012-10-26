@@ -18,17 +18,17 @@ import YaLedger.Processor.Templates
 
 -- | Check if posting matches to 'Condition'
 matchC :: Throws NoSuchRate l
-       => DateTime            -- ^ Posting date/time
+       => M.Map AccountID [GroupID] -- ^ Precomputed map of account groups
+       -> DateTime            -- ^ Posting date/time
        -> Posting Decimal t   -- ^ Posting itself
        -> Condition
        -> Ledger l Bool
-matchC date (CPosting acc x) cond = check ECredit date acc x cond
-matchC date (DPosting acc x) cond = check EDebit  date acc x cond
+matchC groupsMap date (CPosting acc x) cond = check groupsMap ECredit date acc x cond
+matchC groupsMap date (DPosting acc x) cond = check groupsMap EDebit  date acc x cond
 
-check t date acc x (Condition {..}) = do
-  coa <- gets lsCoA
+check groupsMap t date acc x (Condition {..}) = do
   let accID = getID acc
-  let grps = fromMaybe [] $ groupIDs accID coa
+  let grps = fromMaybe [] $ M.lookup accID groupsMap
       action = maybe [ECredit, EDebit] (\x -> [x]) cAction
   if (t `elem` action) &&
      ((accID `elem` cAccounts) ||
@@ -65,7 +65,8 @@ runRules pt date pAttrs p run = do
                    ECredit -> creditRules . lsRules
                    EDebit  -> debitRules  . lsRules )
   forM_ rules $ \(name, attrs, When cond tran) -> do
-    y <- matchC date p cond
+    groupsMap <- gets lsFullGroupsMap
+    y <- matchC groupsMap date p cond
     if y && (pAttrs `matchAll` cAttributes cond)
       then do
            let attrs' = M.insert "rule" (Exactly name) (pAttrs `M.union` attrs)
