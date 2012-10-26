@@ -165,7 +165,7 @@ parseCmdLine argv = do
                                 return (configDir </> "yaledger.yaml")
                           (p:_) -> return p
           defaultOptions <- loadConfig configPath
-          case foldr apply defaultOptions fns of
+          case foldr apply defaultOptions (reverse fns) of
             Help -> fail "Impossible: Main.parseCmdLine.Help"
             opts -> do
                let opts' = opts {reportsQuery = query opts `mappend` reportsQuery opts}
