@@ -14,6 +14,7 @@ import qualified Data.Map as M
 import YaLedger.Types
 import YaLedger.Exceptions
 import YaLedger.Kernel
+import YaLedger.Logger
 import YaLedger.Processor.Duplicates
 import YaLedger.Processor.Rules
 import YaLedger.Processor.Templates
@@ -137,6 +138,7 @@ processRecord = do
 
     Just (Ext date pos attrs (SetRate rates)) -> do
       lift $ setPos pos
+      lift $ debug $ "Setting exchange rates:\n" ++ unlines (map show rates)
       let rates' = map (Ext date pos attrs) rates
       lift $ modify $ \st -> st {lsRates = rates' ++ lsRates st}
       return []
