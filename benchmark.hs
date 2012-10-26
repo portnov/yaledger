@@ -31,33 +31,12 @@ reports = [("balances",  Report Balances),
 main :: IO ()
 main = do
   dataDir <- getUserDataDir "yaledger"
-  let argv = words "-C examples/default.accounts -M examples/test.map -f -fexamples/benchmark.yaledger -e 2030/01/01 turnovers -t"
-  options <- parseCmdLine argv
-  case options of
-    Help -> return ()
-    _ -> do
-         let report = head $ reportParams options
-             params = tail $ reportParams options
-             inputPaths = if null (files options)
-                            then [dataDir </> "default.yaledger"]
-                            else files options
-         case lookupInit report reports of
-           [] -> putStrLn $ "No such report: " ++ report ++
-                            "\nSupported reports are: " ++
-                            unwords (map fst reports)
-           [fn] -> do
-               setupLogger (logSeverity options)
-               C.defaultMain [
-                 C.bench "run" $ C.whnfIO ( do
-                   runYaLedger (chartOfAccounts options)
-                       (accountMap options)
-                       (currenciesList options)
-                       (parserConfigs options)
-                       (reportsInterval options)
-                       (query options)
-                       (deduplicationRules options)
-                       (files options) fn params ) ]
-           _ -> putStrLn $ "Ambigous report specification: " ++ report ++
-                           "\nSupported reports are: " ++
-                           unwords (map fst reports)
+  let argv = words "-r ./examples/currencies.yaml -C examples/default.accounts -M examples/test.map -f -fexamples/benchmark.yaledger -e 2030/01/01 turnovers -t"
+  init <- initialize allParsers reports argv
+  case init of
+    Nothing -> return ()
+    Just (report, options, params) ->
+         C.defaultMain [
+           C.bench "run" $ C.whnfIO ( runYaLedger allParsers options report params )
+           ]
 
