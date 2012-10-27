@@ -9,6 +9,7 @@ module YaLedger.Parser
 
 import Control.Applicative ((<$>))
 import Control.Monad
+import Control.Concurrent.ParallelIO
 import Data.Maybe
 import Data.List
 import Text.Parsec
@@ -49,19 +50,21 @@ parseInputFiles :: [(String, String, InputParser)] -- ^ List of parsers: (name, 
                 -> [FilePath]                      -- ^ List of files or masks (*.yaledger)
                 -> IO [Ext Record]
 parseInputFiles parsers configs currs coa masks = do
-  inputFiles <- concat <$> mapM glob masks
-  infoIO $ "Input files:\n" ++ unlines inputFiles
-  records <- forM inputFiles $ \file -> do
-                 case lookupMask (takeFileName file) parsers of
-                   Nothing -> fail $ "Unknown file type: " ++ file
-                   Just (parserName, parser) ->
-                     let configFile = fromMaybe (parserName ++ ".yaml") $
-                                          lookup parserName configs
-                     in  do
-                         rec <- parser configFile currs coa file
-                         infoIO $ "Read " ++ show (length rec) ++ " records from " ++ file
-                         return rec
-  return $ sort $ concat records
+    inputFiles <- concat <$> mapM glob masks
+    infoIO $ "Input files:\n" ++ unlines inputFiles
+    records <- parallel (map loadFile inputFiles)
+    return $ sort $ concat records
+  where
+    loadFile file = do
+       case lookupMask (takeFileName file) parsers of
+         Nothing -> fail $ "Unknown file type: " ++ file
+         Just (parserName, parser) ->
+           let configFile = fromMaybe (parserName ++ ".yaml") $
+                                lookup parserName configs
+           in  do
+               rec <- parser configFile currs coa file
+               infoIO $ "Read " ++ show (length rec) ++ " records from " ++ file
+               return rec
 
 -- | Read chart of accounts from file
 readCoA :: Currencies -> FilePath -> IO ChartOfAccounts

@@ -53,6 +53,10 @@ infoIO :: String -> IO ()
 infoIO str =
   infoM rootLoggerName $ "INFO: " ++ str
 
+warningIO :: String -> IO ()
+warningIO str =
+  warningM rootLoggerName $ "WARNING: " ++ str
+
 warning :: Throws InternalError l => String -> Ledger l ()
 warning str =
   wrapIO $ warningM rootLoggerName $ "WARNING: " ++ str

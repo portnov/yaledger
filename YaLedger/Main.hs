@@ -16,6 +16,7 @@ import Control.Applicative ((<$>))
 import Control.Monad.State
 import Control.Monad.Exception
 import Control.Monad.Loc
+import Control.Concurrent.ParallelIO
 import Data.Char
 import Data.Maybe
 import qualified Data.Map as M
@@ -248,6 +249,7 @@ runYaLedger parsers options report params = do
                       lsFullGroupsMap = buildGroupsMap coa [1.. snd (agRange $ branchData coa)]
                     }
     processYaLedger qry mbInterval rules (filter (checkRecord qry) records) qryReport report params
+  stopGlobalPool
 
 processYaLedger qry mbInterval rules records qryReport report params = do
   now <- gets lsStartDate

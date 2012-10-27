@@ -212,7 +212,9 @@ loadConfig configFile = do
   zero <- getDefaultLedgerOptions
   exist <- doesFileExist configFile
   if not exist
-    then return zero
+    then do
+         infoIO $ "Config file does not exist: " ++ configFile ++ "; using default settings."
+         return zero
     else do
         str <- B.readFile configFile
         case decodeEither str of
