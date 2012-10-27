@@ -1,4 +1,4 @@
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards, OverloadedStrings, BangPatterns #-}
 -- | Parser for `native' transactions journal file
 module YaLedger.Parser.Transactions
   (loadTransactions,
@@ -10,35 +10,57 @@ import Control.Applicative hiding (many, (<|>), optional)
 import Data.Either
 import Data.List
 import Data.Dates
+import Data.Dates.Formats (formatParser, pFormat)
 import qualified Data.Map as M
+import Data.Yaml hiding (Parser)
 import Text.Parsec hiding (space, spaces)
 import Text.Printf
+import System.Directory
 
 import YaLedger.Types
 import YaLedger.Processor.Templates
 import YaLedger.Kernel.Common
 import YaLedger.Parser.Common
+import YaLedger.Logger
 
 data PState = PState {
   getCoA :: ChartOfAccounts,
   currentDate :: DateTime,
+  dateTimeParser :: Maybe (Parser DateTime),
   declaredCurrencies :: Currencies,
   templates :: M.Map String Int -- ^ Number of parameters
   }
 
 type Parser a = Parsec String PState a
 
+data NativeParserConfig = NativeParserConfig {
+    nativeDateFormat :: Maybe String }
+  deriving (Eq, Show)
+
+instance FromJSON NativeParserConfig where
+  parseJSON (Object v) =
+    NativeParserConfig
+      <$> v .:? "dateformat"
+
 space = oneOf " \t"
 spaces = many space
 
-emptyPState :: ChartOfAccounts -> Currencies -> IO PState
-emptyPState coa currs = do
-  now <- getCurrentDateTime
-  return $ PState {
-             getCoA = coa,
-             currentDate = now,
-             declaredCurrencies = currs,
-             templates = M.empty }
+emptyPState :: DateTime -> ChartOfAccounts -> Currencies -> Maybe String -> PState
+emptyPState now coa currs mbFormat =
+    PState {
+      getCoA = coa,
+      currentDate = now,
+      dateTimeParser = dParser,
+      declaredCurrencies = currs,
+      templates = M.empty }
+  where
+    dParser = case mbFormat of
+                 Nothing -> Nothing
+                 Just str -> case runParser pFormat () str str of
+                               Left err     -> error $ "Cannot use specified date format: " ++ show err
+                               Right format -> Just $! formatParser format
+
+{-# NOINLINE emptyPState #-}
 
 addTemplate :: String -> Transaction Param -> Parser ()
 addTemplate name tran = do
@@ -54,12 +76,15 @@ getNParams name = do
 
 recordDate :: Parser DateTime
 recordDate = do
-    try datetime <|> timeOnly
+    st <- getState
+    try (datetime $ dateTimeParser st) <|> timeOnly
   where
-    datetime = do
+    datetime mbP = do
        st <- getState
        let now = currentDate st
-       dt <- pDate now
+       dt <- case mbP of
+               Nothing     -> pDate now
+               Just parser -> try parser <|> pDate now
        putState $ st {currentDate = dt}
        mbT <- optionMaybe $ do
                 comma
@@ -389,10 +414,21 @@ param = try pParam <|> try pBalance <|> (Fixed <$> pAmount)
       return $ FromBalance c
 
 -- | Read transactions from `native' format file (*.yaledger)
-loadTransactions :: FilePath -> Currencies -> ChartOfAccounts -> FilePath -> IO [Ext Record]
-loadTransactions _ currs coa path = do
+loadTransactions :: FilePath         -- ^ Config file path
+                 -> Currencies
+                 -> ChartOfAccounts
+                 -> FilePath         -- ^ Source file path
+                 -> IO [Ext Record]
+loadTransactions configPath currs coa path = do
+  ex <- doesFileExist configPath
+  config <- if ex
+              then do
+                   infoIO $ "Using config for native format: " ++ configPath
+                   loadParserConfig configPath
+              else return (NativeParserConfig Nothing)
   content <- readFile path
-  st <- emptyPState coa currs
+  now <- getCurrentDateTime
+  let !st = emptyPState now coa currs (nativeDateFormat config)
   case runParser pRecords st path content of
     Right res -> return res
     Left err -> fail $ show err

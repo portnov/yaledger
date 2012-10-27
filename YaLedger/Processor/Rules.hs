@@ -64,8 +64,8 @@ runRules pt date pAttrs p run = do
   rules <- gets (case pt of
                    ECredit -> creditRules . lsRules
                    EDebit  -> debitRules  . lsRules )
+  groupsMap <- gets lsFullGroupsMap
   forM_ rules $ \(name, attrs, When cond tran) -> do
-    groupsMap <- gets lsFullGroupsMap
     y <- matchC groupsMap date p cond
     if y && (pAttrs `matchAll` cAttributes cond)
       then do

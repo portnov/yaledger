@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, BangPatterns #-}
 module YaLedger.Parser.CBR
   (loadCBR, test
   ) where
@@ -136,7 +136,8 @@ pRates =
 
 loadCache :: Currencies -> ChartOfAccounts -> FilePath -> IO [Ext Record]
 loadCache currs coa cachePath = do
-  st <- T.emptyPState coa currs
+  now <- getCurrentDateTime
+  let !st = T.emptyPState now coa currs (Just "YYYY/MM/DD")
   content <- readFile cachePath
   case runParser pRates st cachePath content of
     Left err -> fail $ show err

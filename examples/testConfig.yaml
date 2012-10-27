@@ -1,7 +1,9 @@
 files: [ "examples/default.yaledger" ]
 
-chart-of-accounts: examples/default.accounts
-accounts-map: examples/test.map
+dateformat: "YYYY/MM/DD"
+currencies:        ./examples/currencies.yaml
+chart-of-accounts: ./examples/default.accounts
+accounts-map:      ./examples/test.map
 
 deduplicate:
  - check-attributes: [ date, {amount: 5}, credit-account, debit-account ]

@@ -169,7 +169,10 @@ parseCmdLine argv = do
           case foldr apply defaultOptions (reverse fns) of
             Help -> fail "Impossible: Main.parseCmdLine.Help"
             opts -> do
-               let opts' = opts {reportsQuery = query opts `mappend` reportsQuery opts}
+               let opts' = opts {
+                             mainConfigPath = Just configPath,
+                             reportsQuery = query opts `mappend` reportsQuery opts
+                           }
                if null params
                  then return opts'
                  else return $ opts' { reportParams = params }
@@ -228,7 +231,7 @@ runYaLedger parsers options report params = do
   coaPath <- fromJustM "No CoA path specified" (chartOfAccounts options)
   mapPath <- fromJustM "No accounts map path specified" (accountMap options)
   cpath   <- fromJustM "No currencies list file specified" (currenciesList options)
-  let configs = parserConfigs options
+  let configs = ("yaledger", fromJust (mainConfigPath options)): parserConfigs options
       mbInterval = reportsInterval options
       rules = deduplicationRules options
       inputPaths = files options

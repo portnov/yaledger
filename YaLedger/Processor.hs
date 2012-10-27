@@ -18,6 +18,7 @@ import YaLedger.Logger
 import YaLedger.Processor.Duplicates
 import YaLedger.Processor.Rules
 import YaLedger.Processor.Templates
+import YaLedger.Output.Pretty
 
 -- | Merge two sorted lists into one sorted.
 merge :: Ord a => [a] -> [a] -> [a]
@@ -104,6 +105,17 @@ getNextP p doDelete = do
           else return ()
         return (Just x)
 
+debugPos pos r =
+  lift $ debug $ "Record:\n" ++ prettyPrint r ++ "  at " ++ show pos
+
+insertRule new [] = [new]
+insertRule new@(name, _, _) list = go list list
+  where
+    go f [] = new: f
+    go f ((n,c,w):rs)
+      | n == name = new: rs
+      | otherwise = (n,c,w): go f rs
+
 -- | Process one record.
 processRecord :: (Throws InternalError l,
                   Throws InsufficientFunds l)
@@ -113,25 +125,29 @@ processRecord = do
   case rec of
     Nothing -> return []
 
-    Just (Ext date pos attrs (Transaction tran)) ->
+    Just rec@(Ext date pos attrs (Transaction tran)) -> do
+      debugPos pos rec
       return [ Ext date pos attrs tran ]
 
-    Just (Ext _ _ attrs (Template name tran)) -> do
+    Just rec@(Ext _ pos attrs (Template name tran)) -> do
+      debugPos pos rec
       lift $ modify $ \st -> st {lsTemplates = M.insert name (attrs, tran) (lsTemplates st)}
       return []
 
-    Just (Ext _ _ attrs (RuleR name cond tran)) -> do
+    Just rec@(Ext _ pos attrs (RuleR name cond tran)) -> do
+      debugPos pos rec
       lift $ modify $ \st ->
                        let old = lsRules st
                            new = (name, attrs, When cond tran)
                        in case cAction cond of
-                            Nothing -> st {lsRules = old {creditRules = new: creditRules old,
-                                                          debitRules  = new: debitRules  old} }
-                            Just ECredit -> st {lsRules = old {creditRules = new: creditRules old}}
-                            Just EDebit  -> st {lsRules = old {debitRules  = new: debitRules  old}}
+                            Nothing -> st {lsRules = old {creditRules = insertRule new (creditRules old),
+                                                          debitRules  = insertRule new (debitRules  old) } }
+                            Just ECredit -> st {lsRules = old {creditRules = insertRule new (creditRules old) }}
+                            Just EDebit  -> st {lsRules = old {debitRules  = insertRule new (debitRules  old) }}
       return []
 
-    Just (Ext date pos attrs (Periodic name interval tran)) -> do
+    Just rec@(Ext date pos attrs (Periodic name interval tran)) -> do
+      debugPos pos rec
       mbNext <- getNextP (periodic name . getContent)
                          (isStop name   . getContent)
       let prune = case getDate <$> mbNext of
@@ -143,11 +159,17 @@ processRecord = do
       -- lift $ debug $ "Periodic " ++ name ++ ": " ++ show (length result)
       return result
 
-    Just (Ext date pos attrs (SetRate rates)) -> do
+    Just rec@(Ext date pos attrs (SetRate rates)) -> do
+      debugPos pos rec
       lift $ setPos pos
       lift $ debug $ "Setting exchange rates:\n" ++ unlines (map show rates)
       let rates' = map (Ext date pos attrs) rates
       lift $ modify $ \st -> st {lsRates = rates' ++ lsRates st}
+      return []
+
+    Just rec@(Ext _ pos _ _) -> do
+      lift $ setPos pos
+      lift $ warning $ "Unknown record:\n" ++ prettyPrint rec ++ "\n  at " ++ show pos
       return []
 
 periodic name (Periodic x _ _) = name == x
