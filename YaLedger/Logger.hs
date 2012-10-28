@@ -7,7 +7,8 @@ module YaLedger.Logger
    info, warning, errorMessage,
    debugIO, infoIO,
    handler,
-   trace, traceS
+   trace, traceS,
+   traceEventIO, traceEventM
   ) where
 
 import Control.Monad.Exception
@@ -16,6 +17,7 @@ import System.Log.Logger
 
 #ifdef DEBUG
 import System.IO.Unsafe
+import qualified Debug.Trace as Trace
 #endif
 
 import YaLedger.Types
@@ -83,3 +85,20 @@ traceS prefix x = unsafePerformIO $ do
 #else
 traceS _ x = x
 #endif
+
+traceEventM :: Throws InternalError l => String -> Ledger l ()
+#ifdef DEBUG
+traceEventM message = wrapIO (Trace.traceEventIO message)
+{-# NOINLINE traceEventIO #-}
+#else
+traceEventM _ = return ()
+#endif
+
+traceEventIO :: String -> IO ()
+#ifdef DEBUG
+traceEventIO message = Trace.traceEventIO message
+{-# NOINLINE traceEventM #-}
+#else
+traceEventIO _ = return ()
+#endif
+

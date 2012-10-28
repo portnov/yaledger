@@ -53,6 +53,7 @@ parseInputFiles parsers configs currs coa masks = do
     inputFiles <- concat <$> mapM glob masks
     infoIO $ "Input files:\n" ++ unlines inputFiles
     records <- parallel (map loadFile inputFiles)
+    traceEventIO "All files loaded."
     return $ sort $ concat records
   where
     loadFile file = do
@@ -64,6 +65,7 @@ parseInputFiles parsers configs currs coa masks = do
            in  do
                rec <- parser configFile currs coa file
                infoIO $ "Read " ++ show (length rec) ++ " records from " ++ file
+               traceEventIO $ "File loaded: " ++ file
                return rec
 
 -- | Read chart of accounts from file
