@@ -9,7 +9,7 @@ module YaLedger.Kernel
    convertPosting', convertDecimal,
    checkQuery, checkRecord, isAdmin,
    creditPostings, debitPostings,
-   accountByID, accountFullPath,
+   accountByID,
    sumGroup, sumPostings,
    accountAsCredit,
    accountAsDebit,
@@ -293,13 +293,6 @@ debitTurnovers qry account = do
 sumPostings :: [Posting Decimal t] -> Decimal
 sumPostings es = sum (map postingValue es)
 
-first :: (a -> Maybe b) -> [a] -> Maybe b
-first _ [] = Nothing
-first fn (x:xs) =
-    case fn x of
-      Just y  -> Just y
-      Nothing -> first fn xs
-
 -- | Lookup for account by it's ID
 accountByID :: AccountID -> ChartOfAccounts -> Maybe AnyAccount
 accountByID i (Branch _ ag children)
@@ -315,25 +308,6 @@ accountByID i (Branch _ ag children)
 accountByID i (Leaf _ acc)
   | getID acc == i = Just acc
   | otherwise      = Nothing
-
--- | Get fully qualfiied path of account
-accountFullPath :: AccountID -> ChartOfAccounts -> Maybe Path
-accountFullPath i tree = go [] i tree
-  where
-    go p i (Branch groupName ag children)
-      | i `inRange` agRange ag = do
-          let accs = [(getID acc, n) | Leaf n acc <- children]
-          case filter ((== i) . fst) accs of
-            [(_,accName)] -> return (p ++ [groupName, accName])
-            _   -> do
-                   let grps = [(n,grp) | Branch n _ grp <- children]
-                   msum $ map (\(n,g) -> first (go (p ++ [groupName, n]) i) g) grps
-      | otherwise = Nothing
-
-    go p i (Leaf name acc)
-      | getID acc == i = Just (p ++ [name])
-      | otherwise      = Nothing
-
 
 -- | Return same account as FreeOr Credit Account,
 -- or throw an exception.

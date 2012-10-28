@@ -30,6 +30,7 @@ data PState = PState {
   dateTimeParser :: Maybe (Parser DateTime),
   declaredCurrencies :: Currencies,
   defaultAttrs :: Attributes,
+  rootPath :: Path,
   templates :: M.Map String Int -- ^ Number of parameters
   }
 
@@ -55,6 +56,7 @@ emptyPState now coa currs mbFormat =
       dateTimeParser = dParser,
       declaredCurrencies = currs,
       defaultAttrs = M.empty,
+      rootPath = [],
       templates = M.empty }
   where
     dParser = case mbFormat of
@@ -64,6 +66,12 @@ emptyPState now coa currs mbFormat =
                                Right format -> Just $! formatParser format
 
 {-# NOINLINE emptyPState #-}
+
+pPathRelative :: Parser Path
+pPathRelative = do
+  st <- getState
+  path <- pPath
+  return $ rootPath st ++ path
 
 addTemplate :: String -> Transaction Param -> Parser ()
 addTemplate name tran = do
@@ -117,12 +125,25 @@ pDateTime' now = do
     Just t  -> return (date `addTime` t)
 
 pSpecial :: Parser ()
-pSpecial = do
-  reserved "attributes"
-  spaces
-  attrs <- braces pAttributes
-  st <- getState
-  putState $ st {defaultAttrs = attrs}
+pSpecial = try setAttributes <|> setRoot
+  where
+    setAttributes = do
+      reserved "attributes"
+      spaces
+      attrs <- braces pAttributes
+      st <- getState
+      putState $ st {defaultAttrs = attrs}
+
+    setRoot = do
+      reserved "root"
+      spaces
+      path <- pPath
+      x <- getCoAItem getPosition (getCoA <$> getState) path
+      case x of
+        Branch {} -> do
+                     st <- getState
+                     putState $ st {rootPath = path}
+        _ -> fail $ "This is an account, not accounts group:" ++ intercalate "/" path
 
 pRecords :: Parser [Ext Record]
 pRecords = do
@@ -240,7 +261,7 @@ pCondition = do
 
 pRuleObject :: Parser (Either AccountID GroupID)
 pRuleObject = do
-  path <- pPath
+  path <- pPathRelative
   item <- getCoAItem getPosition (getCoA <$> getState) path
   case item of
     Leaf {..}   -> return $ Left  (getID leafData)
@@ -286,7 +307,7 @@ pEntry p = do
   es <- many1 (try (Left <$> pCreditPosting p) <|> (try (Right <$> pDebitPosting p)))
   corr <- optionMaybe $ do
             spaces
-            x <- pPath <?> "corresponding account path"
+            x <- pPathRelative <?> "corresponding account path"
             return x
   let cr = lefts es
       dt = rights es
@@ -312,7 +333,7 @@ pReconciliate :: Parser v -> Parser (Transaction v)
 pReconciliate p = do
   reserved "reconciliate"
   spaces
-  path <- pPath
+  path <- pPathRelative
   account <- getAccount getPosition (getCoA <$> getState) path 
   spaces
   x <- p
@@ -358,7 +379,7 @@ pCreditPosting :: Parser v -> Parser (Posting v Credit)
 pCreditPosting p = do
   spaces
   reserved "cr"
-  accPath <- pPath
+  accPath <- pPathRelative
   acc <- getAccountT AGCredit getPosition (getCoA <$> getState) accPath
   account <- case acc of
                WFree   _ acc -> return $ Left acc
@@ -373,7 +394,7 @@ pDebitPosting :: Parser v -> Parser (Posting v Debit)
 pDebitPosting p = do
   spaces
   reserved "dr"
-  accPath <- pPath
+  accPath <- pPathRelative
   acc <- getAccountT AGDebit getPosition (getCoA <$> getState) accPath
   account <- case acc of
                WFree   _ acc -> return $ Left acc

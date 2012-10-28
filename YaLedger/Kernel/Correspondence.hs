@@ -5,8 +5,7 @@ module YaLedger.Kernel.Correspondence
    isOptional,
    filterCoA, runCQuery,
    buildGroupsMap,
-   groupIDs, lookupAMap,
-   inRange
+   groupIDs, lookupAMap
   ) where
 
 import Control.Monad
@@ -14,6 +13,7 @@ import Data.Maybe
 import qualified Data.Map as M
 
 import YaLedger.Types
+import YaLedger.Kernel.Common
 
 -- | Match account type
 matchT :: PostingType -> AccountGroupType -> Bool
@@ -95,9 +95,6 @@ runCQuery qry coa =
     []  -> Nothing
     [x] -> Just x
     list -> Just $ head $ filterByAddAttributes (cqAttributes qry) list
-
-inRange :: Integer -> (Integer, Integer) -> Bool
-inRange i (m, n) = (m < i) && (i <= n)
 
 -- | List of groups IDs of all account's parent groups
 groupIDs :: ChartOfAccounts
