@@ -48,7 +48,7 @@ instance Arbitrary AttributeValue where
     elements [exact, option, oneOf, anybut, Any]
 
 instance Arbitrary a => Arbitrary (Ext a) where
-  arbitrary = Ext <$> arbitrary <*> return nowhere <*> arbitrary <*> arbitrary
+  arbitrary = Ext <$> arbitrary <*> return 0 <*> return nowhere <*> arbitrary <*> arbitrary
 
 instance Arbitrary Amount where
   arbitrary = (:#) <$> arbitrary <*> arbitrary
