@@ -14,3 +14,7 @@ parsers:
   cbr:  ./examples/cbr.yaml
 
 debug: error
+
+deduplicate:
+  - check-attributes: [{date: 1}, amount, credit-amount, debit-amount]
+    action: ignore-new
