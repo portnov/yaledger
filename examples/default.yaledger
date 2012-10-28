@@ -44,7 +44,7 @@ periodic testPeriodic = every 3 days do
 @ 2012/09/10 reconciliation test.
 reconciliate X1 120.0$
 
-@ 2012/09/11 ---
+@ 2012/09/11 test
 {category = "TEST regexps"}
   cr X1 3р
 
@@ -69,7 +69,7 @@ call трамвай
 @ 2012/09/17 Another test.
   cr X1 3€
 
-@ 2012/09/17 ---
+@ 2012/09/17 * test
 stop testPeriodic
 
 @ 2012/09/18 Снял в банкомате

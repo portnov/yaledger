@@ -130,6 +130,10 @@ ext p = do
   space
   date <- recordDate
   spaces
+  mbStatus <- optionMaybe $ do
+                r <- many1 $ oneOf "!#/\\:.*?%-_+=@&<>"
+                spaces
+                return r
   mbCategory <- optionMaybe $ do
                   char '('
                   r <- many1 $ noneOf "\n\r)"
@@ -140,6 +144,7 @@ ext p = do
   newline
   attrs <- option M.empty $ braces $ pAttributes
   let attrs' = insertAttr Optional "description" mbDescription $
+               insertAttr Exactly  "status"      mbStatus      $
                insertAttr Exactly  "category"    mbCategory attrs
   content <- p
   return $ Ext date 0 pos attrs' content

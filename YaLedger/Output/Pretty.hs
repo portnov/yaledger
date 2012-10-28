@@ -17,8 +17,9 @@ instance Pretty String where
 
 instance Pretty a => Pretty (Ext a) where
   prettyPrint (Ext date _ _ attrs a) =
-      printf "@ %s %s%s\n%s%s"
+      printf "@ %s %s%s%s\n%s%s"
              (prettyPrint date)
+             (maybe "" (\s -> getString s ++ " ") $ M.lookup "status" attrs)
              (maybe "" (\s -> "(" ++ getString s ++ ") ") $ M.lookup "category" attrs)
              (maybe "" getString $ M.lookup "description" attrs)
              (prettyPrint attrs)
@@ -28,7 +29,7 @@ instance Pretty Decimal where
   prettyPrint x = show (roundTo 4 x)
 
 instance Pretty Attributes where
-  prettyPrint as = go $ M.filterWithKey (\name _ -> name `notElem` ["category", "description"]) as
+  prettyPrint as = go $ M.filterWithKey (\name _ -> name `notElem` ["category", "description","status"]) as
     where
       go x
         | M.null x = ""
