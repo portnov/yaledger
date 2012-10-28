@@ -3,9 +3,9 @@ module YaLedger.Parser.CoA where
 
 import Control.Applicative ((<$>))
 import Control.Monad.Trans
+import Control.Concurrent.STM
 import Data.Maybe
 import Data.Decimal
-import Data.IORef
 import qualified Data.Map as M
 import Text.Parsec
 
@@ -34,17 +34,17 @@ type Parser a = ParsecT String PState IO a
 
 account :: AccountGroupType -> String -> Integer -> Currency -> Bool -> BalanceChecks -> Attributes -> Parser AnyAccount
 account AGDebit  name aid c _ checks attrs = do
-    empty1 <- lift $ newIORef []
-    empty2 <- lift $ newIORef []
+    empty1 <- lift $ newTVarIO []
+    empty2 <- lift $ newTVarIO []
     return $ WDebit  attrs $ DAccount name aid c checks empty1 empty2
 account AGCredit name aid c _ checks attrs = do
-    empty1 <- lift $ newIORef []
-    empty2 <- lift $ newIORef []
+    empty1 <- lift $ newTVarIO []
+    empty2 <- lift $ newTVarIO []
     return $ WCredit attrs $ CAccount name aid c checks empty1 empty2
 account AGFree   name aid c redirect checks attrs = do
-    empty1 <- lift $ newIORef []
-    empty2 <- lift $ newIORef []
-    empty3 <- lift $ newIORef []
+    empty1 <- lift $ newTVarIO []
+    empty2 <- lift $ newTVarIO []
+    empty3 <- lift $ newTVarIO []
     return $ WFree   attrs $ FAccount name aid c redirect checks empty1 empty2 empty3
 
 newAID :: Parser Integer

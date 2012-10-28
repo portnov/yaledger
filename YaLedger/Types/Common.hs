@@ -21,8 +21,8 @@ module YaLedger.Types.Common
    newPos
   ) where
 
+import Control.Concurrent.STM
 import Data.Decimal
-import Data.IORef
 import Data.Dates
 import qualified Data.Map as M
 import Text.Printf
@@ -52,7 +52,7 @@ instance Sign Free where
 instance Sign t => Sign (f t) where
   sign _ = sign (undefined :: t)
 
-type IOList a = IORef [a]
+type IOList a = TVar [a]
 
 data Currency =
   Currency {

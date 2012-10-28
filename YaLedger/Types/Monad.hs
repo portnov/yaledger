@@ -8,9 +8,9 @@ module YaLedger.Types.Monad where
 import Control.Monad.State
 import Control.Monad.Exception
 import Control.Monad.Loc
+import Control.Concurrent.STM
 import Data.Dates
 import qualified Data.Map as M
-import Data.IORef
 import Text.Parsec.Pos
 
 import YaLedger.Types.Attributes
@@ -97,13 +97,14 @@ runLedger opts coa amap records action = do
 -- * IOList
 --
 newIOList :: (MonadIO m, Throws InternalError l) => EMT l m (IOList a)
-newIOList = wrapIO $ newIORef []
+newIOList = wrapIO $ newTVarIO []
 
 readIOList :: (MonadIO m, Throws InternalError l) => IOList a -> EMT l m [a]
-readIOList iolist = wrapIO (readIORef iolist)
+readIOList iolist = wrapIO (readTVarIO iolist)
 
 appendIOList :: (MonadIO m, Throws InternalError l) => IOList a -> a -> EMT l m ()
-appendIOList iolist x = wrapIO $ modifyIORef iolist (x:)
+appendIOList iolist x =
+  wrapIO $ atomically $ modifyTVar iolist (x:)
 
 -- | Update last item of 'IOList'
 plusIOList :: (MonadIO m, Throws InternalError l)
@@ -112,7 +113,7 @@ plusIOList :: (MonadIO m, Throws InternalError l)
            -> IOList a
            -> EMT l m ()
 plusIOList def fn iolist = do
-  wrapIO $ modifyIORef iolist $ \list ->
+  wrapIO $ atomically $ modifyTVar iolist $ \list ->
     case list of
       [] -> [def]
       (x:xs) -> fn x: x: xs
@@ -122,7 +123,7 @@ modifyLastItem ::  (MonadIO m, Throws InternalError l)
                -> IOList (Ext a)
                -> EMT l m ()
 modifyLastItem fn iolist = do
-  wrapIO $ modifyIORef iolist $ \list ->
+  wrapIO $ atomically $ modifyTVar iolist $ \list ->
     case list of
       [] -> []
       (x:xs) -> (x {getContent = fn (getContent x)}): xs
