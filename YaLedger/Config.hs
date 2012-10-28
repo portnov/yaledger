@@ -34,8 +34,8 @@ instance Monoid LedgerOptions where
       accountMap  = accountMap  o2 `mplus` accountMap o1,
       currenciesList = currenciesList o2 `mplus` currenciesList o1,
       files = if null (files o2) then files o1 else files o2,
-      query = query o1 `mappend` query o2,
-      reportsQuery = reportsQuery o1 `mappend` reportsQuery o2,
+      query = query o2 `mappend` query o1,
+      reportsQuery = reportsQuery o2 `mappend` reportsQuery o1,
       reportsInterval = reportsInterval o2 `mplus` reportsInterval o1,
       logSeverity = min (logSeverity o1) (logSeverity o2),
       parserConfigs = parserConfigs o1 ++ parserConfigs o2,
@@ -48,8 +48,8 @@ instance Monoid Query where
   mempty = Query Nothing Nothing False M.empty
   mappend q1 q2 =
     Query {
-      qStart = qStart q1 `mappend` qStart q2,
-      qEnd   = qEnd   q1 `mappend` qEnd   q2,
+      qStart = qStart q2 `mplus` qStart q1,
+      qEnd   = qEnd   q2 `mplus` qEnd   q1,
       qAllAdmin = qAllAdmin q1 || qAllAdmin q2,
       qAttributes = qAttributes q1 `M.union` qAttributes q2 }
 
