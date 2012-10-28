@@ -1,5 +1,9 @@
 
-module YaLedger.Processor.DateIndex where
+module YaLedger.Processor.DateIndex
+  (buildIndex,
+   lookupDate,
+   lookupDateApprox, lookupDatePrev
+  ) where
 
 import Data.List
 import Data.Function (on)
@@ -94,11 +98,11 @@ buildIndex recs =
 
   in  byYear
 
-noext y m d x = Ext (DateTime y m d 0 0 0) i (newPos "<nowhere>" 0 0) M.empty x
-  where i = fromIntegral (y*366 + m*31 + d)
-
-testList ::  [Ext String]
-testList = [noext y m d (s y m d) | y <- [2012,2013], m <- [1,5,10,11], d <- [3,6,7,10,12,29]]
-  where
-    s :: Int -> Int -> Int -> String
-    s y m d = printf "S <%02d/%02d/%02d>" y m d
+-- noext y m d x = Ext (DateTime y m d 0 0 0) i (newPos "<nowhere>" 0 0) M.empty x
+--   where i = fromIntegral (y*366 + m*31 + d)
+-- 
+-- testList ::  [Ext String]
+-- testList = [noext y m d (s y m d) | y <- [2012,2013], m <- [1,5,10,11], d <- [3,6,7,10,12,29]]
+--   where
+--     s :: Int -> Int -> Int -> String
+--     s y m d = printf "S <%02d/%02d/%02d>" y m d
