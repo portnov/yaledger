@@ -1,6 +1,7 @@
 
 module YaLedger.Types.Transactions where
 
+import qualified Data.Map as M
 import Data.Dates
 
 import YaLedger.Types.Attributes
@@ -47,6 +48,17 @@ data ValueCondition =
 
 data Rule = When Condition (Transaction Param)
   deriving (Eq, Show)
+
+data DateZipper a =
+    EmptyZipper
+  | DateZipper {
+      dzDate :: DateTime,
+      dzThisDate :: [a],
+      dzPrevDate :: Maybe (DateZipper a),
+      dzNextDate :: Maybe (DateZipper a) }
+  deriving (Eq, Show)
+
+type DateIndex a = M.Map Int (M.Map Int (M.Map Int (DateZipper a)))
 
 replicateRecords :: DateInterval -> Int -> [Ext Record] -> [Ext Record]
 replicateRecords interval n list = concat [map (shift i) list | i <- [0..n]]

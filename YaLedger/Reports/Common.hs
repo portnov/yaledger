@@ -164,8 +164,8 @@ showEntriesBalances' coa fmt totals list =
                      (ARight, ["BALANCE B/D"])] l ++ footer
 
 causedByExt :: Ext (Balance Checked) -> Maybe (Ext (Entry Decimal Checked))
-causedByExt (Ext date pos attrs p) =
-  Ext date pos attrs <$> causedBy p
+causedByExt (Ext date i pos attrs p) =
+  Ext date i pos attrs <$> causedBy p
 
 getEntries :: (Throws InternalError l,
                HasBalances a)

@@ -48,7 +48,7 @@ processEntry date pos attrs uentry = do
   -- Process debit postings
   forM dt $ \p -> do
       let account = debitPostingAccount p
-      debit  account (Ext date pos attrs p)
+      debit  account (Ext date 0 pos attrs p)
       -- Add link to this entry for last balance (caused by previous call of `debit')
       modifyLastItem (\b -> b {causedBy = Just entry}) (accountBalances account)
       -- Run all needed rules
@@ -57,7 +57,7 @@ processEntry date pos attrs uentry = do
   -- Process credit postings
   forM cr $ \p -> do
       let account = creditPostingAccount p
-      credit account (Ext date pos attrs p)
+      credit account (Ext date 0 pos attrs p)
       -- Add link to this entry for last balance (caused by previous call of `credit')
       modifyLastItem (\b -> b {causedBy = Just entry}) (accountBalances account)
       -- Run all needed rules
@@ -68,14 +68,14 @@ processEntry date pos attrs uentry = do
     OneCurrency -> return () -- There is no any difference
     CreditDifference p -> do
         let account = creditPostingAccount p
-        credit (creditPostingAccount p) (Ext date pos attrs p)
+        credit (creditPostingAccount p) (Ext date 0 pos attrs p)
         modifyLastItem (\b -> b {causedBy = Just entry}) (accountBalances account)
         runRules ECredit date attrs p processTransaction
     -- Dor debit difference, there might be many postings,
     -- caused by debit redirection
     DebitDifference  ps -> forM_ ps $ \ p -> do
           let account = debitPostingAccount p
-          debit  (debitPostingAccount  p) (Ext date pos attrs p)
+          debit  (debitPostingAccount  p) (Ext date 0 pos attrs p)
           modifyLastItem (\b -> b {causedBy = Just entry}) (accountBalances account)
           runRules EDebit date attrs p processTransaction
   return ()
@@ -125,16 +125,16 @@ processRecord = do
   case rec of
     Nothing -> return []
 
-    Just rec@(Ext date pos attrs (Transaction tran)) -> do
+    Just rec@(Ext date i pos attrs (Transaction tran)) -> do
       debugPos pos rec
-      return [ Ext date pos attrs tran ]
+      return [ Ext date i pos attrs tran ]
 
-    Just rec@(Ext _ pos attrs (Template name tran)) -> do
+    Just rec@(Ext _ _ pos attrs (Template name tran)) -> do
       debugPos pos rec
       lift $ modify $ \st -> st {lsTemplates = M.insert name (attrs, tran) (lsTemplates st)}
       return []
 
-    Just rec@(Ext _ pos attrs (RuleR name cond tran)) -> do
+    Just rec@(Ext _ _ pos attrs (RuleR name cond tran)) -> do
       debugPos pos rec
       lift $ modify $ \st ->
                        let old = lsRules st
@@ -146,7 +146,7 @@ processRecord = do
                             Just EDebit  -> st {lsRules = old {debitRules  = insertRule new (debitRules  old) }}
       return []
 
-    Just rec@(Ext date pos attrs (Periodic name interval tran)) -> do
+    Just rec@(Ext date _ pos attrs (Periodic name interval tran)) -> do
       debugPos pos rec
       mbNext <- getNextP (periodic name . getContent)
                          (isStop name   . getContent)
@@ -154,20 +154,20 @@ processRecord = do
                     Just dateX -> takeWhile (\x -> getDate x < dateX)
                     Nothing    -> id
       let listFrom start =
-              Ext start pos attrs tran: listFrom (start `addInterval` interval)
+              Ext start 0 pos attrs tran: listFrom (start `addInterval` interval)
       let result = prune $ listFrom date
       -- lift $ debug $ "Periodic " ++ name ++ ": " ++ show (length result)
       return result
 
-    Just rec@(Ext date pos attrs (SetRate rates)) -> do
+    Just rec@(Ext date _ pos attrs (SetRate rates)) -> do
       debugPos pos rec
       lift $ setPos pos
       lift $ debug $ "Setting exchange rates:\n" ++ unlines (map show rates)
-      let rates' = map (Ext date pos attrs) rates
+      let rates' = map (Ext date 0 pos attrs) rates
       lift $ modify $ \st -> st {lsRates = rates' ++ lsRates st}
       return []
 
-    Just rec@(Ext _ pos _ _) -> do
+    Just rec@(Ext _ _ pos _ _) -> do
       lift $ setPos pos
       lift $ warning $ "Unknown record:\n" ++ prettyPrint rec ++ "\n  at " ++ show pos
       return []
@@ -192,6 +192,11 @@ processAll = do
          other <- processAll
          return $ merge other trans
 
+enumerate :: [Ext a] -> [Ext a]
+enumerate list = zipWith go [1..] list
+  where
+    go i e = e {extID = i}
+
 -- | Process all records.
 processRecords :: (Throws NoSuchRate l,
                    Throws NoCorrespondingAccountFound l,
@@ -205,7 +210,7 @@ processRecords :: (Throws NoSuchRate l,
                -> [Ext Record]               -- ^ All records
                -> Ledger l ()
 processRecords endDate rules list = do
-  deduplicated <- deduplicate rules (sort list)
+  deduplicated <- deduplicate rules (enumerate $ sort list)
   let records = sort deduplicated
   modify $ \st -> st {lsLoadedRecords = records}
   list' <- evalStateT processAll records
@@ -221,19 +226,19 @@ processTransaction :: (Throws NoSuchRate l,
                        Throws InternalError l)
                    => Ext (Transaction Amount)
                    -> Ledger l ()
-processTransaction (Ext date pos attrs (TEntry p)) = do
+processTransaction (Ext date _ pos attrs (TEntry p)) = do
     setPos pos
     processEntry date pos attrs p
-processTransaction (Ext date pos attrs (TReconciliate acc x)) = do
+processTransaction (Ext date _ pos attrs (TReconciliate acc x)) = do
     setPos pos
     entry <- reconciliate date acc x
     processEntry date
                  pos
                  (M.insert "category" (Exactly "reconciliation") attrs)
                  entry
-processTransaction (Ext date pos attrs (TCallTemplate name args)) = do
+processTransaction (Ext date _ pos attrs (TCallTemplate name args)) = do
     setPos pos
     (tplAttrs, template) <- getTemplate name
     tran <- fillTemplate template args
-    processTransaction (Ext date pos (attrs `M.union` tplAttrs) tran)
+    processTransaction (Ext date 0 pos (attrs `M.union` tplAttrs) tran)
 

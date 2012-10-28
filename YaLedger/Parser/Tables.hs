@@ -215,7 +215,7 @@ convertRow pc currs coa path rowN row = do
                          Nothing  -> return []
                return $ UEntry posting corr Nothing []
   let pos = newPos path rowN 1
-  return $ Ext date pos attrs (Transaction $ TEntry entry)
+  return $ Ext date 0 pos attrs (Transaction $ TEntry entry)
 
 cposting :: AnyAccount -> Amount -> IO [Posting Amount Credit]
 cposting acc x =

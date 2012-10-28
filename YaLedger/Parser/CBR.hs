@@ -146,7 +146,7 @@ loadCache currs coa cachePath = do
 getChecks :: [Ext Record] -> [(DateTime, String)]
 getChecks recs = concatMap go recs
   where
-    go (Ext date _ _ (SetRate rates)) =
+    go (Ext date _ _ _ (SetRate rates)) =
       [(date, cSymbol $ rateCurrencyFrom r) | r <-  rates]
     go _ = error "Impossible: CBR.getChecks.go"
 
@@ -160,7 +160,7 @@ loadCBR configPath currs coa cachePath = do
              doc <- getCBRXML date
              pairs <- parseRates doc (map currencyCode grs)
              let rates = map (bind grs) pairs
-             return $ Ext date nowhere M.empty $ SetRate $
+             return $ Ext date 0 nowhere M.empty $ SetRate $
                         map (convert currs) rates
     let records = cache ++ new
     writeFile cachePath $ unlines $ map prettyPrint records

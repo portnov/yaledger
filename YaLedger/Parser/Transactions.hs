@@ -142,7 +142,7 @@ ext p = do
   let attrs' = insertAttr Optional "description" mbDescription $
                insertAttr Exactly  "category"    mbCategory attrs
   content <- p
-  return $ Ext date pos attrs' content
+  return $ Ext date 0 pos attrs' content
 
 pRecord :: Parser (Ext Record)
 pRecord = try (ext pTemplate)

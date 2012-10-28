@@ -35,9 +35,9 @@ class ATemplate a where
 instance ATemplate a => ATemplate (Ext a) where
   type Result (Ext a) = Ext (Result a)
 
-  nParams (Ext _ _ _ a) = nParams a
+  nParams (Ext _ _ _ _ a) = nParams a
 
-  subst (Ext date loc attrs a) = Ext date loc attrs <$> subst a 
+  subst (Ext date i loc attrs a) = Ext date i loc attrs <$> subst a 
 
 instance ATemplate (Transaction Param) where
   type Result (Transaction Param) = Transaction Amount

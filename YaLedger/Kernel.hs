@@ -101,11 +101,12 @@ balancePlus p history = do
       update e@(Ext {getContent = b}) =
           Ext {
             getDate       = getDate p,
+            extID         = extID p,
             getLocation   = getLocation p,
             getAttributes = getAttributes p,
             getContent    = b {balanceValue = balanceValue b + value}
           }
-  let zero = Ext (getDate p) (getLocation p) (getAttributes p) (Balance Nothing value)
+  let zero = Ext (getDate p) (extID p) (getLocation p) (getAttributes p) (Balance Nothing value)
   plusIOList zero update history
 
 whenJust :: (Monad m) => Maybe a -> (a -> m ()) -> m ()

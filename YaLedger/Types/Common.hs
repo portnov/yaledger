@@ -25,6 +25,7 @@ import Control.Concurrent.STM
 import Data.Decimal
 import Data.Dates
 import qualified Data.Map as M
+import Data.Hashable
 import Text.Printf
 import Text.Parsec.Pos
 
@@ -68,6 +69,12 @@ instance Show Currency where
 instance Ord Currency where
   compare c1 c2 = compare (cSymbol c1) (cSymbol c2)
 
+instance Hashable Currency where
+  hash c = hash (cSymbol c) `combine`
+           hash (cIntCode c) `combine`
+           hash (cStrCode c) `combine`
+           hash (cPrecision c)
+
 emptyCurrency :: Currency
 emptyCurrency = Currency {
   cSymbol = "¤",
@@ -101,6 +108,7 @@ type FreeOr t f = Either (f Free) (f t)
 
 data Ext a = Ext {
     getDate :: DateTime,
+    extID   :: Integer,
     getLocation :: SourcePos,
     getAttributes :: Attributes,
     getContent :: a }
@@ -123,6 +131,12 @@ data Amount = Decimal :# Currency
 
 instance Show Amount where
   show (n :# c) = show (roundTo (fromIntegral $ cPrecision c) n) ++ show c
+
+instance Hashable Amount where
+  hash (n :# c) = hash n `combine` hash c
+
+instance Hashable Decimal where
+  hash (Decimal n x) = hash x `combine` hash n
 
 instance HasCurrency Amount where
   getCurrency (_ :# c) = c

@@ -5,6 +5,7 @@ module YaLedger.Types.Ledger where
 import qualified Data.Map as M
 import Data.Decimal
 import Data.List
+import Data.Hashable
 import Text.Printf
 
 import YaLedger.Tree
@@ -34,6 +35,10 @@ instance Eq v => Eq (Posting v Credit) where
 instance Show v => Show (Posting v t) where
   show (DPosting acc x) = "dr " ++ showFA acc ++ " " ++ show x
   show (CPosting acc x) = "cr " ++ showFA acc ++ " " ++ show x
+
+instance Hashable v => Hashable (Posting v t) where
+  hash (DPosting acc x) = hash (1000000*getID acc) `combine` hash x
+  hash (CPosting acc x) = hash (2000000*getID acc) `combine` hash x
 
 postingValue :: Posting v t -> v
 postingValue (DPosting {..}) = debitPostingAmount

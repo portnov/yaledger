@@ -34,10 +34,10 @@ postings' qry mbPath = do
         putStrLn res
 
 left :: Ext (Posting Decimal Credit) -> Ext (Either (Posting Decimal Credit) (Posting Decimal Debit))
-left (Ext date pos attrs posting) = Ext date pos attrs (Left posting)
+left (Ext date i pos attrs posting) = Ext date i pos attrs (Left posting)
 
 right :: Ext (Posting Decimal Debit) -> Ext (Either (Posting Decimal Credit) (Posting Decimal Debit))
-right (Ext date pos attrs posting) = Ext date pos attrs (Right posting)
+right (Ext date i pos attrs posting) = Ext date i pos attrs (Right posting)
 
 showPostings :: [Ext (Either (Posting Decimal Credit) (Posting Decimal Debit))] -> [String]
 showPostings [] = ["No postings."]

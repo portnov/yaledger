@@ -14,6 +14,7 @@ import YaLedger.Kernel.Correspondence (matchAll)
 import YaLedger.Output.Pretty
 import YaLedger.Exceptions
 import YaLedger.Logger
+import YaLedger.Processor.DateIndex
 
 -- | Find matching deduplication rule
 findDRule :: Ext Record -> [DeduplicationRule] -> Maybe ([CheckAttribute], Attributes, DAction)
@@ -58,19 +59,25 @@ getDebitAccount r =
 
 -- | Search for record with matching attributes in list.
 -- Returns (Maybe found record, all records except found).
-matchBy :: [CheckAttribute]                 -- ^ Attributes to match
+matchBy :: DateIndex (Ext Record)
+        -> [CheckAttribute]                 -- ^ Attributes to match
         -> Attributes                       -- ^ Attributes of old records
         -> Ext Record                       -- ^ New record
         -> [Ext Record]                     -- ^ All other records
         -> (Maybe (Ext Record), [Ext Record])
-matchBy checks oldAttrs newRecord oldRecords = go oldRecords
+matchBy index checks oldAttrs newRecord oldRecords
+    | (CDate dx:_) <- checks = case go (lookupDatePrev (getDate newRecord) dx index) of
+                                 Nothing -> (Nothing, oldRecords)
+                                 Just r -> (Just r,  filter (r /=) oldRecords)
+    | otherwise = case go oldRecords of
+                    Nothing -> (Nothing, oldRecords)
+                    Just r -> (Just r,  filter (r /=) oldRecords)
   where
-    go [] = (Nothing, [])
+    go [] = Nothing
     go (r:rs) = 
       if checkAttrs oldAttrs r && all (matches r) checks
-        then (Just r, rs)
-        else let (x, ers) = go rs
-             in  (x, r: ers)
+        then Just r
+        else go rs
 
     matches oldRecord (CDate d) =
       datesDifference (getDate newRecord) (getDate oldRecord) <= d
@@ -146,14 +153,16 @@ deduplicate :: (Throws DuplicatedRecord l,
             => [DeduplicationRule]        -- ^ List of deduplication rules
             -> [Ext Record]               -- ^ Source list of records
             -> Ledger l [Ext Record]
-deduplicate rules records = go (reverse records)
+deduplicate rules records = go $ reverse records
   where
+    index = buildIndex records
+
     go [] = return []
     go (r:rs) =
       case findDRule r rules of
         Nothing -> (r:) <$> go rs
         Just (checks, oldAttrs, action) -> 
-          case matchBy checks oldAttrs r rs of
+          case matchBy index checks oldAttrs r rs of
             (Nothing, _) -> (r:) <$> go rs
             (Just old, other) -> 
               case action of
