@@ -59,6 +59,7 @@ library
                    YaLedger.Processor.Rules
                    YaLedger.Processor.Templates
                    YaLedger.Processor.Duplicates
+                   YaLedger.Processor.DateIndex
                    YaLedger.Reports.API
                    YaLedger.Reports.Common
                    YaLedger.Reports.CoA
