@@ -6,7 +6,7 @@ chart-of-accounts: ./examples/default.accounts
 accounts-map:      ./examples/tests.map
 
 query:
-  end: 2030/01/01
+  end: 2176/01/01
 
 parsers:
   csv:  ./examples/csv.yaml

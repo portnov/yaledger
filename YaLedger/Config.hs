@@ -48,8 +48,8 @@ instance Monoid Query where
   mempty = Query Nothing Nothing False M.empty
   mappend q1 q2 =
     Query {
-      qStart = qStart q2 `mplus` qStart q1,
-      qEnd   = qEnd   q2 `mplus` qEnd   q1,
+      qStart = qStart q1 `mplus` qStart q2,
+      qEnd   = qEnd   q1 `mplus` qEnd   q2,
       qAllAdmin = qAllAdmin q1 || qAllAdmin q2,
       qAttributes = qAttributes q1 `M.union` qAttributes q2 }
 

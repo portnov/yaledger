@@ -254,6 +254,8 @@ runYaLedger parsers options report params = do
 processYaLedger qry mbInterval rules records qryReport report params = do
   now <- gets lsStartDate
   let endDate = fromMaybe now (qEnd qry)
+  info $ "Records query: " ++ show qry
+  info $ "Report query: " ++ show qryReport
   t <- tryE $ processRecords endDate rules records 
   case t of
     Left (l, e :: SomeException) -> wrapIO $ putStrLn $ showExceptionWithTrace l e
