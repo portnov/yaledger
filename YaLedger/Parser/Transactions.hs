@@ -7,6 +7,7 @@ module YaLedger.Parser.Transactions
   ) where
 
 import Control.Applicative hiding (many, (<|>), optional)
+import Data.Maybe
 import Data.Either
 import Data.List
 import Data.Dates
@@ -28,6 +29,7 @@ data PState = PState {
   currentDate :: DateTime,
   dateTimeParser :: Maybe (Parser DateTime),
   declaredCurrencies :: Currencies,
+  defaultAttrs :: Attributes,
   templates :: M.Map String Int -- ^ Number of parameters
   }
 
@@ -52,6 +54,7 @@ emptyPState now coa currs mbFormat =
       currentDate = now,
       dateTimeParser = dParser,
       declaredCurrencies = currs,
+      defaultAttrs = M.empty,
       templates = M.empty }
   where
     dParser = case mbFormat of
@@ -113,11 +116,19 @@ pDateTime' now = do
     Nothing -> return date
     Just t  -> return (date `addTime` t)
 
+pSpecial :: Parser ()
+pSpecial = do
+  reserved "attributes"
+  spaces
+  attrs <- braces pAttributes
+  st <- getState
+  putState $ st {defaultAttrs = attrs}
+
 pRecords :: Parser [Ext Record]
 pRecords = do
-  rs <- pRecord `sepEndBy1` (many newline <?> "N2")
+  rs <- (try (pSpecial >> return Nothing) <|> (Just <$> pRecord))  `sepEndBy1` (many newline <?> "N2")
   eof
-  return rs
+  return (catMaybes rs)
 
 insertAttr :: (String -> AttributeValue) -> String -> Maybe String -> Attributes -> Attributes
 insertAttr _ _ Nothing attrs = attrs
@@ -142,10 +153,12 @@ ext p = do
   spaces
   mbDescription <- optionMaybe $ many1 $ noneOf "\n\r"
   newline
+  st <- getState
+  let defAttrs = defaultAttrs st
   attrs <- option M.empty $ braces $ pAttributes
   let attrs' = insertAttr Optional "description" mbDescription $
                insertAttr Exactly  "status"      mbStatus      $
-               insertAttr Exactly  "category"    mbCategory attrs
+               insertAttr Exactly  "category"    mbCategory (defAttrs `M.union` attrs)
   content <- p
   return $ Ext date 0 pos attrs' content
 
