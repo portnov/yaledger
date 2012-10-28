@@ -3,12 +3,14 @@
 *.swp
 *~
 *.prof
+*.tix
 CSV
 Test
 tbank.yaledger
 yaledger
-tests/yaledger-tests
+yaledger-tests
 benchmark
+.hpc/
 dist/
 cabal-dev/
 doc/ru/asciidoc/*.html

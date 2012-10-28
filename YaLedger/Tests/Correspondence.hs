@@ -34,7 +34,7 @@ testCheckEntry date attrs uentry creditAccPaths debitAccPaths = do
           failTest "correspondence" $ path ++ " /= " ++ intercalate "/" accPath
 
 correspondenceTest currs coa amap options records = do
-  accs <- loadAccs "correspondence.txt"
+  accs <- loadAccs "tests/correspondence.txt"
   let entries = [p | p@(Ext {getContent = Transaction (TEntry _)}) <- records]
   runLedger options coa amap records $ runEMT $ do
     forM_ (zip entries accs) $ \(rec, list) -> do

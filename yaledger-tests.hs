@@ -17,7 +17,7 @@ import qualified YaLedger.Tests.Main as Test
 
 main :: IO ()
 main =
-  Test.main "-c ../examples/tests.yaml"
+  Test.main "-c ./examples/tests.yaml"
 
 
 
