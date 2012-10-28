@@ -75,7 +75,7 @@ matchBy index checks oldAttrs newRecord oldRecords
   where
     go [] = Nothing
     go (r:rs) = 
-      if checkAttrs oldAttrs r && all (matches r) checks
+      if (newRecord /= r) && checkAttrs oldAttrs r && all (matches r) checks
         then Just r
         else go rs
 
