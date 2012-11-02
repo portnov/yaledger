@@ -114,12 +114,24 @@ instance Pretty Param where
 
 instance (Pretty t) => Pretty (Transaction t) where
   prettyPrint (TEntry e) = prettyPrint e
-  prettyPrint (TReconciliate acc x) =
-    printf "reconciliate %s %s\n" (getName acc) (prettyPrint x)
+  prettyPrint (TReconciliate acc x msg) =
+    printf "reconciliate %s %s%s\n" (getName acc) (prettyPrint x)
+                                    (maybe "" ((" "++) . prettyPrint) msg)
   prettyPrint (TCallTemplate name args) =
     printf "call %s %s\n"
            name
            (unwords $ map prettyPrint args)
+
+instance Pretty ReconciliationMessage where
+  prettyPrint (RWarning msg) = "warning: " ++ prettyPrint msg
+  prettyPrint (RError   msg) = "error: " ++ prettyPrint msg
+
+instance Pretty MessageFormat where
+  prettyPrint list = concatMap prettyPrint list
+
+instance Pretty MessageElement where
+  prettyPrint (MVariable name) = '#':name
+  prettyPrint (MFixed str) = str
 
 instance (Pretty v) => Pretty (Entry v c) where
   prettyPrint (CEntry dt cr _) =

@@ -35,6 +35,8 @@ import YaLedger.Types
 import YaLedger.Exceptions
 import YaLedger.Kernel.Correspondence
 import YaLedger.Kernel.Common
+import YaLedger.Output.Pretty
+import YaLedger.Output.Messages
 import YaLedger.Logger
 
 -- | Accounts that could be credited
@@ -624,12 +626,14 @@ fillEntry qry date dt cr mbCorr amount@(value :# _) = do
 -- to given value.
 reconciliate :: (Throws NoSuchRate l,
                  Throws InvalidAccountType l,
+                 Throws ReconciliationError l,
                  Throws InternalError l)
              => DateTime       -- ^ Transaction date/time
              -> AnyAccount     -- ^ Account
              -> Amount         -- ^ Balance value to set
-             -> Ledger l (Entry Amount Unchecked)
-reconciliate date account amount = do
+             -> Maybe ReconciliationMessage
+             -> Ledger l (Maybe (Entry Amount Unchecked))
+reconciliate date account amount msg = do
 
   let qry = Query {
               qStart      = Nothing,
@@ -637,20 +641,55 @@ reconciliate date account amount = do
               qAllAdmin   = True,
               qAttributes = M.empty }
 
-  currentBalance :# accountCurrency <- saldo qry account
+  targetBalance :# accountCurrency <- saldo qry account
   actualBalance :# _ <- convert (Just date) (getCurrency account) amount
 
   -- diff is in accountCurrency
-  let diff = actualBalance - currentBalance
-  if diff > 0
+  let diff = actualBalance - targetBalance
+  if diff /= 0
     then do
-         account' <- accountAsCredit account
-         let posting = CPosting account' (diff :# accountCurrency)
-         return $ UEntry [] [posting] Nothing [getCurrency amount]
-    else do
-         account' <- accountAsDebit account
-         let posting = DPosting account' ((-diff) :# accountCurrency)
-         return $ UEntry [posting] [] Nothing [getCurrency amount]
+         coa <- gets lsCoA
+         fireReconMessage coa msg account
+                          (actualBalance :# accountCurrency)
+                          (targetBalance :# accountCurrency)
+         if diff > 0
+           then do
+                account' <- accountAsCredit account
+                let posting = CPosting account' (diff :# accountCurrency)
+                return $ Just $ UEntry [] [posting] Nothing [getCurrency amount]
+           else do
+                account' <- accountAsDebit account
+                let posting = DPosting account' ((-diff) :# accountCurrency)
+                return $ Just $ UEntry [posting] [] Nothing [getCurrency amount]
+    else return Nothing
+
+fireReconMessage :: (Throws InternalError l,
+                     Throws ReconciliationError l)
+                 => ChartOfAccounts
+                 -> Maybe ReconciliationMessage
+                 -> AnyAccount
+                 -> Amount
+                 -> Amount
+                 -> Ledger l ()
+fireReconMessage _ Nothing _ _ _ = return ()
+fireReconMessage coa (Just (RWarning str)) account actual target =
+  warning (formatReconMessage str coa account actual target)
+fireReconMessage coa (Just (RError   str)) account actual target =
+  throwP $ ReconciliationError (formatReconMessage str coa account actual target)
+
+formatReconMessage :: MessageFormat
+                   -> ChartOfAccounts
+                   -> AnyAccount
+                   -> Amount
+                   -> Amount
+                   -> String
+formatReconMessage format coa account actual target =
+  let path = case accountFullPath (getID account) coa of
+               Nothing -> error $ "Impossible: Kernel.formatReconMessage: no account: " ++ show account
+               Just p  -> intercalate "/" p
+  in formatMessage [("account", path),
+                    ("target",  prettyPrint target),
+                    ("actual",  prettyPrint actual)] format
 
 -- | Calculate sum of amounts in accounts group.
 sumGroup :: (Throws InternalError l,

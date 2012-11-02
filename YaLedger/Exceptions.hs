@@ -46,6 +46,16 @@ instance Show InsufficientFunds where
 
 instance Exception InsufficientFunds
 
+data ReconciliationError = ReconciliationError String SourcePos
+  deriving (Typeable)
+
+instance Show ReconciliationError where
+  show (ReconciliationError msg pos) =
+    showPos pos $
+      "Reconciliation error: " ++ msg
+
+instance Exception ReconciliationError
+
 data DuplicatedRecord = DuplicatedRecord String SourcePos
   deriving (Typeable)
 

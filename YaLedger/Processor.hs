@@ -35,6 +35,7 @@ processEntry :: (Throws NoSuchRate l,
                  Throws InvalidAccountType l,
                  Throws NoSuchTemplate l,
                  Throws InsufficientFunds l,
+                 Throws ReconciliationError l,
                  Throws InternalError l)
                => DateTime                -- ^ Date/time of entry
                -> SourcePos               -- ^ Location of entry in source file
@@ -203,6 +204,7 @@ processRecords :: (Throws NoSuchRate l,
                    Throws InvalidAccountType l,
                    Throws NoSuchTemplate l,
                    Throws InsufficientFunds l,
+                   Throws ReconciliationError l,
                    Throws DuplicatedRecord l,
                    Throws InternalError l)
                => DateTime                   -- ^ Process records with date <= this
@@ -223,19 +225,21 @@ processTransaction :: (Throws NoSuchRate l,
                        Throws InvalidAccountType l,
                        Throws NoSuchTemplate l,
                        Throws InsufficientFunds l,
+                       Throws ReconciliationError l,
                        Throws InternalError l)
                    => Ext (Transaction Amount)
                    -> Ledger l ()
 processTransaction (Ext date _ pos attrs (TEntry p)) = do
     setPos pos
     processEntry date pos attrs p
-processTransaction (Ext date _ pos attrs (TReconciliate acc x)) = do
+processTransaction (Ext date _ pos attrs (TReconciliate acc x msg)) = do
     setPos pos
-    entry <- reconciliate date acc x
-    processEntry date
-                 pos
-                 (M.insert "category" (Exactly "reconciliation") attrs)
-                 entry
+    mbEntry <- reconciliate date acc x msg
+    case mbEntry of
+      Nothing -> return ()
+      Just entry -> processEntry date pos
+                                 (M.insert "category" (Exactly "reconciliation") attrs)
+                                 entry
 processTransaction (Ext date _ pos attrs (TCallTemplate name args)) = do
     setPos pos
     (tplAttrs, template) <- getTemplate name

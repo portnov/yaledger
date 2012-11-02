@@ -55,6 +55,7 @@ library
                    YaLedger.Output.ASCII
                    YaLedger.Output.CSV
                    YaLedger.Output.Pretty
+                   YaLedger.Output.Messages
                    YaLedger.Processor
                    YaLedger.Processor.Rules
                    YaLedger.Processor.Templates

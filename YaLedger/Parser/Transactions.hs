@@ -337,7 +337,29 @@ pReconciliate p = do
   account <- getAccount getPosition (getCoA <$> getState) path 
   spaces
   x <- p
-  return $ TReconciliate account x
+  msg <- optionMaybe pReconMessage
+  return $ TReconciliate account x msg
+
+defaultReconMessage :: MessageFormat
+defaultReconMessage =
+  [MFixed "On reconciliation: target balance of ",
+   MVariable "account",
+   MFixed " is ",
+   MVariable "target",
+   MFixed ", but actual balance is ",
+   MVariable "actual" ]
+
+pReconMessage :: Parser ReconciliationMessage
+pReconMessage = try (go "warning" RWarning) <|> (go "error" RError)
+  where
+    go keyword constr = do
+      spaces
+      reserved keyword
+      msg <- option defaultReconMessage $ do
+               char ':'
+               spaces
+               pMessageFormat
+      return (constr msg)
 
 pSetRate :: Parser Record
 pSetRate = SetRate <$> many1 (do

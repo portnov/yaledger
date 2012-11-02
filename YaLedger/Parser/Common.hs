@@ -106,6 +106,16 @@ pAttribute = do
   value <- pAttributeValue
   return (name, value)
 
+pMessageFormat :: Monad m => ParsecT String st m MessageFormat
+pMessageFormat = many1 $ try var <|> fixed
+  where
+    var = do
+      char '#'
+      name <- many1 alphaNum
+      return (MVariable name)
+
+    fixed = MFixed <$> (many1 $ noneOf "\n\r#")
+
 pPath :: Monad m => ParsecT String st m Path
 pPath = try identifier `sepBy1` reservedOp "/"
 

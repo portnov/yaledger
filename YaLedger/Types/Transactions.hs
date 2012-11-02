@@ -19,8 +19,13 @@ data Record =
 
 data Transaction v =
     TEntry (Entry v Unchecked)
-  | TReconciliate AnyAccount v
+  | TReconciliate AnyAccount v (Maybe ReconciliationMessage)
   | TCallTemplate String [Amount]
+  deriving (Eq, Show)
+
+data ReconciliationMessage =
+    RWarning MessageFormat
+  | RError MessageFormat
   deriving (Eq, Show)
 
 data Query = Query {

@@ -15,6 +15,7 @@ module YaLedger.Types.Common
    Amount (..), Param (..),
    AccountGroupType (..),
    AccountGroupData (..),
+   MessageFormat, MessageElement (..),
    SourcePos,
    emptyCurrency,
    sourceLine, sourceColumn, sourceName,
@@ -207,4 +208,11 @@ instance Show AccountGroupData where
 
 instance HasID AccountGroupData where
   getID ag = agID ag
+
+data MessageElement =
+    MVariable String
+  | MFixed String
+  deriving (Eq, Show)
+
+type MessageFormat = [MessageElement]
 
