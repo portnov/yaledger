@@ -56,13 +56,6 @@ float       = P.float lexer
 natural     = P.natural lexer
 naturalOrFloat = P.naturalOrFloat lexer
 
-number :: Monad m => ParsecT String st m Decimal
-number = do
-  x <- naturalOrFloat
-  return $ case x of
-             Left i  -> realFracToDecimal 10 (fromIntegral i)
-             Right x -> realFracToDecimal 10 x
-
 pRegexp :: Monad m => ParsecT String st m String
 pRegexp = do
     char '/'
@@ -118,6 +111,21 @@ pMessageFormat = many1 $ try var <|> fixed
 
 pPath :: Monad m => ParsecT String st m Path
 pPath = try identifier `sepBy1` reservedOp "/"
+
+number :: Monad m => (st -> Char) -> (st -> Char) -> ParsecT String st m Decimal
+number getThousandsSep getDecimalSep = do
+    st <- getState
+    let thousandsSep = getThousandsSep st
+        decimalSep   = getDecimalSep   st
+    str <- many1 $ oneOf $ "0123456789" ++ [thousandsSep, decimalSep]
+    case length $ filter (== decimalSep) str of
+      0 -> return $ Decimal 0 (read $ filter (/= thousandsSep) str)
+      1 -> return $ read $ map (dot decimalSep) $ filter (/= thousandsSep) str
+      _ -> fail $ "More than one decimal separator in number: " ++ str
+  where
+    dot sep c
+      | sep == c  = '.'
+      | otherwise = c
 
 currencySymbol :: Monad m => ParsecT String st m String
 currencySymbol =

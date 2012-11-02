@@ -27,6 +27,8 @@ import YaLedger.Logger
 data PState = PState {
   getCoA :: ChartOfAccounts,
   currentDate :: DateTime,
+  getThousandsSeparator :: Char,
+  getDecimalSeparator :: Char,
   dateTimeParser :: Maybe (Parser DateTime),
   declaredCurrencies :: Currencies,
   defaultAttrs :: Attributes,
@@ -37,13 +39,17 @@ data PState = PState {
 type Parser a = Parsec String PState a
 
 data NativeParserConfig = NativeParserConfig {
+    thousandsSeparator :: Char,
+    decimalSeparator :: Char,
     nativeDateFormat :: Maybe String }
   deriving (Eq, Show)
 
 instance FromJSON NativeParserConfig where
   parseJSON (Object v) =
     NativeParserConfig
-      <$> v .:? "dateformat"
+      <$> v .:? "thousands-separator" .!= ' '
+      <*> v .:? "decimal-separator" .!= '.'
+      <*> v .:? "dateformat"
 
 space = oneOf " \t"
 spaces = many space
@@ -53,6 +59,8 @@ emptyPState now coa currs mbFormat =
     PState {
       getCoA = coa,
       currentDate = now,
+      getThousandsSeparator = ' ',
+      getDecimalSeparator = '.',
       dateTimeParser = dParser,
       declaredCurrencies = currs,
       defaultAttrs = M.empty,
@@ -431,13 +439,13 @@ pAmount :: Parser Amount
 pAmount = try numberFirst <|> currencyFirst
   where
     numberFirst = do
-      n <- number
+      n <- number getThousandsSeparator getDecimalSeparator
       c <- currency
       return $ n :# c
 
     currencyFirst = do
       c <- currency
-      n <- number
+      n <- number getThousandsSeparator getDecimalSeparator
       return $ n :# c
 
 currency :: Parser Currency
@@ -486,7 +494,7 @@ loadTransactions configPath currs coa path = do
               then do
                    infoIO $ "Using config for native format: " ++ configPath
                    loadParserConfig configPath
-              else return (NativeParserConfig Nothing)
+              else return (NativeParserConfig ' ' '.' Nothing)
   content <- readFile path
   now <- getCurrentDateTime
   let !st = emptyPState now coa currs (nativeDateFormat config)

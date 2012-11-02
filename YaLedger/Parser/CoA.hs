@@ -15,6 +15,8 @@ import YaLedger.Parser.Common
 data PState = PState {
     lastAID :: Integer,
     lastGID :: Integer,
+    getThousandsSeparator :: Char,
+    getDecimalSeparator :: Char, 
     declaredCurrencies :: Currencies,
     groupAttributes :: Attributes,
     groupCurrency   :: Currency,
@@ -25,6 +27,8 @@ emptyPState :: Currencies -> PState
 emptyPState currs = PState {
   lastAID = 0,
   lastGID = 0,
+  getThousandsSeparator = ' ',
+  getDecimalSeparator = '.',
   declaredCurrencies = currs,
   groupAttributes = M.empty,
   groupCurrency = emptyCurrency,
@@ -118,7 +122,7 @@ bcheck kind = do
   symbol kind
   spaces
   reservedOp "="
-  res <- number
+  res <- number getThousandsSeparator getDecimalSeparator
   semicolon
   return res
 
