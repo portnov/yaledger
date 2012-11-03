@@ -118,9 +118,10 @@ number getThousandsSep getDecimalSep = do
     let thousandsSep = getThousandsSep st
         decimalSep   = getDecimalSep   st
     str <- many1 $ oneOf $ "0123456789" ++ [thousandsSep, decimalSep]
-    case length $ filter (== decimalSep) str of
-      0 -> return $ Decimal 0 (read $ filter (/= thousandsSep) str)
-      1 -> return $ read $ map (dot decimalSep) $ filter (/= thousandsSep) str
+    let clr = filter (/= thousandsSep) str
+    case length $ filter (== decimalSep) clr of
+      0 -> return $ Decimal 0 (read clr)
+      1 -> return $ read $ map (dot decimalSep) clr
       _ -> fail $ "More than one decimal separator in number: " ++ str
   where
     dot sep c

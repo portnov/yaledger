@@ -40,6 +40,8 @@ defaultFieldConfig n =
 data GenericParserConfig = GenericParserConfig {
     pcDate       :: FieldConfig,
     pcDateFormat :: String,
+    pcThousandsSep :: Char,
+    pcDecimalSep   :: Char,
     pcCurrency   :: FieldConfig,
     pcAmount     :: FieldConfig,
     pcAccount    :: FieldConfig,
@@ -64,6 +66,8 @@ parseGenericConfig reserved v =
   GenericParserConfig
       <$> v .:  "date"
       <*> v .:? "dateformat" .!= "YYYY/MM/DD"
+      <*> v .:? "thousands-separator" .!= ' '
+      <*> v .:? "decimal-separator"   .!= '.'
       <*> v .:? "currency"  .!= FixedValue "$"
       <*> v .:  "amount"
       <*> v .:  "account"
@@ -125,14 +129,21 @@ field fc row =
                    [] -> ""
                    (x:_) -> x
 
-readSum :: String -> Either String Decimal
-readSum str =
-  let str' = filter (`notElem` " \r\n\t") str
-      list = reads str'
-  in case [x | (x, "") <- list] of
-       [x] -> Right x
-       _   -> Left $ "Cannot parse amount: " ++ str'
+readSum :: Char -> Char -> String -> Either String Decimal
+readSum thousandsSep decimalSep str =
+  let str' = filter (`notElem` (thousandsSep: " \r\n\t")) str
+      dot c
+        | decimalSep == c = '.'
+        | otherwise       = c
+      readD s = case [x | (x, "") <- reads s] of
+                  [x] -> Right x
+                  _   -> Left $ "Cannot parse amount: " ++ s
 
+  in case length $ filter (== decimalSep) str' of
+       0 -> Decimal 0 <$> readD str'
+       1 -> readD $ map dot str'
+       _ -> Left $ "More than one decimal separator in number: " ++ str
+  
 filterRows :: [RowsFilter] -> [[String]] -> [[String]]
 filterRows filters rows = filter (\row -> all (ok row) filters) rows
   where
@@ -186,13 +197,13 @@ convertRow pc currs coa path rowN row = do
             Left err -> fail $ dateStr ++ ":\n" ++ show err
 
   (s, amount) <- case head amountStr of
-                   '+' -> case readSum (tail amountStr) of
+                   '+' -> case readSum (pcThousandsSep pc) (pcDecimalSep pc) (tail amountStr) of
                             Right x -> return (ECredit, x)
                             Left err -> fail err
-                   '-' -> case readSum (tail amountStr) of
+                   '-' -> case readSum (pcThousandsSep pc) (pcDecimalSep pc) (tail amountStr) of
                             Right x -> return (EDebit, x)
                             Left err -> fail err
-                   _   -> case readSum amountStr of
+                   _   -> case readSum (pcThousandsSep pc) (pcDecimalSep pc) amountStr of
                             Right x -> return (ECredit, x)
                             Left err -> fail err
 
