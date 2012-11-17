@@ -184,7 +184,7 @@ convertRow pc currs coa path rowN row = do
 
       lookupAccount path =
          case lookupTree (mkPath path) coa of
-           [] -> fail $ "No such account: " ++ path
+           [] -> fail $ "No such account: " ++ path ++ "\n" ++ unwords row
            [a] -> return a
            as -> fail "Ambigous account specification"
 
