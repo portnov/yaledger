@@ -66,6 +66,7 @@ library
                    YaLedger.Reports.CoA
                    YaLedger.Reports.Cat
                    YaLedger.Reports.Balance
+                   YaLedger.Reports.Saldo
                    YaLedger.Reports.Registry
                    YaLedger.Reports.Details
                    YaLedger.Reports.IncomeStatement

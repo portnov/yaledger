@@ -6,6 +6,7 @@ import YaLedger.Main
 import YaLedger.Reports.Cat
 import YaLedger.Reports.CoA
 import YaLedger.Reports.Balance
+import YaLedger.Reports.Saldo
 import YaLedger.Reports.Details
 import YaLedger.Reports.Registry
 import YaLedger.Reports.Postings
@@ -16,7 +17,8 @@ main :: IO ()
 main =
   defaultMain
     allParsers
-    [("balances",  Report Balances),
+    [("balances", Report Balances),
+     ("saldo",    Report Saldo),
      ("registry", Report Registry),
      ("postings", Report Postings),
      ("details",  Report Details),

@@ -4,7 +4,7 @@ module YaLedger.Kernel
   (module YaLedger.Kernel.Common,
    CanCredit (..), CanDebit (..),
    negateAmount, differenceType,
-   getCurrentBalance,
+   getCurrentBalance, getBalanceAt,
    convert, convertPosting,
    convertPosting', convertDecimal,
    checkQuery, checkRecord, isAdmin,
@@ -16,7 +16,8 @@ module YaLedger.Kernel
    checkEntry,
    reconciliate,
    creditTurnovers, debitTurnovers,
-   saldo, treeSaldo, treeSaldos
+   saldo, treeSaldo, treeSaldos,
+   treeBalances
   ) where
 
 import Prelude hiding (catch)
@@ -124,6 +125,22 @@ getCurrentBalance :: (HasBalances a,
 getCurrentBalance acc = do
   balances <- readIOList (accountBalances acc)
   return $ case balances of
+             [] -> 0
+             (b:_) -> balanceValue (getContent b)
+
+-- | Get balance of account at given date.
+-- Value is returned in currency of account.
+getBalanceAt :: (HasBalances a,
+                 Throws InternalError l)
+             => Maybe DateTime    -- ^ If Nothing, return current balance
+             -> a                 -- ^ Any sort of account
+             -> Ledger l Decimal
+getBalanceAt mbDate acc = do
+  balances <- readIOList (accountBalances acc)
+  let good = case mbDate of
+               Nothing   -> id
+               Just date -> filter (\r -> getDate r <= date)
+  return $ case good balances of
              [] -> 0
              (b:_) -> balanceValue (getContent b)
 
@@ -722,6 +739,22 @@ treeSaldos :: (Throws InternalError l,
 treeSaldos queries coa = mapTreeM (sumGroups $ map qEnd queries) saldos coa
   where
     saldos acc = forM queries $ \qry -> saldo qry acc
+
+    sumGroups dates ag list =
+      forM (zip dates $ transpose list) $ \(date,ams) ->
+        sumGroup date ag ams
+
+-- | Calculate balances for each account \/ group in CoA.
+treeBalances :: (Throws NoSuchRate l,
+                 Throws InternalError l)
+             => [Query]
+             -> ChartOfAccounts
+             -> Ledger l (Tree [Amount] [Amount])
+treeBalances queries coa = mapTreeM (sumGroups $ map qEnd queries) balances coa
+  where
+    balances acc = forM queries $ \qry -> do
+                       b <- getBalanceAt (qEnd qry) acc
+                       return $ b :# getCurrency acc
 
     sumGroups dates ag list =
       forM (zip dates $ transpose list) $ \(date,ams) ->
