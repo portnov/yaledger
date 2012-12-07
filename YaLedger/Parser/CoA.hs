@@ -40,16 +40,20 @@ account :: AccountGroupType -> String -> Integer -> Currency -> Bool -> BalanceC
 account AGDebit  name aid c _ checks attrs = do
     empty1 <- lift $ newTVarIO []
     empty2 <- lift $ newTVarIO []
-    return $ WDebit  attrs $ DAccount name aid c checks empty1 empty2
+    empty3 <- lift $ newTVarIO []
+    return $ WDebit  attrs $ DAccount name aid c checks empty1 empty2 empty3
 account AGCredit name aid c _ checks attrs = do
     empty1 <- lift $ newTVarIO []
     empty2 <- lift $ newTVarIO []
-    return $ WCredit attrs $ CAccount name aid c checks empty1 empty2
+    empty3 <- lift $ newTVarIO []
+    return $ WCredit attrs $ CAccount name aid c checks empty1 empty2 empty3
 account AGFree   name aid c redirect checks attrs = do
     empty1 <- lift $ newTVarIO []
     empty2 <- lift $ newTVarIO []
     empty3 <- lift $ newTVarIO []
-    return $ WFree   attrs $ FAccount name aid c redirect checks empty1 empty2 empty3
+    empty4 <- lift $ newTVarIO []
+    empty5 <- lift $ newTVarIO []
+    return $ WFree   attrs $ FAccount name aid c redirect checks empty1 empty2 empty3 empty4 empty5
 
 newAID :: Parser Integer
 newAID = do

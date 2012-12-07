@@ -80,13 +80,13 @@ instance ATemplate (Posting Param t) where
   subst (DPosting acc a) =
     case a of
       FromBalance c -> do
-        balance <- lift (getCurrentBalance acc)
+        balance <- lift (getCurrentBalance AvailableBalance acc)
         return $ DPosting acc (balance *. c :# getCurrency acc)
       _ -> DPosting acc <$> subst a
   subst (CPosting acc a) =
     case a of
       FromBalance c -> do
-        balance <- lift (getCurrentBalance acc)
+        balance <- lift (getCurrentBalance AvailableBalance acc)
         return $ CPosting acc (balance *. c :# getCurrency acc)
       _ -> CPosting acc <$> subst a
 

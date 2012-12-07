@@ -3,6 +3,7 @@
 module YaLedger.Kernel
   (module YaLedger.Kernel.Common,
    CanCredit (..), CanDebit (..),
+   HoldOperations (..),
    negateAmount, differenceType,
    getCurrentBalance, getBalanceAt,
    convert, convertPosting,
@@ -48,6 +49,11 @@ class CanCredit a where
          -> Ext (Posting Decimal Credit)
          -> Ledger l ()
 
+  creditHold :: (Throws InternalError l) 
+         => a
+         -> Ext (Hold Decimal Credit)
+         -> Ledger l ()
+
 -- | Accounts that could be debited
 class CanDebit a where
   debit :: (Throws InternalError l,
@@ -56,49 +62,95 @@ class CanDebit a where
         -> Ext (Posting Decimal Debit)
         -> Ledger l ()
 
+  debitHold :: (Throws InternalError l)
+         => a
+         -> Ext (Hold Decimal Debit)
+         -> Ledger l ()
+
+class Sign t => HoldOperations t where
+  justHold :: t -> Decimal -> Balance Checked
+  addHoldSum :: t -> Decimal -> Balance Checked -> Balance Checked
+  getHolds :: FreeOr t Account -> History (Hold Decimal) t
+
+instance HoldOperations Credit where
+  justHold _ x = Balance Nothing 0 x 0
+  addHoldSum _ x b = b {creditHolds = creditHolds b + x}
+
+  getHolds (Left  a) = freeAccountCreditHolds a
+  getHolds (Right a) = creditAccountHolds a
+
+instance HoldOperations Debit where
+  justHold _ x = Balance Nothing 0 0 x
+  addHoldSum _ x b = b {debitHolds = debitHolds b - x}
+
+  getHolds (Left  a) = freeAccountDebitHolds a
+  getHolds (Right a) = debitAccountHolds a
+
 instance CanDebit (Account Debit) where
   debit acc@(DAccount {..}) p = do
-      balance <- getCurrentBalance acc
+      balance <- getCurrentBalance AvailableBalance acc
       checkBalance (balance - postingValue (getContent p)) acc
       appendIOList debitAccountPostings p
-      balancePlus p debitAccountBalances
+      balancePlusPosting p debitAccountBalances
+
+  debitHold (DAccount {..}) hold = do
+      appendIOList debitAccountHolds hold
+      balanceSetHold hold debitAccountBalances
 
 instance CanDebit (Account Free) where
   debit acc@(FAccount {..}) p = do
-      balance <- getCurrentBalance acc
+      balance <- getCurrentBalance AvailableBalance acc
       checkBalance (balance - postingValue (getContent p)) acc
       appendIOList freeAccountDebitPostings p
-      balancePlus p freeAccountBalances
+      balancePlusPosting p freeAccountBalances
+
+  debitHold (FAccount {..}) hold = do
+      appendIOList freeAccountDebitHolds hold
+      balanceSetHold hold freeAccountBalances
 
 instance CanCredit (Account Credit) where
   credit acc@(CAccount {..}) p = do
-      balance <- getCurrentBalance acc
+      balance <- getCurrentBalance AvailableBalance acc
       checkBalance (balance + postingValue (getContent p)) acc
       appendIOList creditAccountPostings p
-      balancePlus p creditAccountBalances
+      balancePlusPosting p creditAccountBalances
+
+  creditHold (CAccount {..}) hold = do
+      appendIOList creditAccountHolds hold
+      balanceSetHold hold creditAccountBalances
 
 instance CanCredit (Account Free) where
   credit acc@(FAccount {..}) p = do
-      balance <- getCurrentBalance acc
+      balance <- getCurrentBalance AvailableBalance acc
       checkBalance (balance + postingValue (getContent p)) acc
       appendIOList freeAccountCreditPostings p
-      balancePlus p freeAccountBalances
+      balancePlusPosting p freeAccountBalances
+
+  creditHold (FAccount {..}) hold = do
+      appendIOList freeAccountCreditHolds hold
+      balanceSetHold hold freeAccountBalances
 
 instance CanCredit (FreeOr Credit Account) where
   credit (Left  a) p = credit a p
   credit (Right a) p = credit a p
 
+  creditHold (Left  a) hold = creditHold a hold
+  creditHold (Right a) hold = creditHold a hold
+
 instance CanDebit (FreeOr Debit Account) where
   debit (Left  a) p = debit a p
   debit (Right a) p = debit a p
 
+  debitHold (Left  a) hold = debitHold a hold
+  debitHold (Right a) hold = debitHold a hold
+
 -- | Add posting value to balances history
-balancePlus :: forall l t.
+balancePlusPosting :: forall l t.
                (Throws InternalError l, Sign t)
             => Ext (Posting Decimal t)   -- ^ Posting
             -> History Balance Checked   -- ^ Balances history
             -> Ledger l ()
-balancePlus p history = do
+balancePlusPosting p history = do
   let s = fromIntegral (sign (undefined :: t))
       value = s * postingValue (getContent p)
       update e@(Ext {getContent = b}) =
@@ -107,9 +159,30 @@ balancePlus p history = do
             extID         = extID p,
             getLocation   = getLocation p,
             getAttributes = getAttributes p,
-            getContent    = b {balanceValue = balanceValue b + value}
+            getContent    = b { balanceValue = balanceValue b + value }
           }
-  let zero = Ext (getDate p) (extID p) (getLocation p) (getAttributes p) (Balance Nothing value)
+  let zero = Ext (getDate p) (extID p) (getLocation p) (getAttributes p) (Balance Nothing value 0 0)
+  plusIOList zero update history
+
+balanceSetHold :: forall l t.
+                  (Throws InternalError l, HoldOperations t)
+                => Ext (Hold Decimal t)
+                -> History Balance Checked
+                -> Ledger l ()
+balanceSetHold hold history = do
+  let value = postingValue $ holdPosting (getContent hold)
+      update e@(Ext {getContent = b}) =
+          Ext {
+            getDate       = getDate hold,
+            extID         = extID hold,
+            getLocation   = getLocation hold,
+            getAttributes = getAttributes hold,
+            getContent    = addHoldSum (undefined :: t) value b
+          }
+  let zero = Ext (getDate hold)
+                 (extID hold)
+                 (getLocation hold)
+                 (getAttributes hold) $ justHold (undefined :: t) value
   plusIOList zero update history
 
 whenJust :: (Monad m) => Maybe a -> (a -> m ()) -> m ()
@@ -120,29 +193,31 @@ whenJust (Just a) fn = fn a
 -- Value is returned in currency of account.
 getCurrentBalance :: (HasBalances a,
                       Throws InternalError l)
-                  => a                 -- ^ Any sort of account
+                  => BalanceType
+                  -> a                 -- ^ Any sort of account
                   -> Ledger l Decimal
-getCurrentBalance acc = do
+getCurrentBalance btype acc = do
   balances <- readIOList (accountBalances acc)
-  return $ case balances of
+  return $ case map (balanceGetter btype . getContent) balances of
              [] -> 0
-             (b:_) -> balanceValue (getContent b)
+             (b:_) -> b
 
 -- | Get balance of account at given date.
 -- Value is returned in currency of account.
 getBalanceAt :: (HasBalances a,
                  Throws InternalError l)
              => Maybe DateTime    -- ^ If Nothing, return current balance
+             -> BalanceType
              -> a                 -- ^ Any sort of account
              -> Ledger l Decimal
-getBalanceAt mbDate acc = do
+getBalanceAt mbDate btype acc = do
   balances <- readIOList (accountBalances acc)
   let good = case mbDate of
                Nothing   -> id
                Just date -> filter (\r -> getDate r <= date)
-  return $ case good balances of
+  return $ case map (balanceGetter btype . getContent) (good balances) of
              [] -> 0
-             (b:_) -> balanceValue (getContent b)
+             (b:_) -> b
 
 -- | Check if balance account would be OK.
 -- Issue INFO:, WARNING:, or exception.
@@ -403,6 +478,7 @@ setZero (DPosting a _) = DPosting a 0
 --
 --  * Calculate exchange rate difference.
 --
+-- NB: this does not modify any accounts.
 checkEntry :: (Throws NoSuchRate l,
                Throws NoCorrespondingAccountFound l,
                Throws InvalidAccountType l,
@@ -517,25 +593,33 @@ lookupCorrespondence qry date amount@(value :# currency) mbCorr = do
   groupsMap <- gets lsFullGroupsMap
   let mbAccount = runCQuery qry coa
       mbByMap = lookupAMap groupsMap coa amap qry (cqExcept qry)
+  -- Search for corresponding account:
+  -- 1. Account which is explicitly specified in source record.
+  -- 2. Account which is found using accounts map.
+  -- 3. Account which is found by given query.
   case mbCorr `mplus` mbByMap `mplus` mbAccount of
+    -- No corresponding account found
     Nothing -> throwP (NoCorrespondingAccountFound qry)
     Just acc ->
       case cqType qry of
+        -- Second entry part will be credit.
+        -- Just return found account.
         ECredit -> return (Right acc)
         EDebit ->
+          -- Second entry part will be debit.
           -- Check if we should redirect part of debit
           case acc of
             -- Debit redirect has sence only for free accounts
             WFree _ account ->
               if not (freeAccountRedirect account)
+                -- Account redirect is not used for this account
                 then return (Right acc)
                 else do
                      let accountCurrency = getCurrency account
                      toDebit :# _ <- convert (Just date) accountCurrency amount
-                     currentBalance <- getCurrentBalance account
+                     currentBalance <- getCurrentBalance AvailableBalance account
                      -- toDebit and currentBalance are both in currency of
                      -- found account.
-                     let firstPosting = DPosting (Left account) (currentBalance :# accountCurrency)
                      if toDebit <= currentBalance
                        then return $ Left [DPosting (Left account) (toDebit :# accountCurrency)]
                        else do
@@ -555,6 +639,11 @@ lookupCorrespondence qry date amount@(value :# currency) mbCorr = do
                                                           (Exactly $ getName account)
                                                           (cqAttributes qry)
                                        }
+                            -- first posting will get all available balance of this account.
+                            let firstPosting = DPosting (Left account) (currentBalance :# accountCurrency)
+                            -- search for other accounts to redirect part of amount.
+                            -- NB: this recursive call can return one account
+                            -- or list of postings.
                             nextHop <- lookupCorrespondence qry' date
                                            (toRedirect :# accountCurrency)
                                            Nothing
@@ -570,7 +659,6 @@ lookupCorrespondence qry date amount@(value :# currency) mbCorr = do
                                 return $ Left (firstPosting: postings)
             -- For other account types, just return found account.
             _ -> return (Right acc)
-            
 
 -- | Fill in debit and credit parts of entry, so that
 -- credit - debit == 0.
@@ -746,13 +834,15 @@ treeSaldos queries coa = mapTreeM (sumGroups $ map qEnd queries) saldos coa
 -- | Calculate balances for each account \/ group in CoA.
 treeBalances :: (Throws NoSuchRate l,
                  Throws InternalError l)
-             => [Query]
+             => BalanceType
+             -> [Query]
              -> ChartOfAccounts
              -> Ledger l (Tree [Amount] [Amount])
-treeBalances queries coa = mapTreeM (sumGroups $ map qEnd queries) balances coa
+treeBalances btype queries coa =
+    mapTreeM (sumGroups $ map qEnd queries) balances coa
   where
     balances acc = forM queries $ \qry -> do
-                       b <- getBalanceAt (qEnd qry) acc
+                       b <- getBalanceAt (qEnd qry) btype acc
                        return $ b :# getCurrency acc
 
     sumGroups dates ag list =

@@ -62,7 +62,7 @@ balance queries options mbPath = (do
     (\l (e :: NoSuchRate) -> handler l e)
 
 byOneAccount queries options acc = do
-    results <- forM queries $ \qry -> getBalanceAt (qEnd qry) acc
+    results <- forM queries $ \qry -> getBalanceAt (qEnd qry) AvailableBalance acc
     let ends   = map qEnd   queries
     let format = case needCSV options of
                    Nothing  -> tableColumns ASCII
@@ -72,7 +72,7 @@ byOneAccount queries options acc = do
                      (["BALANCE"], ARight, map show results)]
 
 byGroup queries options coa = do
-    results <- treeBalances queries coa
+    results <- treeBalances AvailableBalance queries coa
     let results' = if BNoZeros `elem` options
                      then filterLeafs (any isNotZero) results
                      else results

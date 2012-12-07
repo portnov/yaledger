@@ -102,6 +102,9 @@ newIOList = wrapIO $ newTVarIO []
 readIOList :: (MonadIO m, Throws InternalError l) => IOList a -> EMT l m [a]
 readIOList iolist = wrapIO (readTVarIO iolist)
 
+writeIOList :: (MonadIO m, Throws InternalError l) => IOList a -> [a] -> EMT l m ()
+writeIOList iolist x = wrapIO (atomically $ writeTVar iolist x)
+
 appendIOList :: (MonadIO m, Throws InternalError l) => IOList a -> a -> EMT l m ()
 appendIOList iolist x =
   wrapIO $ atomically $ modifyTVar iolist (x:)

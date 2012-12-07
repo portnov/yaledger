@@ -7,6 +7,7 @@ import Data.Decimal
 import Data.List
 import Data.Hashable
 import Text.Printf
+import Data.Dates
 
 import YaLedger.Tree
 import YaLedger.Types.Attributes
@@ -48,6 +49,10 @@ postingAccount :: Posting v t -> AnyAccount
 postingAccount (DPosting {..}) = either (WFree M.empty) (WDebit M.empty) debitPostingAccount
 postingAccount (CPosting {..}) = either (WFree M.empty) (WCredit M.empty) creditPostingAccount
 
+postingAccount' :: Posting v t -> FreeOr t Account
+postingAccount' (DPosting acc _) = acc
+postingAccount' (CPosting acc _) = acc
+
 showFA :: FreeOr t Account -> String
 showFA (Left a) = show a
 showFA (Right a) = show a
@@ -59,6 +64,21 @@ instance HasCurrency (Posting Amount t) where
 instance HasCurrency (Posting Decimal t) where
   getCurrency (DPosting acc _) = getCurrency acc
   getCurrency (CPosting acc _) = getCurrency acc
+
+data Hold v t = Hold {
+    holdPosting :: Posting v t
+  , holdEndDate :: Maybe DateTime }
+
+deriving instance Eq (Posting v t) => Eq (Hold v t)
+
+instance HasCurrency (Hold Amount t) where
+  getCurrency (Hold p _) = getCurrency p
+
+instance HasCurrency (Hold Decimal t) where
+  getCurrency (Hold p _) = getCurrency p
+
+instance Show v => Show (Hold v t) where
+  show (Hold p _) = "hold " ++ show p
 
 data PostingType =
     EDebit
@@ -132,10 +152,13 @@ instance Show v => Show (Entry v t) where
 
 type History f t = IOList (Ext (f t))
 
+-- | Item of account balances history
 data Balance c =
   Balance {
-    causedBy :: Maybe (Entry Decimal c),
-    balanceValue :: Decimal
+    causedBy     :: Maybe (Entry Decimal c)
+  , balanceValue :: Decimal  -- ^ Balance value itself (sum of postings)
+  , creditHolds  :: Decimal  -- ^ Sum of all credit holds
+  , debitHolds   :: Decimal  -- ^ Sum of all debit holds
   }
 
 deriving instance Eq (Entry Decimal c) => Eq (Balance c)
@@ -144,7 +167,7 @@ instance Show (Balance c) where
   show b = show (balanceValue b)
 
 zeroBalance :: Balance Checked
-zeroBalance = Balance Nothing 0
+zeroBalance = Balance Nothing 0 0 0
 
 data BalanceChecks =
   BalanceChecks {
@@ -152,6 +175,15 @@ data BalanceChecks =
     bcWarning :: Maybe Decimal,
     bcError   :: Maybe Decimal }
   deriving (Eq, Show)
+
+data BalanceType =
+    LedgerBalance
+  | AvailableBalance
+  deriving (Eq, Show)
+
+balanceGetter :: BalanceType -> (Balance Checked -> Decimal)
+balanceGetter LedgerBalance    b = balanceValue b + creditHolds b
+balanceGetter AvailableBalance b = balanceValue b + debitHolds  b
 
 noChecks :: BalanceChecks
 noChecks = BalanceChecks Nothing Nothing Nothing
@@ -165,6 +197,7 @@ data Account t where
     -- | For credit accounts, we'll check if balance is GREATER THAN given values
     creditAccountChecks   :: BalanceChecks,
     creditAccountBalances :: History Balance Checked,
+    creditAccountHolds    :: History (Hold Decimal) Credit,
     creditAccountPostings :: History (Posting Decimal) Credit
   } -> Account Credit
 
@@ -174,6 +207,7 @@ data Account t where
     debitAccountCurrency :: Currency,
     debitAccountChecks   :: BalanceChecks,
     debitAccountBalances :: History Balance Checked,
+    debitAccountHolds    :: History (Hold Decimal) Debit,
     debitAccountPostings :: History (Posting Decimal) Debit
   } -> Account Debit
 
@@ -185,6 +219,8 @@ data Account t where
     freeAccountRedirect       :: Bool,
     freeAccountChecks         :: BalanceChecks,
     freeAccountBalances       :: History Balance Checked,
+    freeAccountCreditHolds    :: History (Hold Decimal) Credit,
+    freeAccountDebitHolds     :: History (Hold Decimal) Debit,
     freeAccountCreditPostings :: History (Posting Decimal) Credit,
     freeAccountDebitPostings  :: History (Posting Decimal) Debit
   } -> Account Free 

@@ -14,6 +14,7 @@ import qualified Data.Map as M
 import YaLedger.Types
 import YaLedger.Exceptions
 import YaLedger.Kernel
+import YaLedger.Kernel.Holds
 import YaLedger.Logger
 import YaLedger.Processor.Duplicates
 import YaLedger.Processor.Rules
@@ -36,6 +37,7 @@ processEntry :: (Throws NoSuchRate l,
                  Throws NoSuchTemplate l,
                  Throws InsufficientFunds l,
                  Throws ReconciliationError l,
+                 Throws NoSuchHold l,
                  Throws InternalError l)
                => DateTime                -- ^ Date/time of entry
                -> SourcePos               -- ^ Location of entry in source file
@@ -206,6 +208,7 @@ processRecords :: (Throws NoSuchRate l,
                    Throws InsufficientFunds l,
                    Throws ReconciliationError l,
                    Throws DuplicatedRecord l,
+                   Throws NoSuchHold l,
                    Throws InternalError l)
                => DateTime                   -- ^ Process records with date <= this
                -> [DeduplicationRule]        -- ^ Rules to deduplicate records
@@ -226,6 +229,7 @@ processTransaction :: (Throws NoSuchRate l,
                        Throws NoSuchTemplate l,
                        Throws InsufficientFunds l,
                        Throws ReconciliationError l,
+                       Throws NoSuchHold l,
                        Throws InternalError l)
                    => Ext (Transaction Amount)
                    -> Ledger l ()
@@ -240,9 +244,31 @@ processTransaction (Ext date _ pos attrs (TReconciliate acc x tgt msg)) = do
       Just entry -> processEntry date pos
                                  (M.insert "category" (Exactly "reconciliation") attrs)
                                  entry
+
 processTransaction (Ext date _ pos attrs (TCallTemplate name args)) = do
     setPos pos
     (tplAttrs, template) <- getTemplate name
     tran <- fillTemplate template args
     processTransaction (Ext date 0 pos (attrs `M.union` tplAttrs) tran)
+
+processTransaction (Ext date _ pos attrs (THold crholds dtholds)) = do
+    setPos pos
+
+    forM_ crholds $ \(Hold posting mbEnd) -> do
+      p <- convertPosting' (Just date) posting
+      creditHold (postingAccount' p) $ Ext date 0 pos attrs (Hold p mbEnd)
+
+    forM_ dtholds $ \(Hold posting mbEnd) -> do
+      p <- convertPosting' (Just date) posting
+      debitHold (postingAccount' p) $ Ext date 0 pos attrs (Hold p mbEnd)
+
+processTransaction (Ext date _ pos attrs (TCloseCreditHold (Hold p@(CPosting acc amt) _))) = do
+    setPos pos
+    p' <- convertPosting' (Just date) p
+    closeHold date p'
+
+processTransaction (Ext date _ pos attrs (TCloseDebitHold (Hold p@(DPosting acc amt) _))) = do
+    setPos pos
+    p' <- convertPosting' (Just date) p
+    closeHold date p'
 

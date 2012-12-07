@@ -56,6 +56,16 @@ instance Show ReconciliationError where
 
 instance Exception ReconciliationError
 
+data NoSuchHold = NoSuchHold PostingType Decimal Path SourcePos
+  deriving (Typeable)
+
+instance Show NoSuchHold where
+  show (NoSuchHold ptype amt path pos) =
+    showPos pos $
+      "There is no " ++ show ptype ++ " hold of amount " ++ show amt ++ " on account " ++ intercalate "/" path
+
+instance Exception NoSuchHold
+
 data DuplicatedRecord = DuplicatedRecord String SourcePos
   deriving (Typeable)
 
