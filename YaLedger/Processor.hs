@@ -74,7 +74,7 @@ processEntry date pos attrs uentry = do
         credit (creditPostingAccount p) (Ext date 0 pos attrs p)
         modifyLastItem (\b -> b {causedBy = Just entry}) (accountBalances account)
         runRules ECredit date attrs p processTransaction
-    -- Dor debit difference, there might be many postings,
+    -- For debit difference, there might be many postings,
     -- caused by debit redirection
     DebitDifference  ps -> forM_ ps $ \ p -> do
           let account = debitPostingAccount p

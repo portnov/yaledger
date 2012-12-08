@@ -16,12 +16,23 @@ import YaLedger.Kernel.Common
 import YaLedger.Logger
 import YaLedger.Output.Pretty
 
+-- | Check if hold is suitable to close or use
+checkHold :: (Decimal -> Decimal -> Bool) -- ^ Operation to check hold amount, (==) or (>=)
+          -> DateTime                     -- ^ Transaction date/time
+          -> Decimal                      -- ^ Transaction amount
+          -> Ext (Hold Decimal t)         -- ^ Hold to check
+          -> Bool
+checkHold op date amt extHold =
+    (getDate extHold <= date) &&
+    ((postingValue $ holdPosting $ getContent extHold) `op` amt)
+
+-- | Close one hold.
 closeHold :: forall t l.
              (HoldOperations t,
               Throws NoSuchHold l,
               Throws InternalError l)
-           => DateTime
-           -> Posting Decimal t
+           => DateTime               -- ^ Transaction date/time
+           -> Posting Decimal t      -- ^ Hold posting
            -> Ledger l ()
 closeHold date posting = do
     let acc = postingAccount' posting
@@ -34,17 +45,13 @@ closeHold date posting = do
   where
     amt = postingValue posting
 
-    good op extHold =
-      (getDate extHold <= date) &&
-      ((postingValue $ holdPosting $ getContent extHold) `op` amt)
-
     close [] _ _ [] = return False
     close acc _ history [] = do
         updateBalances (postingAccount posting)
         writeIOList history acc
         return False
     close acc op history (extHold: rest) =
-      if good op extHold
+      if checkHold op date amt extHold
         then do
              let oldHold = getContent extHold
                  newHold = extHold {getContent = oldHold {holdEndDate = Just date}}
@@ -75,6 +82,7 @@ closeHold date posting = do
         getContent = addHoldSum (undefined :: t) (negate amt) (getContent extBalance)
       }
 
+-- | Smart constructor for NoSuchHold
 noSuchHold :: (Throws NoSuchHold l) => Posting Decimal t -> Ledger l b
 noSuchHold (CPosting acc amt) = do
   coa <- gets lsCoA
