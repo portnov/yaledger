@@ -105,3 +105,10 @@ stop testPeriodic
   cr roubles 0.2р
   Z5
 
+@ 2012/12/01
+hold dr карман 50р
+hold cr трамвай 50р
+
+@ 2012/12/02
+close dr карман 50р
+

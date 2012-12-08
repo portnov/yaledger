@@ -68,7 +68,7 @@ emptyLedgerState opts coa amap records = do
              lsRates = [],
              lsLoadedRecords = records,
              lsConfig = opts,
-             lsPosition = newPos "<nowhere>" 0 0
+             lsPosition = nowhere
            }
 
 -- | Wrap IO action into EMT monad

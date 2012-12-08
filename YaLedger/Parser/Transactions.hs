@@ -212,6 +212,8 @@ pTransaction :: Parser v -> Parser (Transaction v)
 pTransaction p =
         try (pEntry p)
     <|> try (pReconciliate p)
+    <|> try (pSetHold p)
+    <|> try (pCloseHold p)
     <|> pCall
 
 pTemplate :: Parser Record
@@ -332,6 +334,32 @@ pEntry p = do
                Nothing -> return Nothing
                Just path -> Just <$> getAccount getPosition (getCoA <$> getState) path
   return $ TEntry $ UEntry dt cr account []
+
+pSetHold :: Parser v -> Parser (Transaction v)
+pSetHold p = do
+    hs <- many1 (try (Left <$> pCreditHold) <|> try (Right <$> pDebitHold))
+    return $ THold (lefts hs) (rights hs)
+  where
+    pCreditHold = do
+      reserved "hold"
+      spaces
+      posting <- pCreditPosting p
+      return (Hold posting Nothing)
+
+    pDebitHold = do
+      reserved "hold"
+      spaces
+      posting <- pDebitPosting p
+      return (Hold posting Nothing)
+
+pCloseHold :: Parser v -> Parser (Transaction v)
+pCloseHold p = do
+  reserved "close"
+  spaces
+  r <- try (Left <$> pCreditPosting p) <|> try (Right <$> pDebitPosting p)
+  case r of
+    Left p  -> return $ TCloseCreditHold $ Hold p Nothing
+    Right p -> return $ TCloseDebitHold  $ Hold p Nothing
 
 pCall :: Parser (Transaction v)
 pCall = do

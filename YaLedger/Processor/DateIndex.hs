@@ -98,7 +98,7 @@ buildIndex recs =
 
   in  byYear
 
--- noext y m d x = Ext (DateTime y m d 0 0 0) i (newPos "<nowhere>" 0 0) M.empty x
+-- noext y m d x = Ext (DateTime y m d 0 0 0) i (nowhere) M.empty x
 --   where i = fromIntegral (y*366 + m*31 + d)
 -- 
 -- testList ::  [Ext String]

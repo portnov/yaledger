@@ -166,7 +166,6 @@ loadCBR configPath currs coa cachePath = do
     writeFile cachePath $ unlines $ map prettyPrint records
     return records
   where
-    nowhere = newPos "<nowhere>" 0 0
     convert currs (cFromS, rev, (aFrom, aTo)) =
       case M.lookup cFromS currs of
         Nothing -> error $ "While loading CBR rates: unknown currency: " ++ cFromS

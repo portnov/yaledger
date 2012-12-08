@@ -35,56 +35,12 @@ import qualified Data.Map as M
 
 import YaLedger.Types
 import YaLedger.Exceptions
+import YaLedger.Kernel.Types
 import YaLedger.Kernel.Correspondence
 import YaLedger.Kernel.Common
 import YaLedger.Output.Pretty
 import YaLedger.Output.Messages
 import YaLedger.Logger
-
--- | Accounts that could be credited
-class CanCredit a where
-  credit :: (Throws InternalError l,
-             Throws InsufficientFunds l)
-         => a
-         -> Ext (Posting Decimal Credit)
-         -> Ledger l ()
-
-  creditHold :: (Throws InternalError l) 
-         => a
-         -> Ext (Hold Decimal Credit)
-         -> Ledger l ()
-
--- | Accounts that could be debited
-class CanDebit a where
-  debit :: (Throws InternalError l,
-            Throws InsufficientFunds l)
-        => a
-        -> Ext (Posting Decimal Debit)
-        -> Ledger l ()
-
-  debitHold :: (Throws InternalError l)
-         => a
-         -> Ext (Hold Decimal Debit)
-         -> Ledger l ()
-
-class Sign t => HoldOperations t where
-  justHold :: t -> Decimal -> Balance Checked
-  addHoldSum :: t -> Decimal -> Balance Checked -> Balance Checked
-  getHolds :: FreeOr t Account -> History (Hold Decimal) t
-
-instance HoldOperations Credit where
-  justHold _ x = Balance Nothing 0 x 0
-  addHoldSum _ x b = b {creditHolds = creditHolds b + x}
-
-  getHolds (Left  a) = freeAccountCreditHolds a
-  getHolds (Right a) = creditAccountHolds a
-
-instance HoldOperations Debit where
-  justHold _ x = Balance Nothing 0 0 x
-  addHoldSum _ x b = b {debitHolds = debitHolds b - x}
-
-  getHolds (Left  a) = freeAccountDebitHolds a
-  getHolds (Right a) = debitAccountHolds a
 
 instance CanDebit (Account Debit) where
   debit acc@(DAccount {..}) p = do

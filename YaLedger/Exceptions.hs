@@ -148,7 +148,6 @@ wrapE :: (Monad m, Throws InternalError l)
       -> EMT l m a
 wrapE action = wrapException wrapFail $ wrapException wrapSome action
   where
-    nowhere = newPos "<nowhere>" 0 0
     wrapFail (FailException msg) = InternalError msg nowhere
     wrapSome (SomeException e)   = InternalError (show e) nowhere
 

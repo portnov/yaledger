@@ -19,7 +19,7 @@ module YaLedger.Types.Common
    SourcePos,
    emptyCurrency,
    sourceLine, sourceColumn, sourceName,
-   newPos
+   newPos, nowhere
   ) where
 
 import Control.Concurrent.STM
@@ -116,6 +116,9 @@ data Ext a = Ext {
     getAttributes :: Attributes,
     getContent :: a }
   deriving (Eq, Show)
+
+nowhere :: SourcePos
+nowhere = newPos "<nowhere>" 0 0
 
 class HasAmount a where
   getAmount :: a -> Amount
