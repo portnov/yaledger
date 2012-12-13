@@ -232,9 +232,9 @@ processTransaction :: (Throws NoSuchRate l,
 processTransaction (Ext date _ pos attrs (TEntry p)) = do
     setPos pos
     processEntry date pos attrs p
-processTransaction (Ext date _ pos attrs (TReconciliate acc x msg)) = do
+processTransaction (Ext date _ pos attrs (TReconciliate acc x tgt msg)) = do
     setPos pos
-    mbEntry <- reconciliate date acc x msg
+    mbEntry <- reconciliate date acc x tgt msg
     case mbEntry of
       Nothing -> return ()
       Just entry -> processEntry date pos

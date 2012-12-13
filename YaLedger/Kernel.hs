@@ -648,9 +648,10 @@ reconciliate :: (Throws NoSuchRate l,
              => DateTime       -- ^ Transaction date/time
              -> AnyAccount     -- ^ Account
              -> Amount         -- ^ Balance value to set
+             -> Maybe AnyAccount            -- ^ User-specified corresponding account
              -> Maybe ReconciliationMessage
              -> Ledger l (Maybe (Entry Amount Unchecked))
-reconciliate date account amount msg = do
+reconciliate date account amount tgt msg = do
 
   let qry = Query {
               qStart      = Nothing,
@@ -673,11 +674,11 @@ reconciliate date account amount msg = do
            then do
                 account' <- accountAsCredit account
                 let posting = CPosting account' (diff :# accountCurrency)
-                return $ Just $ UEntry [] [posting] Nothing [getCurrency amount]
+                return $ Just $ UEntry [] [posting] tgt [getCurrency amount]
            else do
                 account' <- accountAsDebit account
                 let posting = DPosting account' ((-diff) :# accountCurrency)
-                return $ Just $ UEntry [posting] [] Nothing [getCurrency amount]
+                return $ Just $ UEntry [posting] [] tgt [getCurrency amount]
     else return Nothing
 
 fireReconMessage :: (Throws InternalError l,

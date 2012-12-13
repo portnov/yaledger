@@ -19,7 +19,7 @@ data Record =
 
 data Transaction v =
     TEntry (Entry v Unchecked)
-  | TReconciliate AnyAccount v (Maybe ReconciliationMessage)
+  | TReconciliate AnyAccount v (Maybe AnyAccount) (Maybe ReconciliationMessage)
   | TCallTemplate String [Amount]
   deriving (Eq, Show)
 
