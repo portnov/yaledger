@@ -417,6 +417,7 @@ pCreditPosting p = do
                _ -> fail $ printf "Invalid account type: %s: debit instead of credit." (intercalate "/" accPath)
   spaces
   amount <- p
+  whiteSpace
   many newline
   return $ CPosting account amount
 
@@ -432,6 +433,7 @@ pDebitPosting p = do
                _ -> fail $ printf "Invalid account type: %s: credit instead of debit." (intercalate "/" accPath)
   spaces
   amount <- p
+  whiteSpace
   many newline
   return $ DPosting account amount
 

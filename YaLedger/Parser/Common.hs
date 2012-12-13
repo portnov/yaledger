@@ -54,6 +54,7 @@ semicolon   = P.semi lexer
 stringLit   = P.stringLiteral lexer
 float       = P.float lexer
 natural     = P.natural lexer
+whiteSpace  = P.whiteSpace lexer
 naturalOrFloat = P.naturalOrFloat lexer
 
 pRegexp :: Monad m => ParsecT String st m String
