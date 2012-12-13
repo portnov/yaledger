@@ -653,17 +653,18 @@ reconciliate :: (Throws NoSuchRate l,
              -> Ledger l (Maybe (Entry Amount Unchecked))
 reconciliate date account amount tgt msg = do
 
-  targetBalance <- getBalanceAt (Just date) account
+  calculatedBalance <- getBalanceAt (Just date) account
   actualBalance :# accountCurrency <- convert (Just date) (getCurrency account) amount
 
   -- diff is in accountCurrency
-  let diff = actualBalance - targetBalance
+  let diff = actualBalance - calculatedBalance
   if diff /= 0
     then do
          coa <- gets lsCoA
          fireReconMessage coa msg account
                           (actualBalance :# accountCurrency)
-                          (targetBalance :# accountCurrency)
+                          (calculatedBalance :# accountCurrency)
+                          (diff :# accountCurrency)
          if diff > 0
            then do
                 account' <- accountAsCredit account
@@ -678,30 +679,33 @@ reconciliate date account amount tgt msg = do
 fireReconMessage :: (Throws InternalError l,
                      Throws ReconciliationError l)
                  => ChartOfAccounts
-                 -> Maybe ReconciliationMessage
-                 -> AnyAccount
-                 -> Amount
-                 -> Amount
+                 -> Maybe ReconciliationMessage  -- ^ If Nothing, then do nothing
+                 -> AnyAccount                   -- ^ Account which we are reconciliating
+                 -> Amount                       -- ^ Actual balance
+                 -> Amount                       -- ^ Calculated balance
+                 -> Amount                       -- ^ Difference
                  -> Ledger l ()
-fireReconMessage _ Nothing _ _ _ = return ()
-fireReconMessage coa (Just (RWarning str)) account actual target =
-  warning (formatReconMessage str coa account actual target)
-fireReconMessage coa (Just (RError   str)) account actual target =
-  throwP $ ReconciliationError (formatReconMessage str coa account actual target)
+fireReconMessage _ Nothing _ _ _ _ = return ()
+fireReconMessage coa (Just (RWarning str)) account actual calculated diff =
+  warning (formatReconMessage str coa account actual calculated diff)
+fireReconMessage coa (Just (RError   str)) account actual calculated diff =
+  throwP $ ReconciliationError (formatReconMessage str coa account actual calculated diff)
 
 formatReconMessage :: MessageFormat
                    -> ChartOfAccounts
-                   -> AnyAccount
-                   -> Amount
-                   -> Amount
+                   -> AnyAccount      -- ^ Account which we are reconciliating
+                   -> Amount          -- ^ Actual balance
+                   -> Amount          -- ^ Calculated balance
+                   -> Amount          -- ^ Difference
                    -> String
-formatReconMessage format coa account actual target =
+formatReconMessage format coa account actual calculated diff =
   let path = case accountFullPath (getID account) coa of
                Nothing -> error $ "Impossible: Kernel.formatReconMessage: no account: " ++ show account
                Just p  -> intercalate "/" p
-  in formatMessage [("account", path),
-                    ("target",  prettyPrint target),
-                    ("actual",  prettyPrint actual)] format
+  in formatMessage [("account",    path),
+                    ("calculated", prettyPrint calculated),
+                    ("actual",     prettyPrint actual),
+                    ("diff",       prettyPrint diff) ] format
 
 -- | Calculate sum of amounts in accounts group.
 sumGroup :: (Throws InternalError l,

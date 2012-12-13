@@ -356,10 +356,10 @@ pReconciliate p = do
 
 defaultReconMessage :: MessageFormat
 defaultReconMessage =
-  [MFixed "On reconciliation: target balance of ",
+  [MFixed "On reconciliation: calculated balance of ",
    MVariable "account",
    MFixed " is ",
-   MVariable "target",
+   MVariable "calculated",
    MFixed ", but actual balance is ",
    MVariable "actual" ]
 
