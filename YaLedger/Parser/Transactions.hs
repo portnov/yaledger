@@ -345,13 +345,13 @@ pReconciliate p = do
   account <- getAccount getPosition (getCoA <$> getState) path 
   spaces
   x <- p
-  msg <- optionMaybe $ try pReconMessage
-  targetAccount <- optionMaybe $ do
+  targetAccount <- optionMaybe $ try $ do
                      spaces
                      reserved "with"
                      spaces
                      path <- pPathRelative
                      getAccount getPosition (getCoA <$> getState) path
+  msg <- optionMaybe pReconMessage
   return $ TReconciliate account x targetAccount msg
 
 defaultReconMessage :: MessageFormat
