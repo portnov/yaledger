@@ -653,14 +653,8 @@ reconciliate :: (Throws NoSuchRate l,
              -> Ledger l (Maybe (Entry Amount Unchecked))
 reconciliate date account amount tgt msg = do
 
-  let qry = Query {
-              qStart      = Nothing,
-              qEnd        = Just date,
-              qAllAdmin   = True,
-              qAttributes = M.empty }
-
-  targetBalance :# accountCurrency <- saldo qry account
-  actualBalance :# _ <- convert (Just date) (getCurrency account) amount
+  targetBalance <- getBalanceAt (Just date) account
+  actualBalance :# accountCurrency <- convert (Just date) (getCurrency account) amount
 
   -- diff is in accountCurrency
   let diff = actualBalance - targetBalance
