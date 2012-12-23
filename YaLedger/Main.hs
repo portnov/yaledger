@@ -13,6 +13,7 @@ module YaLedger.Main
 
 import Prelude hiding (catch)
 import Control.Applicative ((<$>))
+import qualified Control.Exception as E
 import Control.Monad.State
 import Control.Monad.Exception
 import Control.Monad.Loc
@@ -234,6 +235,19 @@ tryE action =
 fromJustM msg Nothing = fail msg
 fromJustM _ (Just x)  = return x
 
+loadConfigs :: FilePath -> FilePath -> FilePath -> IO (Currencies, ChartOfAccounts, AccountMap)
+loadConfigs cpath coaPath mapPath = do
+  currs <- loadCurrencies cpath
+  let currsMap = M.fromList [(cSymbol c, c) | c <- currs]
+  coa <- readCoA currsMap coaPath
+  amap <- readAMap coa mapPath
+  return (currsMap, coa, amap)
+
+runYaLedger :: [(String, String, InputParser)]
+            -> LedgerOptions
+            -> Report
+            -> [String]
+            -> IO ()
 runYaLedger parsers options report params = do
   coaPath <- fromJustM "No CoA path specified" (chartOfAccounts options)
   mapPath <- fromJustM "No accounts map path specified" (accountMap options)
@@ -244,10 +258,13 @@ runYaLedger parsers options report params = do
       inputPaths = files options
       qry = query options
       qryReport = reportsQuery options
-  currs <- loadCurrencies cpath
-  let currsMap = M.fromList [(cSymbol c, c) | c <- currs]
-  coa <- readCoA currsMap coaPath
-  amap <- readAMap coa mapPath
+  (currsMap, coa, amap) <- loadConfigs cpath coaPath mapPath
+                           `E.catch`
+                            (\(e :: SomeException) -> do
+                                fail $ "An error occured while loading configs:\n  " ++ show e ++
+                                       "\nIf you do not have any configs, just run `yaledger init' command." )
+
+
   records <- parseInputFiles parsers configs currsMap coa inputPaths
   runLedger options coa amap records $ runEMT $ do
     -- Build full map of groups of accounts.
