@@ -1,0 +1,38 @@
+INSTALLATION
+============
+
+From Hackage
+------------
+
+To install a version of YaLedger from Hackage, just run:
+
+$ cabal update
+$ cabal install yaledger
+
+YaLedger binary will be installed into cabal's directory, say ~/.cabal/bin. You
+can add it into your $PATH, or just do something like
+
+$ sudo cp ~/.cabal/bin/yaledger /usr/local/bin/
+
+From Git
+--------
+
+To install latest version of YaLedger, you should do the following:
+
+$ git clone git://girorious.org/yaledger/yaledger.git
+$ cd yaledger
+$ cabal install
+
+RUNNING
+=======
+
+To run YaLedger, you will need some configs for it. You can install sample
+configs by running:
+
+$ yaledger init
+
+This will install some configs under ~/.config/yaledger/.
+
+Other sample configs and input files could be found under examples/ in YaLedger
+source directory.
+
