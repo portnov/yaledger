@@ -44,12 +44,21 @@ data NativeParserConfig = NativeParserConfig {
     nativeDateFormat :: Maybe String }
   deriving (Eq, Show)
 
+defaultNativeParserConfig :: NativeParserConfig
+defaultNativeParserConfig =
+  NativeParserConfig {
+    thousandsSeparator = ' ',
+    decimalSeparator   = '.',
+    nativeDateFormat   = Nothing }
+
 instance FromJSON NativeParserConfig where
   parseJSON (Object v) =
     NativeParserConfig
       <$> v .:? "thousands-separator" .!= ' '
       <*> v .:? "decimal-separator" .!= '.'
       <*> v .:? "dateformat"
+  parseJSON Null = return defaultNativeParserConfig
+  parseJSON x = fail $ "NativeParserConfig: invalid object: " ++ show x
 
 space = oneOf " \t"
 spaces = many space
@@ -502,7 +511,7 @@ loadTransactions configPath currs coa path = do
               then do
                    infoIO $ "Using config for native format: " ++ configPath
                    loadParserConfig configPath
-              else return (NativeParserConfig ' ' '.' Nothing)
+              else return defaultNativeParserConfig
   content <- readFile path
   now <- getCurrentDateTime
   let !st = emptyPState now coa currs (nativeDateFormat config)

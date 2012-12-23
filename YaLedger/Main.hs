@@ -42,6 +42,7 @@ import YaLedger.Processor
 import YaLedger.Config
 import YaLedger.Logger
 import YaLedger.Reports.Common
+import YaLedger.Installer
 
 -- | Parrse NAME=VALUE attribute syntax
 parsePair :: String -> Either ParseError (String, AttributeValue)
@@ -216,11 +217,14 @@ defaultMain :: [(String, String, InputParser)] -- ^ List of parsers to support: 
             -> IO ()
 defaultMain parsers reports = do
   argv <- getArgs
-  init <- initialize parsers reports argv
-  case init of
-    Nothing -> return ()
-    Just (report, options, params) ->
-      runYaLedger parsers options report params
+  if (not $ null argv) && (length argv <= 2) && (head argv == "init")
+    then install $ tail argv
+    else do
+         init <- initialize parsers reports argv
+         case init of
+           Nothing -> return ()
+           Just (report, options, params) ->
+             runYaLedger parsers options report params
 
 tryE action =
   (Right <$> action) `catchWithSrcLoc` (\l e -> return (Left (l, e)))

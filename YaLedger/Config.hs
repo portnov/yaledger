@@ -68,7 +68,8 @@ instance FromJSON LedgerOptions where
       <*> (parseConfigs =<< (v .:? "parsers"))
       <*> v .:? "deduplicate" .!= []
       <*> return []
-  parseJSON _ = fail "LedgerOptions: invalid object"
+  parseJSON Null = return mempty
+  parseJSON x = fail $ "LedgerOptions: invalid object: " ++ show x
 
 instance FromJSON DateInterval where
   parseJSON (String text) =

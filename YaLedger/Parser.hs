@@ -13,6 +13,7 @@ import Control.Concurrent.ParallelIO
 import Data.Maybe
 import Data.List
 import Text.Parsec
+import System.Directory
 import System.FilePath
 import System.FilePath.Glob
 
@@ -80,8 +81,12 @@ readCoA currs path = do
 -- | Read accounts map from file
 readAMap :: ChartOfAccounts -> FilePath -> IO AccountMap
 readAMap coa path = do
-  content <- readFile path
-  case runParser Map.pAccountMap (Map.PState coa) path content of
-    Right res -> return res
-    Left err -> fail $ show err
+  b <- doesFileExist path
+  if b
+    then do
+         content <- readFile path
+         case runParser Map.pAccountMap (Map.PState coa) path content of
+           Right res -> return res
+           Left err -> fail $ show err
+    else return []
 
