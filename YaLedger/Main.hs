@@ -217,7 +217,7 @@ defaultMain :: [(String, String, InputParser)] -- ^ List of parsers to support: 
             -> IO ()
 defaultMain parsers reports = do
   argv <- getArgs
-  if (not $ null argv) && (length argv <= 2) && (head argv == "init")
+  if (not $ null argv) && (head argv == "init")
     then install $ tail argv
     else do
          init <- initialize parsers reports argv
