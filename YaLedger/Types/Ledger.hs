@@ -37,8 +37,8 @@ instance Show v => Show (Posting v t) where
   show (CPosting acc x) = "cr " ++ showFA acc ++ " " ++ show x
 
 instance Hashable v => Hashable (Posting v t) where
-  hash (DPosting acc x) = hash (1000000*getID acc) `combine` hash x
-  hash (CPosting acc x) = hash (2000000*getID acc) `combine` hash x
+  hashWithSalt s (DPosting acc x) = s `hashWithSalt` (1000000*getID acc) `hashWithSalt` x
+  hashWithSalt s (CPosting acc x) = s `hashWithSalt` (2000000*getID acc) `hashWithSalt` x
 
 postingValue :: Posting v t -> v
 postingValue (DPosting {..}) = debitPostingAmount

@@ -71,10 +71,12 @@ instance Ord Currency where
   compare c1 c2 = compare (cSymbol c1) (cSymbol c2)
 
 instance Hashable Currency where
-  hash c = hash (cSymbol c) `combine`
-           hash (cIntCode c) `combine`
-           hash (cStrCode c) `combine`
-           hash (cPrecision c)
+  hashWithSalt s c =
+           s `hashWithSalt`
+           (cSymbol c) `hashWithSalt`
+           (cIntCode c) `hashWithSalt`
+           (cStrCode c) `hashWithSalt`
+           (cPrecision c)
 
 emptyCurrency :: Currency
 emptyCurrency = Currency {
@@ -134,10 +136,10 @@ instance Show Amount where
   show (n :# c) = show (roundTo (fromIntegral $ cPrecision c) n) ++ show c
 
 instance Hashable Amount where
-  hash (n :# c) = hash n `combine` hash c
+  hashWithSalt s (n :# c) = s `hashWithSalt` n `hashWithSalt` c
 
 instance Hashable Decimal where
-  hash (Decimal n x) = hash x `combine` hash n
+  hashWithSalt s (Decimal n x) = s `hashWithSalt` x `hashWithSalt` n
 
 instance HasCurrency Amount where
   getCurrency (_ :# c) = c
