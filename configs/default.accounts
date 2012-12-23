@@ -1,0 +1,38 @@
+group Root {
+  currency = "$";
+  account reconciliation {
+    category = "reconciliation";
+  };
+  group assets {
+    account card;
+    account currentAccount;
+    account pinMoney;
+    account wallet;
+  };
+  group outcomes (credit) {
+    account tramway;
+    group internet {
+      account hosting;
+      account ISP;
+    };
+    group food {
+      account tea;
+      account sweets;
+      account lunch;
+    };
+    group services {
+      account rent;
+      account electricity;
+      account water;
+    };
+    account bankFees;
+  };
+  group incomes (debit) {
+    account salary;
+    account bonuses;
+    account subsistence;
+    account misc;
+  };
+};
+
+

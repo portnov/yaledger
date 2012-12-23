@@ -1,0 +1,18 @@
+# Which files to read
+#
+# files: [ "/home/user/Documents/yaledger/*" ]
+# 
+# Configuration files for CSV, HTML parsers
+# By default csv.yaml and html.yaml are used
+#
+# parsers:
+#  csv: my_csv.yaml
+#  html: my_html.yaml
+# 
+# Records deduplication settings example:
+# deduplicate:
+#  - check-attributes: [ date, {amount: 5}, credit-account, debit-account ]
+#    action:
+#      set-attributes:
+#        cleared: ?date
+
