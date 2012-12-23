@@ -82,6 +82,7 @@ library
                    YaLedger.Types.Transactions
                    YaLedger.Types.Attributes
                    YaLedger.Types.Config
+                   YaLedger.Installer
 
   build-depends:       base >= 4 && < 5, mtl >=2.1,
                        transformers >= 0.3,

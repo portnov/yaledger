@@ -5,6 +5,7 @@ module YaLedger.Installer
 
 import System.FilePath
 import System.Directory
+import System.Environment.XDG.BaseDir
 
 import qualified Paths_yaledger as Paths
 
