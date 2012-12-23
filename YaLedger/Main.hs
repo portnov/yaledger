@@ -115,7 +115,9 @@ parseCmdLine argv = do
                                ++ str
                                ++ " (required: PARSER=CONFIGFILE)."
 
-  let header = "Usage: yaledger [OPTIONS] [REPORT] [REPORT PARAMS]"
+  let header = "Usage: yaledger [OPTIONS] [REPORT] [REPORT PARAMS]\n\
+               \   or: yaledger init [DIRECTORY]\n\
+               \Supported options are:"
   let options = [
        Option "c" ["config"] (ReqArg SetConfigPath "FILE")
                    "Use specified config file instead of ~/.config/yaledger/yaledger.yaml",
