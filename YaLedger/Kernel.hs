@@ -697,7 +697,7 @@ reconciliate :: (Throws NoSuchRate l,
              -> Ledger l (Maybe (Entry Amount Unchecked))
 reconciliate date account amount tgt msg = do
 
-  calculatedBalance <- getBalanceAt (Just date) account
+  calculatedBalance <- getBalanceAt (Just date) AvailableBalance account
   actualBalance :# accountCurrency <- convert (Just date) (getCurrency account) amount
 
   -- diff is in accountCurrency
