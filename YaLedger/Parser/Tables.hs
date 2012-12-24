@@ -6,6 +6,10 @@ import Control.Monad
 import qualified Data.Text as T
 import qualified Data.HashMap.Strict as H
 import qualified Data.Map as M
+import qualified Data.Text.Lazy as TL
+import qualified Data.Text.Lazy.Encoding as E
+import qualified Data.ByteString.Lazy as L
+import qualified Codec.Text.IConv as IConv
 import Data.Decimal
 import Data.String
 import Data.Yaml
@@ -241,4 +245,9 @@ dposting acc x =
     WDebit   _ a -> return [DPosting (Right a) x]
     WFree    _ a -> return [DPosting (Left  a) x]
     WCredit  _ a -> fail $ "Invalid account type: credit instead of debit: " ++ getName a ++ " " ++ show x
+
+convertToUtf8 :: Maybe String -> L.ByteString -> String
+convertToUtf8 Nothing str = TL.unpack $ E.decodeUtf8 str
+convertToUtf8 (Just encoding) str =
+  TL.unpack $ E.decodeUtf8 $ IConv.convert encoding "UTF8" str
 

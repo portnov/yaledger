@@ -4,12 +4,14 @@ module YaLedger.Parser.CSV where
 import Control.Applicative
 import Control.Monad
 import Data.Yaml
+import qualified Data.ByteString.Lazy as L
 
 import YaLedger.Types
 import YaLedger.Parser.Common (loadParserConfig)
 import YaLedger.Parser.Tables
 
 data ParserConfig = ParserConfig {
+    pcEncoding      :: Maybe String,
     pcSeparator  :: Char,
     pcGeneric    :: GenericParserConfig
     }
@@ -18,7 +20,8 @@ data ParserConfig = ParserConfig {
 instance FromJSON ParserConfig where
   parseJSON (Object v) =
     ParserConfig
-      <$> v .:? "separator" .!= ','
+      <$> v .:? "encoding"
+      <*> v .:? "separator" .!= ','
       <*> parseGenericConfig [] v
 
 csvCells :: Char -> String -> [[String]]
@@ -40,6 +43,7 @@ parseCSV pc path currs coa str =
 loadCSV :: FilePath -> Currencies -> ChartOfAccounts -> FilePath -> IO [Ext Record]
 loadCSV configPath currs coa csvPath = do
   config <- loadParserConfig configPath 
-  csv <- readFile csvPath
+  bstr <- L.readFile csvPath
+  let csv = convertToUtf8 (pcEncoding config) bstr
   parseCSV config csvPath currs coa csv
 

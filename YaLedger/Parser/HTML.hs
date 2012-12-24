@@ -3,10 +3,7 @@ module YaLedger.Parser.HTML where
 
 import Control.Applicative
 import Control.Monad
-import qualified Data.Text.Lazy as T
-import qualified Data.Text.Lazy.Encoding as E
 import qualified Data.ByteString.Lazy as L
-import qualified Codec.Text.IConv as IConv
 import Data.Tree.NTree.TypeDefs
 import Text.XML.HXT.Core
 import Text.HandsomeSoup
@@ -33,10 +30,8 @@ instance FromJSON ParserConfig where
 readHTML :: ParserConfig -> FilePath -> IO [[String]]
 readHTML pc path = do
   bstr <- L.readFile path
-  let string = T.unpack $ E.decodeUtf8 $ case pcEncoding pc of
-                                          Nothing -> bstr
-                                          Just encoding -> IConv.convert encoding "UTF8" bstr
-  let doc = readString [withParseHTML yes, withWarnings no] string
+  let string = convertToUtf8 (pcEncoding pc) bstr
+      doc = readString [withParseHTML yes, withWarnings no] string
   table <- runX $ getTable (pcTableSelector pc) doc
   return $ map (map clean) table
 
