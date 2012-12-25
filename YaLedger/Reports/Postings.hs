@@ -33,8 +33,8 @@ postings qry options mbPath = do
                  []    -> showPostings ASCII
                  (x:_) -> showPostings (CSV x)
   forL coa $ \path acc -> do
-      credit <- readIOList =<< creditPostings acc
-      debit  <- readIOList =<< debitPostings  acc
+      credit <- readIOListL =<< creditPostings acc
+      debit  <- readIOListL =<< debitPostings  acc
       let postings = sort $ filter (checkQuery qry) (map left credit ++ map right debit)
           res = unlines $ format postings
       wrapIO $ do

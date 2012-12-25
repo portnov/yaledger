@@ -17,12 +17,14 @@ module YaLedger.Types.Common
    AccountGroupData (..),
    MessageFormat, MessageElement (..),
    SourcePos,
+   Queue,
    emptyCurrency,
    sourceLine, sourceColumn, sourceName,
    newPos, nowhere
   ) where
 
 import Control.Concurrent.STM
+import qualified Data.PQueue.Prio.Min as Q
 import Data.Decimal
 import Data.Dates
 import qualified Data.Map as M
@@ -220,4 +222,6 @@ data MessageElement =
   deriving (Eq, Show)
 
 type MessageFormat = [MessageElement]
+
+type Queue a = TVar (Q.MinPQueue DateTime (Ext a))
 

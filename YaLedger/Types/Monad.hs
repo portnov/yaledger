@@ -7,11 +7,13 @@ module YaLedger.Types.Monad where
 
 import Control.Monad.State
 import Control.Monad.Exception
+import Control.Monad.Exception.Throws
 import Control.Monad.Loc
 import Control.Concurrent.STM
 import Data.Dates
 import qualified Data.Map as M
 import Text.Parsec.Pos
+import System.Log.Logger (Priority (..), rootLoggerName, logM)
 
 import YaLedger.Types.Attributes
 import YaLedger.Types.Common
@@ -21,11 +23,26 @@ import YaLedger.Types.Transactions
 import YaLedger.Types.Config
 import YaLedger.Tree
 import YaLedger.Exceptions
+import YaLedger.Queue
 
-newtype LedgerMonad a = LedgerMonad (StateT LedgerState IO a)
+newtype LedgerStateT m a = LedgerStateT (StateT LedgerState m a)
   deriving (Monad, MonadState LedgerState, MonadIO)
 
-type Ledger l a = EMT l LedgerMonad a
+type LedgerT l m a = EMT l (LedgerStateT m) a
+
+type Ledger l a = LedgerT l IO a
+
+type LedgerSTM l a = LedgerT l STM a
+
+stm2io :: Throws InternalError l => LedgerSTM l a -> Ledger l a
+stm2io (EMT (LedgerStateT action)) = do -- `do' in StateT IO
+    st <- get
+    (result, st') <- wrapIO $ atomically $ runStateT action st
+    case result of
+      Right a -> do
+                 put st'
+                 return a
+      Left (callTrace, e) -> wrapE $ rethrow callTrace (checkedException e)
 
 data Rules = Rules {
     creditRules :: [(String, Attributes, Rule)]
@@ -44,19 +61,23 @@ data LedgerState = LedgerState {
     lsRules           :: Rules,
     lsRates           :: Rates,
     lsLoadedRecords   :: [Ext Record],
+    lsTranQueue       :: Queue (Transaction Amount),
+    lsMessages        :: TChan (Priority, String),
     lsConfig          :: LedgerOptions,
     -- | Source location of current transaction
     lsPosition        :: SourcePos
   }
-  deriving (Eq, Show)
+  deriving (Eq)
 
-instance MonadState LedgerState (EMT l LedgerMonad) where
+instance Monad m => MonadState LedgerState (EMT l (LedgerStateT m)) where
   get = lift get
   put s = lift (put s)
 
 emptyLedgerState :: LedgerOptions -> ChartOfAccounts -> AccountMap -> [Ext Record] -> IO LedgerState
 emptyLedgerState opts coa amap records = do
   now <- getCurrentDateTime
+  chan <- newTChanIO
+  queue <- newQueue
   return $ LedgerState {
              lsStartDate = now,
              lsDefaultCurrency = emptyCurrency,
@@ -67,6 +88,8 @@ emptyLedgerState opts coa amap records = do
              lsRules = Rules [] [],
              lsRates = [],
              lsLoadedRecords = records,
+             lsTranQueue = queue,
+             lsMessages = chan,
              lsConfig = opts,
              lsPosition = nowhere
            }
@@ -77,19 +100,44 @@ wrapIO :: (MonadIO m, Throws InternalError l)
        -> EMT l m a
 wrapIO action = wrapE $ liftIO action
 
+stm :: Throws InternalError l => STM a -> LedgerSTM l a
+stm action = EMT $ LedgerStateT $ StateT $ \ls -> do
+               result <- action
+               return (Right result, ls)
+
 throwP e = do
   pos <- gets lsPosition
   throw (e pos)
 
 -- | Set current source location
-setPos :: SourcePos -> Ledger l ()
+setPos :: (Monad m) => SourcePos -> LedgerT l m ()
 setPos pos =
   modify $ \st -> st {lsPosition = pos}
 
-runLedger :: LedgerOptions -> ChartOfAccounts -> AccountMap -> [Ext Record] -> LedgerMonad a -> IO a
+logSTM :: Throws InternalError l => Priority -> String -> LedgerSTM l ()
+logSTM priority message = do
+  chan <- gets lsMessages
+  stm $ writeTChan chan (priority, message)
+
+infoSTM :: Throws InternalError l => String -> LedgerSTM l ()
+infoSTM message = logSTM INFO message
+
+warningSTM :: Throws InternalError l => String -> LedgerSTM l ()
+warningSTM message = logSTM WARNING message
+
+outputMessages :: TChan (Priority, String) -> IO ()
+outputMessages chan = do
+  x <- atomically $ tryReadTChan chan
+  case x of
+    Nothing -> return ()
+    Just (priority, message) -> do
+        logM rootLoggerName priority message
+        outputMessages chan
+
+runLedger :: MonadIO m => LedgerOptions -> ChartOfAccounts -> AccountMap -> [Ext Record] -> LedgerStateT m a -> m a
 runLedger opts coa amap records action = do
-  let LedgerMonad emt = action
-  st <- emptyLedgerState opts coa amap records
+  let LedgerStateT emt = action
+  st <- liftIO $ emptyLedgerState opts coa amap records
   -- Use currency of root accounts group as default currency
   (res, _) <- runStateT emt (st {lsDefaultCurrency = agCurrency $ branchData coa})
   return res
@@ -99,34 +147,37 @@ runLedger opts coa amap records action = do
 newIOList :: (MonadIO m, Throws InternalError l) => EMT l m (IOList a)
 newIOList = wrapIO $ newTVarIO []
 
-readIOList :: (MonadIO m, Throws InternalError l) => IOList a -> EMT l m [a]
-readIOList iolist = wrapIO (readTVarIO iolist)
+readIOList :: (Throws InternalError l) => IOList a -> LedgerSTM l [a]
+readIOList iolist = stm (readTVar iolist)
+
+readIOListL :: Throws InternalError l => IOList a -> Ledger l [a]
+readIOListL iolist = wrapIO $ atomically $ readTVar iolist
 
 writeIOList :: (MonadIO m, Throws InternalError l) => IOList a -> [a] -> EMT l m ()
 writeIOList iolist x = wrapIO (atomically $ writeTVar iolist x)
 
-appendIOList :: (MonadIO m, Throws InternalError l) => IOList a -> a -> EMT l m ()
+appendIOList :: (Throws InternalError l) => IOList a -> a -> LedgerSTM l ()
 appendIOList iolist x =
-  wrapIO $ atomically $ modifyTVar iolist (x:)
+  stm $ modifyTVar iolist (x:)
 
 -- | Update last item of 'IOList'
-plusIOList :: (MonadIO m, Throws InternalError l)
+plusIOList :: (Throws InternalError l)
            => a          -- ^ Default value (put it to list if it's empty)
            -> (a -> a)
            -> IOList a
-           -> EMT l m ()
-plusIOList def fn iolist = do
-  wrapIO $ atomically $ modifyTVar iolist $ \list ->
+           -> LedgerSTM l ()
+plusIOList def fn iolist =
+  stm $ modifyTVar iolist $ \list ->
     case list of
       [] -> [def]
       (x:xs) -> fn x: x: xs
 
-modifyLastItem ::  (MonadIO m, Throws InternalError l)
+modifyLastItem ::  (Throws InternalError l)
                => (a -> a)
                -> IOList (Ext a)
-               -> EMT l m ()
+               -> LedgerSTM l ()
 modifyLastItem fn iolist = do
-  wrapIO $ atomically $ modifyTVar iolist $ \list ->
+  stm $ modifyTVar iolist $ \list ->
     case list of
       [] -> []
       (x:xs) -> (x {getContent = fn (getContent x)}): xs

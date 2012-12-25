@@ -39,7 +39,7 @@ registry qry options mbPath = do
                 Branch {..} -> return branchData
     case coa of
       Leaf {leafData = account} -> do
-          balances <- readIOList (accountBalances account)
+          balances <- readIOListL (accountBalances account)
           let balances' = filter (checkQuery qry) balances
           let format = case [s | RCSV s <- options] of
                          []    -> showEntriesBalances' fullCoA ASCII totals

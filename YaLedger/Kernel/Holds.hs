@@ -5,6 +5,7 @@ module YaLedger.Kernel.Holds where
 import Control.Monad
 import Control.Monad.State
 import Control.Monad.Exception
+import Control.Concurrent.STM
 import Data.Decimal
 import Data.Dates
 import qualified Data.Map as M
@@ -33,7 +34,7 @@ closeHold :: forall t l.
               Throws InternalError l)
            => DateTime               -- ^ Transaction date/time
            -> Posting Decimal t      -- ^ Hold posting
-           -> Ledger l ()
+           -> LedgerSTM l ()
 closeHold date posting = do
     let acc = postingAccount' posting
         history = getHolds acc
@@ -48,7 +49,7 @@ closeHold date posting = do
     close [] _ _ [] = return False
     close acc _ history [] = do
         updateBalances (postingAccount posting)
-        writeIOList history acc
+        stm $ writeTVar history acc
         return False
     close acc op history (extHold: rest) =
       if checkHold op date amt extHold
@@ -56,11 +57,11 @@ closeHold date posting = do
              let oldHold = getContent extHold
                  newHold = extHold {getContent = oldHold {holdEndDate = Just date}}
              updateBalances (postingAccount posting)
-             writeIOList history (acc ++ [newHold] ++ rest)
+             stm $ writeTVar history (acc ++ [newHold] ++ rest)
              return True
         else close (acc ++ [extHold]) op history rest
 
-    updateBalances :: AnyAccount -> Ledger l ()
+    updateBalances :: AnyAccount -> LedgerSTM l ()
     updateBalances account =
       plusIOList zeroExtBalance updateExtBalance (accountBalances account)
 
@@ -83,7 +84,7 @@ closeHold date posting = do
       }
 
 -- | Smart constructor for NoSuchHold
-noSuchHold :: (Throws NoSuchHold l) => Posting Decimal t -> Ledger l b
+noSuchHold :: (Throws NoSuchHold l) => Posting Decimal t -> LedgerSTM l b
 noSuchHold (CPosting acc amt) = do
   coa <- gets lsCoA
   let Just path = accountFullPath (getID acc) coa

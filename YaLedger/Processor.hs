@@ -20,6 +20,7 @@ import YaLedger.Processor.Duplicates
 import YaLedger.Processor.Rules
 import YaLedger.Processor.Templates
 import YaLedger.Output.Pretty
+import YaLedger.Queue
 
 -- | Merge two sorted lists into one sorted.
 merge :: Ord a => [a] -> [a] -> [a]
@@ -47,40 +48,43 @@ processEntry :: (Throws NoSuchRate l,
 processEntry date pos attrs uentry = do
   -- First, check the entry
   entry@(CEntry dt cr rd) <- checkEntry date attrs uentry
+  queue <- gets lsTranQueue
 
-  -- Process debit postings
-  forM dt $ \p -> do
-      let account = debitPostingAccount p
-      debit  account (Ext date 0 pos attrs p)
-      -- Add link to this entry for last balance (caused by previous call of `debit')
-      modifyLastItem (\b -> b {causedBy = Just entry}) (accountBalances account)
-      -- Run all needed rules
-      runRules EDebit date attrs p processTransaction
-
-  -- Process credit postings
-  forM cr $ \p -> do
-      let account = creditPostingAccount p
-      credit account (Ext date 0 pos attrs p)
-      -- Add link to this entry for last balance (caused by previous call of `credit')
-      modifyLastItem (\b -> b {causedBy = Just entry}) (accountBalances account)
-      -- Run all needed rules
-      runRules ECredit date attrs p processTransaction
-
-  -- What to do with rates difference?
-  case rd of
-    OneCurrency -> return () -- There is no any difference
-    CreditDifference p -> do
-        let account = creditPostingAccount p
-        credit (creditPostingAccount p) (Ext date 0 pos attrs p)
-        modifyLastItem (\b -> b {causedBy = Just entry}) (accountBalances account)
-        runRules ECredit date attrs p processTransaction
-    -- For debit difference, there might be many postings,
-    -- caused by debit redirection
-    DebitDifference  ps -> forM_ ps $ \ p -> do
+  -- All postings are done in single STM transaction.
+  stm2io $ do
+      -- Process debit postings
+      forM dt $ \p -> do
           let account = debitPostingAccount p
-          debit  (debitPostingAccount  p) (Ext date 0 pos attrs p)
+          debit  account (Ext date 0 pos attrs p)
+          -- Add link to this entry for last balance (caused by previous call of `debit')
           modifyLastItem (\b -> b {causedBy = Just entry}) (accountBalances account)
-          runRules EDebit date attrs p processTransaction
+          -- Run all needed rules
+          runRules EDebit date attrs p $ \tran -> stm (enqueue tran queue)
+
+      -- Process credit postings
+      forM cr $ \p -> do
+          let account = creditPostingAccount p
+          credit account (Ext date 0 pos attrs p)
+          -- Add link to this entry for last balance (caused by previous call of `credit')
+          modifyLastItem (\b -> b {causedBy = Just entry}) (accountBalances account)
+          -- Run all needed rules
+          runRules ECredit date attrs p $ \tran -> stm (enqueue tran queue)
+
+      -- What to do with rates difference?
+      case rd of
+        OneCurrency -> return () -- There is no any difference
+        CreditDifference p -> do
+            let account = creditPostingAccount p
+            credit (creditPostingAccount p) (Ext date 0 pos attrs p)
+            modifyLastItem (\b -> b {causedBy = Just entry}) (accountBalances account)
+            runRules ECredit date attrs p $ \tran -> stm (enqueue tran queue)
+        -- For debit difference, there might be many postings,
+        -- caused by debit redirection
+        DebitDifference  ps -> forM_ ps $ \ p -> do
+              let account = debitPostingAccount p
+              debit  (debitPostingAccount  p) (Ext date 0 pos attrs p)
+              modifyLastItem (\b -> b {causedBy = Just entry}) (accountBalances account)
+              runRules EDebit date attrs p $ \tran -> stm (enqueue tran queue)
   return ()
 
 -- | Get next record
@@ -122,7 +126,7 @@ insertRule new@(name, _, _) list = go list list
 -- | Process one record.
 processRecord :: (Throws InternalError l,
                   Throws InsufficientFunds l)
-              => StateT [Ext Record] (EMT l LedgerMonad) [Ext (Transaction Amount)]
+              => StateT [Ext Record] (EMT l (LedgerStateT IO)) [Ext (Transaction Amount)]
 processRecord = do
   rec <- getNext
   case rec of
@@ -185,7 +189,7 @@ isStop _    _                = False
 -- | Process all records.
 processAll :: (Throws InternalError l,
                Throws InsufficientFunds l)
-           => StateT [Ext Record] (EMT l LedgerMonad) [Ext (Transaction Amount)]
+           => StateT [Ext Record] (EMT l (LedgerStateT IO)) [Ext (Transaction Amount)]
 processAll = do
   trans <- processRecord
   finish <- gets null
@@ -219,8 +223,30 @@ processRecords endDate rules list = do
   let records = sort deduplicated
   modify $ \st -> st {lsLoadedRecords = records}
   list' <- evalStateT processAll records
-  forM_ (takeWhile (\t -> getDate t <= endDate) list') $
-      processTransaction
+  queue <- gets lsTranQueue
+  stm2io $
+    forM_ (takeWhile (\t -> getDate t <= endDate) list') $ \tran ->
+        stm $ enqueue tran queue
+  processTransactionsFromQueue 
+
+processTransactionsFromQueue :: (Throws NoSuchRate l,
+                       Throws NoCorrespondingAccountFound l,
+                       Throws InvalidAccountType l,
+                       Throws NoSuchTemplate l,
+                       Throws InsufficientFunds l,
+                       Throws ReconciliationError l,
+                       Throws NoSuchHold l,
+                       Throws InternalError l)
+                  => Ledger l ()
+processTransactionsFromQueue = do
+  queue <- gets lsTranQueue
+  mbTran <- stm2io $ stm $ getFromQueue queue
+  case mbTran of
+    -- If queue is empty, then nothing to do.
+    Nothing -> return ()
+    Just tran -> do
+                 processTransaction tran
+                 processTransactionsFromQueue
 
 -- | Process one transaction
 processTransaction :: (Throws NoSuchRate l,
@@ -256,19 +282,19 @@ processTransaction (Ext date _ pos attrs (THold crholds dtholds)) = do
 
     forM_ crholds $ \(Hold posting mbEnd) -> do
       p <- convertPosting' (Just date) posting
-      creditHold (postingAccount' p) $ Ext date 0 pos attrs (Hold p mbEnd)
+      stm2io $ creditHold (postingAccount' p) $ Ext date 0 pos attrs (Hold p mbEnd)
 
     forM_ dtholds $ \(Hold posting mbEnd) -> do
       p <- convertPosting' (Just date) posting
-      debitHold (postingAccount' p) $ Ext date 0 pos attrs (Hold p mbEnd)
+      stm2io $ debitHold (postingAccount' p) $ Ext date 0 pos attrs (Hold p mbEnd)
 
 processTransaction (Ext date _ pos attrs (TCloseCreditHold (Hold p@(CPosting acc amt) _))) = do
     setPos pos
     p' <- convertPosting' (Just date) p
-    closeHold date p'
+    stm2io $ closeHold date p'
 
 processTransaction (Ext date _ pos attrs (TCloseDebitHold (Hold p@(DPosting acc amt) _))) = do
     setPos pos
     p' <- convertPosting' (Just date) p
-    closeHold date p'
+    stm2io $ closeHold date p'
 

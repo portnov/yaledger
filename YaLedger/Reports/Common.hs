@@ -172,6 +172,6 @@ getEntries :: (Throws InternalError l,
            => a
            -> Ledger l [Ext (Entry Decimal Checked)]
 getEntries acc = do
-  balances <- readIOList (accountBalances acc)
+  balances <- readIOListL (accountBalances acc)
   return $ mapMaybe causedByExt balances
 

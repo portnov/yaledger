@@ -3,6 +3,7 @@
 module YaLedger.Processor.Templates
   (SubstState, Subst,
    ATemplate (..),
+   TemplateMonad (..),
    fillTemplate,
    getTemplate
   ) where
@@ -11,6 +12,7 @@ import Control.Applicative
 import Control.Monad.Reader
 import Control.Monad.State
 import Control.Monad.Exception
+import Control.Concurrent.STM
 import qualified Data.Map as M
 import Data.Maybe
 import Data.Decimal
@@ -19,18 +21,27 @@ import YaLedger.Types
 import YaLedger.Exceptions
 import YaLedger.Kernel (getCurrentBalance)
 
+class Monad m => TemplateMonad m where
+  liftTemplate :: Throws InternalError l => LedgerT l STM a -> LedgerT l m a
+
+instance TemplateMonad IO where
+  liftTemplate = stm2io
+
+instance TemplateMonad STM where
+  liftTemplate = id
+
 type SubstState = M.Map Int Amount
 
-type Subst l a = ReaderT SubstState (EMT l LedgerMonad) a
+type Subst l m a = ReaderT SubstState (EMT l (LedgerStateT m)) a
 
-use :: Int -> Subst l (Maybe Amount)
+use :: Monad m => Int -> Subst l m (Maybe Amount)
 use i = asks (M.lookup i)
 
 class ATemplate a where
   type Result a
 
   nParams :: a -> Int
-  subst :: Throws InternalError l => a -> Subst l (Result a)
+  subst :: (TemplateMonad m, Throws InternalError l) => a -> Subst l m (Result a)
 
 instance ATemplate a => ATemplate (Ext a) where
   type Result (Ext a) = Ext (Result a)
@@ -80,17 +91,20 @@ instance ATemplate (Posting Param t) where
   subst (DPosting acc a) =
     case a of
       FromBalance c -> do
-        balance <- lift (getCurrentBalance AvailableBalance acc)
+        balance <- lift $ liftTemplate (getCurrentBalance AvailableBalance acc)
         return $ DPosting acc (balance *. c :# getCurrency acc)
       _ -> DPosting acc <$> subst a
   subst (CPosting acc a) =
     case a of
       FromBalance c -> do
-        balance <- lift (getCurrentBalance AvailableBalance acc)
+        balance <- lift $ liftTemplate (getCurrentBalance AvailableBalance acc)
         return $ CPosting acc (balance *. c :# getCurrency acc)
       _ -> CPosting acc <$> subst a
 
-fillTemplate :: Throws InternalError l => Transaction Param -> [Amount] -> Ledger l (Transaction Amount)
+fillTemplate :: (TemplateMonad m, Throws InternalError l)
+              => Transaction Param
+              -> [Amount]
+              -> LedgerT l m (Transaction Amount)
 fillTemplate tran args =
   runReaderT (subst tran) (M.fromList $ zip [1..] args)
 

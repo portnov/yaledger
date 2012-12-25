@@ -22,6 +22,7 @@ module YaLedger.Kernel
   ) where
 
 import Prelude hiding (catch)
+import Control.Concurrent.STM
 import Control.Applicative ((<$>))
 import Control.Monad
 import Control.Monad.State
@@ -105,7 +106,7 @@ balancePlusPosting :: forall l t.
                (Throws InternalError l, Sign t)
             => Ext (Posting Decimal t)   -- ^ Posting
             -> History Balance Checked   -- ^ Balances history
-            -> Ledger l ()
+            -> LedgerSTM l ()
 balancePlusPosting p history = do
   let s = fromIntegral (sign (undefined :: t))
       value = s * postingValue (getContent p)
@@ -124,7 +125,7 @@ balanceSetHold :: forall l t.
                   (Throws InternalError l, HoldOperations t)
                 => Ext (Hold Decimal t)
                 -> History Balance Checked
-                -> Ledger l ()
+                -> LedgerSTM l ()
 balanceSetHold hold history = do
   let value = postingValue $ holdPosting (getContent hold)
       update e@(Ext {getContent = b}) =
@@ -147,13 +148,12 @@ whenJust (Just a) fn = fn a
 
 -- | Get current balance of account.
 -- Value is returned in currency of account.
-getCurrentBalance :: (HasBalances a,
-                      Throws InternalError l)
+getCurrentBalance :: (HasBalances a, Throws InternalError l)
                   => BalanceType
                   -> a                 -- ^ Any sort of account
-                  -> Ledger l Decimal
-getCurrentBalance btype acc = do
-  balances <- readIOList (accountBalances acc)
+                  -> LedgerSTM l Decimal
+getCurrentBalance btype acc = stm $ do
+  balances <- readTVar (accountBalances acc)
   return $ case map (balanceGetter btype . getContent) balances of
              [] -> 0
              (b:_) -> b
@@ -165,7 +165,7 @@ getBalanceAt :: (HasBalances a,
              => Maybe DateTime    -- ^ If Nothing, return current balance
              -> BalanceType
              -> a                 -- ^ Any sort of account
-             -> Ledger l Decimal
+             -> LedgerSTM l Decimal
 getBalanceAt mbDate btype acc = do
   balances <- readIOList (accountBalances acc)
   let good = case mbDate of
@@ -182,7 +182,7 @@ checkBalance :: (Throws InternalError l,
                  IsAccount a)
              => Decimal        -- ^ Account balance
              -> a              -- ^ Any sort of account
-             -> Ledger l ()
+             -> LedgerSTM l ()
 checkBalance targetBalance acc = do
   let bc = accountChecks acc
       op = if sign acc > 0
@@ -190,10 +190,10 @@ checkBalance targetBalance acc = do
              else (<=)
   whenJust (bcInfo bc) $ \value ->
     when (targetBalance `op` value) $ do
-      infoP $ "Balance of " ++ getName acc ++ " will be " ++ show targetBalance ++ show (getCurrency acc)
+      infoSTM $ "Balance of " ++ getName acc ++ " will be " ++ show targetBalance ++ show (getCurrency acc)
   whenJust (bcWarning bc) $ \value ->
     when (targetBalance `op` value) $ 
-      warningP $ "Balance of " ++ getName acc ++ " will be " ++ show targetBalance ++ show (getCurrency acc)
+      warningSTM $ "Balance of " ++ getName acc ++ " will be " ++ show targetBalance ++ show (getCurrency acc)
   whenJust (bcError bc) $ \value ->
     when (targetBalance `op` value) $ 
       throwP (InsufficientFunds (getName acc) targetBalance (getCurrency acc))
@@ -207,11 +207,12 @@ differenceType x
   | otherwise = EDebit
 
 -- | Lookup for active exchange rate
-lookupRate :: (Throws NoSuchRate l)
+lookupRate :: (Monad m,
+               Throws NoSuchRate l)
            => Maybe DateTime    -- ^ Date to search exchange rate for. Nothing for current date.
            -> Currency          -- ^ Source currency
            -> Currency          -- ^ Target currency
-           -> Ledger l Double
+           -> LedgerT l m Double
 lookupRate mbDate from to = do
     now <- gets lsStartDate
     let date = fromMaybe now mbDate
@@ -238,11 +239,12 @@ lookupRate mbDate from to = do
       | otherwise = go ar f t rs
 
 -- | Convert 'Amount' to another currency
-convert :: (Throws NoSuchRate l)
+convert :: (Monad m,
+            Throws NoSuchRate l)
         => Maybe DateTime    -- ^ Date of which exchange rate should be used
         -> Currency          -- ^ Target currency
         -> Amount
-        -> Ledger l Amount
+        -> LedgerT l m Amount
 convert mbDate c' (x :# c)
   | c == c' = return (x :# c)
   | otherwise = do
@@ -320,7 +322,7 @@ creditTurnovers :: (Throws InternalError l)
                 -> Ledger l Amount
 creditTurnovers qry account = do
   let c = getCurrency account
-  postings <- filterPostings qry <$> (readIOList =<< creditPostings account)
+  postings <- filterPostings qry <$> (readIOListL =<< creditPostings account)
   let turnovers = sumPostings postings
   return (turnovers :# c)
 
@@ -332,7 +334,7 @@ debitTurnovers :: (Throws InternalError l)
                -> Ledger l Amount
 debitTurnovers qry account = do
   let c = getCurrency account
-  postings <- filterPostings qry <$> (readIOList =<< debitPostings account)
+  postings <- filterPostings qry <$> (readIOListL =<< debitPostings account)
   let turnovers = sumPostings postings
   return (turnovers :# c)
 
@@ -573,7 +575,7 @@ lookupCorrespondence qry date amount@(value :# currency) mbCorr = do
                 else do
                      let accountCurrency = getCurrency account
                      toDebit :# _ <- convert (Just date) accountCurrency amount
-                     currentBalance <- getCurrentBalance AvailableBalance account
+                     currentBalance <- stm2io $ getCurrentBalance AvailableBalance account
                      -- toDebit and currentBalance are both in currency of
                      -- found account.
                      if toDebit <= currentBalance
@@ -697,7 +699,7 @@ reconciliate :: (Throws NoSuchRate l,
              -> Ledger l (Maybe (Entry Amount Unchecked))
 reconciliate date account amount tgt msg = do
 
-  calculatedBalance <- getBalanceAt (Just date) AvailableBalance account
+  calculatedBalance <- stm2io $ getBalanceAt (Just date) AvailableBalance account
   actualBalance :# accountCurrency <- convert (Just date) (getCurrency account) amount
 
   -- diff is in accountCurrency
@@ -752,12 +754,13 @@ formatReconMessage format coa account actual calculated diff =
                     ("diff",       prettyPrint diff) ] format
 
 -- | Calculate sum of amounts in accounts group.
-sumGroup :: (Throws InternalError l,
+sumGroup :: (Monad m,
+             Throws InternalError l,
              Throws NoSuchRate l)
          => Maybe DateTime
          -> AccountGroupData
          -> [Amount]
-         -> Ledger l Amount
+         -> LedgerT l m Amount
 sumGroup mbDate ag ams = do
   setPos $ newPos ("accounts group " ++ agName ag) 0 0
   let c = agCurrency ag
@@ -795,7 +798,7 @@ treeBalances :: (Throws NoSuchRate l,
              -> ChartOfAccounts
              -> Ledger l (Tree [Amount] [Amount])
 treeBalances btype queries coa =
-    mapTreeM (sumGroups $ map qEnd queries) balances coa
+    stm2io $ mapTreeM (sumGroups $ map qEnd queries) balances coa
   where
     balances acc = forM queries $ \qry -> do
                        b <- getBalanceAt (qEnd qry) btype acc
