@@ -52,7 +52,7 @@ processEntry date tranID pos attrs uentry = do
   queue <- gets lsTranQueue
 
   -- All postings are done in single STM transaction.
-  stm2io $ do
+  runAtomically $ do
       -- Process debit postings
       forM dt $ \p -> do
           let account = debitPostingAccount p
@@ -228,7 +228,7 @@ processRecords endDate rules list = do
   list' <- evalStateT processAll records
   queue <- gets lsTranQueue
   let ns = [1, 100 ..]
-  stm2io $
+  runAtomically $
     forM_ (zip ns (takeWhile (\t -> getDate t <= endDate) list')) $ \(tranID, tran) ->
         stm $ enqueue tranID tran queue
   processTransactionsFromQueue 
@@ -244,7 +244,7 @@ processTransactionsFromQueue :: (Throws NoSuchRate l,
                   => Ledger l ()
 processTransactionsFromQueue = do
   queue <- gets lsTranQueue
-  mbTran <- stm2io $ stm $ getFromQueue queue
+  mbTran <- runAtomically $ stm $ getFromQueue queue
   case mbTran of
     -- If queue is empty, then nothing to do.
     Nothing -> return ()
@@ -287,19 +287,19 @@ processTransaction tranID (Ext date _ pos attrs (THold crholds dtholds)) = do
 
     forM_ crholds $ \(Hold posting mbEnd) -> do
       p <- convertPosting' (Just date) posting
-      stm2io $ creditHold (postingAccount' p) $ Ext date 0 pos attrs (Hold p mbEnd)
+      runAtomically $ creditHold (postingAccount' p) $ Ext date 0 pos attrs (Hold p mbEnd)
 
     forM_ dtholds $ \(Hold posting mbEnd) -> do
       p <- convertPosting' (Just date) posting
-      stm2io $ debitHold (postingAccount' p) $ Ext date 0 pos attrs (Hold p mbEnd)
+      runAtomically $ debitHold (postingAccount' p) $ Ext date 0 pos attrs (Hold p mbEnd)
 
 processTransaction tranID (Ext date _ pos attrs (TCloseCreditHold (Hold p@(CPosting acc amt) _))) = do
     setPos pos
     p' <- convertPosting' (Just date) p
-    stm2io $ closeHold date p'
+    runAtomically $ closeHold date p'
 
 processTransaction tranID (Ext date _ pos attrs (TCloseDebitHold (Hold p@(DPosting acc amt) _))) = do
     setPos pos
     p' <- convertPosting' (Just date) p
-    stm2io $ closeHold date p'
+    runAtomically $ closeHold date p'
 

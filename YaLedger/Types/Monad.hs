@@ -32,17 +32,7 @@ type LedgerT l m a = EMT l (LedgerStateT m) a
 
 type Ledger l a = LedgerT l IO a
 
-type LedgerSTM l a = LedgerT l STM a
-
-stm2io :: Throws InternalError l => LedgerSTM l a -> Ledger l a
-stm2io (EMT (LedgerStateT action)) = do -- `do' in StateT IO
-    st <- get
-    (result, st') <- wrapIO $ atomically $ runStateT action st
-    case result of
-      Right a -> do
-                 put st'
-                 return a
-      Left (callTrace, e) -> wrapE $ rethrow callTrace (checkedException e)
+type Atomic l a = LedgerT l STM a
 
 data Rules = Rules {
     creditRules :: [(String, Attributes, Rule)]
@@ -100,7 +90,7 @@ wrapIO :: (MonadIO m, Throws InternalError l)
        -> EMT l m a
 wrapIO action = wrapE $ liftIO action
 
-stm :: Throws InternalError l => STM a -> LedgerSTM l a
+stm :: Throws InternalError l => STM a -> Atomic l a
 stm action = EMT $ LedgerStateT $ StateT $ \ls -> do
                result <- action
                return (Right result, ls)
@@ -114,22 +104,22 @@ setPos :: (Monad m) => SourcePos -> LedgerT l m ()
 setPos pos =
   modify $ \st -> st {lsPosition = pos}
 
-logSTM :: Throws InternalError l => Priority -> String -> LedgerSTM l ()
+logSTM :: Throws InternalError l => Priority -> String -> Atomic l ()
 logSTM priority message = do
   chan <- gets lsMessages
   stm $ writeTChan chan (priority, message)
 
-debugSTM :: Throws InternalError l => String -> LedgerSTM l ()
+debugSTM :: Throws InternalError l => String -> Atomic l ()
 #ifdef DEBUG
 debugSTM message = logSTM INFO $ "DEBUG: " ++ message
 #else
 debugSTM _ = return ()
 #endif
 
-infoSTM :: Throws InternalError l => String -> LedgerSTM l ()
+infoSTM :: Throws InternalError l => String -> Atomic l ()
 infoSTM message = logSTM INFO message
 
-warningSTM :: Throws InternalError l => String -> LedgerSTM l ()
+warningSTM :: Throws InternalError l => String -> Atomic l ()
 warningSTM message = logSTM WARNING message
 
 outputMessages :: TChan (Priority, String) -> IO ()
@@ -140,6 +130,20 @@ outputMessages chan = do
     Just (priority, message) -> do
         logM rootLoggerName priority message
         outputMessages chan
+
+-- | Run 'Atomic' transaction.
+-- This is similar to 'Control.Concurrent.STM.atomically'.
+-- Any exception thrown within 'Atomic' monad will be rethrown
+-- in 'Ledger' monad.
+runAtomically :: Throws InternalError l => Atomic l a -> Ledger l a
+runAtomically (EMT (LedgerStateT action)) = do -- `do' in StateT IO
+    st <- get
+    (result, st') <- wrapIO $ atomically $ runStateT action st
+    case result of
+      Right a -> do
+                 put st'
+                 return a
+      Left (callTrace, e) -> wrapE $ rethrow callTrace (checkedException e)
 
 runLedger :: MonadIO m => LedgerOptions -> ChartOfAccounts -> AccountMap -> [Ext Record] -> LedgerStateT m a -> m a
 runLedger opts coa amap records action = do
@@ -154,7 +158,7 @@ runLedger opts coa amap records action = do
 newIOList :: (MonadIO m, Throws InternalError l) => EMT l m (IOList a)
 newIOList = wrapIO $ newTVarIO []
 
-readIOList :: (Throws InternalError l) => IOList a -> LedgerSTM l [a]
+readIOList :: (Throws InternalError l) => IOList a -> Atomic l [a]
 readIOList iolist = stm (readTVar iolist)
 
 readIOListL :: Throws InternalError l => IOList a -> Ledger l [a]
@@ -163,7 +167,7 @@ readIOListL iolist = wrapIO $ atomically $ readTVar iolist
 writeIOList :: (MonadIO m, Throws InternalError l) => IOList a -> [a] -> EMT l m ()
 writeIOList iolist x = wrapIO (atomically $ writeTVar iolist x)
 
-appendIOList :: (Throws InternalError l) => IOList a -> a -> LedgerSTM l ()
+appendIOList :: (Throws InternalError l) => IOList a -> a -> Atomic l ()
 appendIOList iolist x =
   stm $ modifyTVar iolist (x:)
 
@@ -172,7 +176,7 @@ plusIOList :: (Throws InternalError l)
            => a          -- ^ Default value (put it to list if it's empty)
            -> (a -> a)
            -> IOList a
-           -> LedgerSTM l ()
+           -> Atomic l ()
 plusIOList def fn iolist =
   stm $ modifyTVar iolist $ \list ->
     case list of
@@ -182,7 +186,7 @@ plusIOList def fn iolist =
 modifyLastItem ::  (Throws InternalError l)
                => (a -> a)
                -> IOList (Ext a)
-               -> LedgerSTM l ()
+               -> Atomic l ()
 modifyLastItem fn iolist = do
   stm $ modifyTVar iolist $ \list ->
     case list of

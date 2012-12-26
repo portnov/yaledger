@@ -66,7 +66,7 @@ byOneAccount queries options acc = do
     results <- forM queries $ \qry -> saldo qry acc
     let starts = map qStart queries
         ends   = map qEnd   queries
-    totals <- stm2io $ getCurrentBalance AvailableBalance acc
+    totals <- runAtomically $ getCurrentBalance AvailableBalance acc
     let format = case needCSV options of
                    Nothing  -> tableColumns ASCII
                    Just sep -> tableColumns (CSV sep)

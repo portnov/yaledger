@@ -106,7 +106,7 @@ balancePlusPosting :: forall l t.
                (Throws InternalError l, Sign t)
             => Ext (Posting Decimal t)   -- ^ Posting
             -> History Balance Checked   -- ^ Balances history
-            -> LedgerSTM l ()
+            -> Atomic l ()
 balancePlusPosting p history = do
   let s = fromIntegral (sign (undefined :: t))
       value = s * postingValue (getContent p)
@@ -126,7 +126,7 @@ balanceSetHold :: forall l t.
                   (Throws InternalError l, HoldOperations t)
                 => Ext (Hold Decimal t)
                 -> History Balance Checked
-                -> LedgerSTM l ()
+                -> Atomic l ()
 balanceSetHold hold history = do
   let value = postingValue $ holdPosting (getContent hold)
       update e@(Ext {getContent = b}) =
@@ -152,7 +152,7 @@ whenJust (Just a) fn = fn a
 getCurrentBalance :: (HasBalances a, Throws InternalError l)
                   => BalanceType
                   -> a                 -- ^ Any sort of account
-                  -> LedgerSTM l Decimal
+                  -> Atomic l Decimal
 getCurrentBalance btype acc = stm $ do
   balances <- readTVar (accountBalances acc)
   return $ case map (balanceGetter btype . getContent) balances of
@@ -166,7 +166,7 @@ getBalanceAt :: (HasBalances a,
              => Maybe DateTime    -- ^ If Nothing, return current balance
              -> BalanceType
              -> a                 -- ^ Any sort of account
-             -> LedgerSTM l Decimal
+             -> Atomic l Decimal
 getBalanceAt mbDate btype acc = do
   balances <- readIOList (accountBalances acc)
   let good = case mbDate of
@@ -183,7 +183,7 @@ checkBalance :: (Throws InternalError l,
                  IsAccount a)
              => Decimal        -- ^ Account balance
              -> a              -- ^ Any sort of account
-             -> LedgerSTM l ()
+             -> Atomic l ()
 checkBalance targetBalance acc = do
   let bc = accountChecks acc
       op = if sign acc > 0
@@ -576,7 +576,7 @@ lookupCorrespondence qry date amount@(value :# currency) mbCorr = do
                 else do
                      let accountCurrency = getCurrency account
                      toDebit :# _ <- convert (Just date) accountCurrency amount
-                     currentBalance <- stm2io $ getCurrentBalance AvailableBalance account
+                     currentBalance <- runAtomically $ getCurrentBalance AvailableBalance account
                      -- toDebit and currentBalance are both in currency of
                      -- found account.
                      if toDebit <= currentBalance
@@ -700,7 +700,7 @@ reconciliate :: (Throws NoSuchRate l,
              -> Ledger l (Maybe (Entry Amount Unchecked))
 reconciliate date account amount tgt msg = do
 
-  calculatedBalance <- stm2io $ getBalanceAt (Just date) AvailableBalance account
+  calculatedBalance <- runAtomically $ getBalanceAt (Just date) AvailableBalance account
   actualBalance :# accountCurrency <- convert (Just date) (getCurrency account) amount
 
   -- diff is in accountCurrency
@@ -799,7 +799,7 @@ treeBalances :: (Throws NoSuchRate l,
              -> ChartOfAccounts
              -> Ledger l (Tree [Amount] [Amount])
 treeBalances btype queries coa =
-    stm2io $ mapTreeM (sumGroups $ map qEnd queries) balances coa
+    runAtomically $ mapTreeM (sumGroups $ map qEnd queries) balances coa
   where
     balances acc = forM queries $ \qry -> do
                        b <- getBalanceAt (qEnd qry) btype acc

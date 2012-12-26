@@ -14,12 +14,12 @@ class CanCredit a where
              Throws InsufficientFunds l)
          => a
          -> Ext (Posting Decimal Credit)
-         -> LedgerSTM l ()
+         -> Atomic l ()
 
   creditHold :: (Throws InternalError l) 
          => a
          -> Ext (Hold Decimal Credit)
-         -> LedgerSTM l ()
+         -> Atomic l ()
 
 -- | Accounts that could be debited
 class CanDebit a where
@@ -27,12 +27,12 @@ class CanDebit a where
             Throws InsufficientFunds l)
         => a
         -> Ext (Posting Decimal Debit)
-        -> LedgerSTM l ()
+        -> Atomic l ()
 
   debitHold :: (Throws InternalError l)
          => a
          -> Ext (Hold Decimal Debit)
-         -> LedgerSTM l ()
+         -> Atomic l ()
 
 class Sign t => HoldOperations t where
   justHold :: t -> Decimal -> Balance Checked

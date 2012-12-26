@@ -25,7 +25,7 @@ class Monad m => TemplateMonad m where
   liftTemplate :: Throws InternalError l => LedgerT l STM a -> LedgerT l m a
 
 instance TemplateMonad IO where
-  liftTemplate = stm2io
+  liftTemplate = runAtomically
 
 instance TemplateMonad STM where
   liftTemplate = id

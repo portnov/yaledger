@@ -34,7 +34,7 @@ closeHold :: forall t l.
               Throws InternalError l)
            => DateTime               -- ^ Transaction date/time
            -> Posting Decimal t      -- ^ Hold posting
-           -> LedgerSTM l ()
+           -> Atomic l ()
 closeHold date posting = do
     let acc = postingAccount' posting
         history = getHolds acc
@@ -61,7 +61,7 @@ closeHold date posting = do
              return True
         else close (acc ++ [extHold]) op history rest
 
-    updateBalances :: AnyAccount -> LedgerSTM l ()
+    updateBalances :: AnyAccount -> Atomic l ()
     updateBalances account =
       plusIOList zeroExtBalance updateExtBalance (accountBalances account)
 
@@ -84,7 +84,7 @@ closeHold date posting = do
       }
 
 -- | Smart constructor for NoSuchHold
-noSuchHold :: (Throws NoSuchHold l) => Posting Decimal t -> LedgerSTM l b
+noSuchHold :: (Throws NoSuchHold l) => Posting Decimal t -> Atomic l b
 noSuchHold (CPosting acc amt) = do
   coa <- gets lsCoA
   let Just path = accountFullPath (getID acc) coa

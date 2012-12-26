@@ -62,7 +62,7 @@ balance queries options mbPath = (do
     (\l (e :: NoSuchRate) -> handler l e)
 
 byOneAccount queries options acc = do
-    results <- forM queries $ \qry -> stm2io $ getBalanceAt (qEnd qry) AvailableBalance acc
+    results <- forM queries $ \qry -> runAtomically $ getBalanceAt (qEnd qry) AvailableBalance acc
     let ends   = map qEnd   queries
     let format = case needCSV options of
                    Nothing  -> tableColumns ASCII

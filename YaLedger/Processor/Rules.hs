@@ -23,7 +23,7 @@ matchC :: Throws NoSuchRate l
        -> DateTime            -- ^ Posting date/time
        -> Posting Decimal t   -- ^ Posting itself
        -> Condition
-       -> LedgerSTM l Bool
+       -> Atomic l Bool
 matchC groupsMap date (CPosting acc x) cond = check groupsMap ECredit date acc x cond
 matchC groupsMap date (DPosting acc x) cond = check groupsMap EDebit  date acc x cond
 
@@ -60,8 +60,8 @@ runRules :: (Throws NoSuchRate l,
          -> Integer
          -> Attributes                                 -- ^ Posting attributes
          -> Posting Decimal t                          -- ^ Posting itself
-         -> (Integer -> Ext (Transaction Amount) -> LedgerSTM l ())  -- ^ Function to apply to produced transactions
-         -> LedgerSTM l ()
+         -> (Integer -> Ext (Transaction Amount) -> Atomic l ())  -- ^ Function to apply to produced transactions
+         -> Atomic l ()
 runRules pt date tranID pAttrs p run = do
   rules <- gets (case pt of
                    ECredit -> creditRules . lsRules
