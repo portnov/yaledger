@@ -128,11 +128,15 @@ debugSTM _ = return ()
 
 -- | Similar to 'info', but in 'Atomic' monad.
 infoSTM :: Throws InternalError l => String -> Atomic l ()
-infoSTM message = logSTM INFO message
+infoSTM message = do
+  pos <- gets lsPosition
+  logSTM INFO $ "INFO: " ++ message ++ "\n    at " ++ show pos
 
 -- | Similar to 'warning', but in 'Atomic' monad.
 warningSTM :: Throws InternalError l => String -> Atomic l ()
-warningSTM message = logSTM WARNING message
+warningSTM message = do
+  pos <- gets lsPosition
+  logSTM WARNING $ "WARNING: " ++ message ++ "\n    at " ++ show pos
 
 -- | Output all messages from 'lsMessages' queue.
 outputMessages :: TChan (Priority, String) -> IO ()
