@@ -234,6 +234,7 @@ processRecords endDate rules list = do
         stm $ enqueue tranID tran queue
   processTransactionsFromQueue 
 
+-- | Process all transactions from transactions queue.
 processTransactionsFromQueue :: (Throws NoSuchRate l,
                        Throws NoCorrespondingAccountFound l,
                        Throws InvalidAccountType l,
@@ -251,6 +252,8 @@ processTransactionsFromQueue = do
     Nothing -> return ()
     Just (tranID, tran) -> do
                  processTransaction tranID tran
+                 chan <- gets lsMessages
+                 wrapIO $ outputMessages chan
                  processTransactionsFromQueue
 
 -- | Process one transaction
