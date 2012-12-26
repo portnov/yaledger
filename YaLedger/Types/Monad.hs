@@ -25,13 +25,20 @@ import YaLedger.Tree
 import YaLedger.Exceptions
 import YaLedger.Kernel.Queue
 
+-- | Base layer of Ledger monad: StateT transformer.
 newtype LedgerStateT m a = LedgerStateT (StateT LedgerState m a)
   deriving (Monad, MonadState LedgerState, MonadIO)
 
+-- | Generic type of YaLedger monad. This is used in
+-- two instances: 'Ledger' and 'Atomic'.
 type LedgerT l m a = EMT l (LedgerStateT m) a
 
+-- | This monad is used in most computations,
+-- which do not need to lock any accounts.
 type Ledger l a = LedgerT l IO a
 
+-- | Computations of this type are peformed
+-- atomically, inside STM transaction.
 type Atomic l a = LedgerT l STM a
 
 data Rules = Rules {
@@ -42,20 +49,19 @@ data Rules = Rules {
 
 -- | Ledger state
 data LedgerState = LedgerState {
-    lsStartDate       :: DateTime,
-    lsDefaultCurrency :: Currency,
-    lsCoA             :: ChartOfAccounts,
-    lsAccountMap      :: AccountMap,
-    lsFullGroupsMap   :: M.Map AccountID [GroupID],
-    lsTemplates       :: M.Map String (Attributes, Transaction Param),
-    lsRules           :: Rules,
-    lsRates           :: Rates,
-    lsLoadedRecords   :: [Ext Record],
-    lsTranQueue       :: Queue (Transaction Amount),
-    lsMessages        :: TChan (Priority, String),
-    lsConfig          :: LedgerOptions,
-    -- | Source location of current transaction
-    lsPosition        :: SourcePos
+    lsStartDate       :: DateTime                                      -- ^ Date/Time of YaLedger startup.
+  , lsDefaultCurrency :: Currency
+  , lsCoA             :: ChartOfAccounts
+  , lsAccountMap      :: AccountMap
+  , lsFullGroupsMap   :: M.Map AccountID [GroupID]                     -- ^ For each account ID, stores list of IDs of all groups account belongs to.
+  , lsTemplates       :: M.Map String (Attributes, Transaction Param)  -- ^ Templates
+  , lsRules           :: Rules
+  , lsRates           :: Rates                                         -- ^ Exchange rates.
+  , lsLoadedRecords   :: [Ext Record]                                  -- ^ All records loaded from source files.
+  , lsTranQueue       :: Queue (Transaction Amount)                    -- ^ Transactions queue.
+  , lsMessages        :: TChan (Priority, String)                      -- ^ Log messages queue. Is used to output messages from 'Atomic' transactions
+  , lsConfig          :: LedgerOptions                                 -- ^ Configuration options
+  , lsPosition        :: SourcePos                                     -- ^ Source location of current transaction
   }
   deriving (Eq)
 
@@ -63,6 +69,7 @@ instance Monad m => MonadState LedgerState (EMT l (LedgerStateT m)) where
   get = lift get
   put s = lift (put s)
 
+-- | Create default LedgerState.
 emptyLedgerState :: LedgerOptions -> ChartOfAccounts -> AccountMap -> [Ext Record] -> IO LedgerState
 emptyLedgerState opts coa amap records = do
   now <- getCurrentDateTime
@@ -90,6 +97,7 @@ wrapIO :: (MonadIO m, Throws InternalError l)
        -> EMT l m a
 wrapIO action = wrapE $ liftIO action
 
+-- | Lift STM action into 'Atomic' monad.
 stm :: Throws InternalError l => STM a -> Atomic l a
 stm action = EMT $ LedgerStateT $ StateT $ \ls -> do
                result <- action
@@ -104,6 +112,8 @@ setPos :: (Monad m) => SourcePos -> LedgerT l m ()
 setPos pos =
   modify $ \st -> st {lsPosition = pos}
 
+-- | Write log message from 'Atomic' monad.
+-- This puts message to 'lsMessages' queue.
 logSTM :: Throws InternalError l => Priority -> String -> Atomic l ()
 logSTM priority message = do
   chan <- gets lsMessages
@@ -116,12 +126,15 @@ debugSTM message = logSTM INFO $ "DEBUG: " ++ message
 debugSTM _ = return ()
 #endif
 
+-- | Similar to 'info', but in 'Atomic' monad.
 infoSTM :: Throws InternalError l => String -> Atomic l ()
 infoSTM message = logSTM INFO message
 
+-- | Similar to 'warning', but in 'Atomic' monad.
 warningSTM :: Throws InternalError l => String -> Atomic l ()
 warningSTM message = logSTM WARNING message
 
+-- | Output all messages from 'lsMessages' queue.
 outputMessages :: TChan (Priority, String) -> IO ()
 outputMessages chan = do
   x <- atomically $ tryReadTChan chan

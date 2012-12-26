@@ -202,6 +202,7 @@ processAll = do
          other <- processAll
          return $ merge other trans
 
+-- | Set extID as [1..].
 enumerate :: [Ext a] -> [Ext a]
 enumerate list = zipWith go [1..] list
   where
