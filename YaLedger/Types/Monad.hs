@@ -23,7 +23,7 @@ import YaLedger.Types.Transactions
 import YaLedger.Types.Config
 import YaLedger.Tree
 import YaLedger.Exceptions
-import YaLedger.Queue
+import YaLedger.Kernel.Queue
 
 newtype LedgerStateT m a = LedgerStateT (StateT LedgerState m a)
   deriving (Monad, MonadState LedgerState, MonadIO)

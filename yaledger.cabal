@@ -41,8 +41,10 @@ library
 
   exposed-modules: YaLedger.Exceptions
                    YaLedger.Kernel
+                   YaLedger.Kernel.Types
                    YaLedger.Kernel.Common
                    YaLedger.Kernel.Correspondence
+                   YaLedger.Kernel.Queue
                    YaLedger.Config
                    YaLedger.Main
                    YaLedger.Logger

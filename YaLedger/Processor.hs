@@ -20,7 +20,7 @@ import YaLedger.Processor.Duplicates
 import YaLedger.Processor.Rules
 import YaLedger.Processor.Templates
 import YaLedger.Output.Pretty
-import YaLedger.Queue
+import YaLedger.Kernel.Queue
 
 -- | Merge two sorted lists into one sorted.
 merge :: Ord a => [a] -> [a] -> [a]

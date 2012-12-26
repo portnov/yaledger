@@ -1,5 +1,9 @@
 
-module YaLedger.Queue where
+module YaLedger.Kernel.Queue
+  (newQueue,
+   enqueue,
+   getFromQueue
+  )where
 
 import Control.Concurrent.STM
 import qualified Data.PQueue.Prio.Min as Q
