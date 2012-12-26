@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, GeneralizedNewtypeDeriving, FlexibleContexts, FlexibleInstances, ScopedTypeVariables #-}
+{-# LANGUAGE CPP, MultiParamTypeClasses, TypeSynonymInstances, GeneralizedNewtypeDeriving, FlexibleContexts, FlexibleInstances, ScopedTypeVariables #-}
 -- | 'Ledger' monad and utility functions.
 --
 -- Ledger monad is basically EMT l (StateT 'LedgerState' IO) a.
@@ -118,6 +118,13 @@ logSTM :: Throws InternalError l => Priority -> String -> LedgerSTM l ()
 logSTM priority message = do
   chan <- gets lsMessages
   stm $ writeTChan chan (priority, message)
+
+debugSTM :: Throws InternalError l => String -> LedgerSTM l ()
+#ifdef DEBUG
+debugSTM message = logSTM INFO $ "DEBUG: " ++ message
+#else
+debugSTM _ = return ()
+#endif
 
 infoSTM :: Throws InternalError l => String -> LedgerSTM l ()
 infoSTM message = logSTM INFO message

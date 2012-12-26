@@ -223,5 +223,5 @@ data MessageElement =
 
 type MessageFormat = [MessageElement]
 
-type Queue a = TVar (Q.MinPQueue DateTime (Ext a))
+type Queue a = TVar (Q.MinPQueue (DateTime, Integer) (Ext a))
 

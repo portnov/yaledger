@@ -41,11 +41,12 @@ processEntry :: (Throws NoSuchRate l,
                  Throws NoSuchHold l,
                  Throws InternalError l)
                => DateTime                -- ^ Date/time of entry
+               -> Integer
                -> SourcePos               -- ^ Location of entry in source file
                -> Attributes              -- ^ Entry attributes
                -> Entry Amount Unchecked  -- ^ Entry itself
                -> Ledger l ()
-processEntry date pos attrs uentry = do
+processEntry date tranID pos attrs uentry = do
   -- First, check the entry
   entry@(CEntry dt cr rd) <- checkEntry date attrs uentry
   queue <- gets lsTranQueue
@@ -55,11 +56,13 @@ processEntry date pos attrs uentry = do
       -- Process debit postings
       forM dt $ \p -> do
           let account = debitPostingAccount p
+          bal <- getCurrentBalance AvailableBalance account
+          debugSTM $ show date ++ ": Balance before posting: " ++ show bal
           debit  account (Ext date 0 pos attrs p)
           -- Add link to this entry for last balance (caused by previous call of `debit')
           modifyLastItem (\b -> b {causedBy = Just entry}) (accountBalances account)
           -- Run all needed rules
-          runRules EDebit date attrs p $ \tran -> stm (enqueue tran queue)
+          runRules EDebit date tranID attrs p $ \tranID tran -> stm (enqueue tranID tran queue)
 
       -- Process credit postings
       forM cr $ \p -> do
@@ -68,7 +71,7 @@ processEntry date pos attrs uentry = do
           -- Add link to this entry for last balance (caused by previous call of `credit')
           modifyLastItem (\b -> b {causedBy = Just entry}) (accountBalances account)
           -- Run all needed rules
-          runRules ECredit date attrs p $ \tran -> stm (enqueue tran queue)
+          runRules ECredit date tranID attrs p $ \tranID tran -> stm (enqueue tranID tran queue)
 
       -- What to do with rates difference?
       case rd of
@@ -77,14 +80,14 @@ processEntry date pos attrs uentry = do
             let account = creditPostingAccount p
             credit (creditPostingAccount p) (Ext date 0 pos attrs p)
             modifyLastItem (\b -> b {causedBy = Just entry}) (accountBalances account)
-            runRules ECredit date attrs p $ \tran -> stm (enqueue tran queue)
+            runRules ECredit date tranID attrs p $ \tranID tran -> stm (enqueue tranID tran queue)
         -- For debit difference, there might be many postings,
         -- caused by debit redirection
         DebitDifference  ps -> forM_ ps $ \ p -> do
               let account = debitPostingAccount p
               debit  (debitPostingAccount  p) (Ext date 0 pos attrs p)
               modifyLastItem (\b -> b {causedBy = Just entry}) (accountBalances account)
-              runRules EDebit date attrs p $ \tran -> stm (enqueue tran queue)
+              runRules EDebit date tranID attrs p $ \tranID tran -> stm (enqueue tranID tran queue)
   return ()
 
 -- | Get next record
@@ -224,9 +227,10 @@ processRecords endDate rules list = do
   modify $ \st -> st {lsLoadedRecords = records}
   list' <- evalStateT processAll records
   queue <- gets lsTranQueue
+  let ns = [1, 100 ..]
   stm2io $
-    forM_ (takeWhile (\t -> getDate t <= endDate) list') $ \tran ->
-        stm $ enqueue tran queue
+    forM_ (zip ns (takeWhile (\t -> getDate t <= endDate) list')) $ \(tranID, tran) ->
+        stm $ enqueue tranID tran queue
   processTransactionsFromQueue 
 
 processTransactionsFromQueue :: (Throws NoSuchRate l,
@@ -244,8 +248,8 @@ processTransactionsFromQueue = do
   case mbTran of
     -- If queue is empty, then nothing to do.
     Nothing -> return ()
-    Just tran -> do
-                 processTransaction tran
+    Just (tranID, tran) -> do
+                 processTransaction tranID tran
                  processTransactionsFromQueue
 
 -- | Process one transaction
@@ -257,27 +261,28 @@ processTransaction :: (Throws NoSuchRate l,
                        Throws ReconciliationError l,
                        Throws NoSuchHold l,
                        Throws InternalError l)
-                   => Ext (Transaction Amount)
+                   => Integer
+                   -> Ext (Transaction Amount)
                    -> Ledger l ()
-processTransaction (Ext date _ pos attrs (TEntry p)) = do
+processTransaction tranID (Ext date _ pos attrs (TEntry p)) = do
     setPos pos
-    processEntry date pos attrs p
-processTransaction (Ext date _ pos attrs (TReconciliate acc x tgt msg)) = do
+    processEntry date tranID pos attrs p
+processTransaction tranID (Ext date _ pos attrs (TReconciliate acc x tgt msg)) = do
     setPos pos
     mbEntry <- reconciliate date acc x tgt msg
     case mbEntry of
       Nothing -> return ()
-      Just entry -> processEntry date pos
+      Just entry -> processEntry date tranID pos
                                  (M.insert "category" (Exactly "reconciliation") attrs)
                                  entry
 
-processTransaction (Ext date _ pos attrs (TCallTemplate name args)) = do
+processTransaction tranID (Ext date _ pos attrs (TCallTemplate name args)) = do
     setPos pos
     (tplAttrs, template) <- getTemplate name
     tran <- fillTemplate template args
-    processTransaction (Ext date 0 pos (attrs `M.union` tplAttrs) tran)
+    processTransaction tranID (Ext date 0 pos (attrs `M.union` tplAttrs) tran)
 
-processTransaction (Ext date _ pos attrs (THold crholds dtholds)) = do
+processTransaction tranID (Ext date _ pos attrs (THold crholds dtholds)) = do
     setPos pos
 
     forM_ crholds $ \(Hold posting mbEnd) -> do
@@ -288,12 +293,12 @@ processTransaction (Ext date _ pos attrs (THold crholds dtholds)) = do
       p <- convertPosting' (Just date) posting
       stm2io $ debitHold (postingAccount' p) $ Ext date 0 pos attrs (Hold p mbEnd)
 
-processTransaction (Ext date _ pos attrs (TCloseCreditHold (Hold p@(CPosting acc amt) _))) = do
+processTransaction tranID (Ext date _ pos attrs (TCloseCreditHold (Hold p@(CPosting acc amt) _))) = do
     setPos pos
     p' <- convertPosting' (Just date) p
     stm2io $ closeHold date p'
 
-processTransaction (Ext date _ pos attrs (TCloseDebitHold (Hold p@(DPosting acc amt) _))) = do
+processTransaction tranID (Ext date _ pos attrs (TCloseDebitHold (Hold p@(DPosting acc amt) _))) = do
     setPos pos
     p' <- convertPosting' (Just date) p
     stm2io $ closeHold date p'

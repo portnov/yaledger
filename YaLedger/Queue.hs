@@ -9,17 +9,17 @@ import YaLedger.Types.Common
 newQueue :: IO (Queue a)
 newQueue = newTVarIO Q.empty
 
-enqueue :: Ext a -> Queue a -> STM ()
-enqueue x queue =
+enqueue :: Integer -> Ext a -> Queue a -> STM ()
+enqueue i x queue =
   modifyTVar queue $
-    \q -> Q.insert (getDate x) x q
+    \q -> Q.insert (getDate x, i) x q
   
-getFromQueue :: Queue a -> STM (Maybe (Ext a))
+getFromQueue :: Queue a -> STM (Maybe (Integer, Ext a))
 getFromQueue queue = do
   q <- readTVar queue
-  case Q.minView q of
-    Just (x, q') -> do
+  case Q.minViewWithKey q of
+    Just (((_,i),x), q') -> do
                     writeTVar queue q'
-                    return (Just x)
+                    return $ Just (i, x)
     Nothing     -> return Nothing
 

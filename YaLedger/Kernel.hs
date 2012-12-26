@@ -119,6 +119,7 @@ balancePlusPosting p history = do
             getContent    = b { balanceValue = balanceValue b + value }
           }
   let zero = Ext (getDate p) (extID p) (getLocation p) (getAttributes p) (Balance Nothing value 0 0)
+  debugSTM $ "balancePlusPosting: updating balance by " ++ show value
   plusIOList zero update history
 
 balanceSetHold :: forall l t.
