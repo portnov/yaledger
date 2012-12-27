@@ -4,6 +4,7 @@ module Main where
 import YaLedger.Types.Reports
 import YaLedger.Main
 import YaLedger.Reports.Cat
+import YaLedger.Reports.Holds
 import YaLedger.Reports.CoA
 import YaLedger.Reports.Balance
 import YaLedger.Reports.Saldo
@@ -25,4 +26,5 @@ main =
      ("turnovers", Report Turnovers),
      ("accounts", Report CoA),
      ("cat",      Report Cat),
+     ("holds",    Report Holds),
      ("incomestatement", Report IncomeStatement)]
