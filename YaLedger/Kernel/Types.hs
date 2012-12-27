@@ -40,6 +40,7 @@ class Sign t => HoldOperations t where
   justHold :: t -> Decimal -> Balance Checked
   addHoldSum :: t -> Decimal -> Balance Checked -> Balance Checked
   getHolds :: FreeOr t Account -> History (Hold Decimal) t
+  createPosting :: FreeOr t Account -> Decimal -> Posting Decimal t
 
 instance HoldOperations Credit where
   justHold _ x = Balance Nothing 0 x 0
@@ -48,10 +49,14 @@ instance HoldOperations Credit where
   getHolds (Left  a) = freeAccountCreditHolds a
   getHolds (Right a) = creditAccountHolds a
 
+  createPosting account amount = CPosting account amount False
+
 instance HoldOperations Debit where
   justHold _ x = Balance Nothing 0 0 x
   addHoldSum _ x b = b {debitHolds = debitHolds b - x}
 
   getHolds (Left  a) = freeAccountDebitHolds a
   getHolds (Right a) = debitAccountHolds a
+
+  createPosting account amount = DPosting account amount False
 

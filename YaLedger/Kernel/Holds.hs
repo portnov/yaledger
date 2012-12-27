@@ -39,31 +39,44 @@ closeHold :: forall t l.
            -> Posting Decimal t      -- ^ Hold posting
            -> Atomic l ()
 closeHold date posting = do
-    let acc = postingAccount' posting
-        history = getHolds acc
+    let account = postingAccount' posting
+        history = getHolds account
     holds <- readIOList history
-    anyClosed <- close [] (==) history holds
+    anyClosed <- close [] history holds
     if anyClosed
       then return ()
       else noSuchHold posting
   where
     amt = postingValue posting
 
-    close [] _ _ [] = return False
-    close acc _ history [] = do
+    -- Close any appropriate hold
+    close [] _ [] = return False
+    close acc history [] = do
         updateBalances (postingAccount posting)
         stm $ writeTVar history acc
         return False
-    close acc op history (extHold: rest) =
-      if checkHold op date amt extHold
+    close acc history (extHold: rest) =
+      if checkHold (>=) date amt extHold
         then do
              let oldHold = getContent extHold
-                 newHold = extHold {getContent = oldHold {holdEndDate = Just date}}
+                 holdAmt = postingValue $ holdPosting oldHold
+                 closedHold = extHold {getContent = oldHold {holdEndDate = Just date}}
+                 newHolds = if holdAmt > amt
+                             then -- Found hold amount > requested posting amount.
+                                  -- We must add new hold for difference.
+                                  let account = postingAccount' $ holdPosting oldHold
+                                      newPosting = createPosting account (holdAmt - amt)
+                                  in  [extHold {getContent = Hold newPosting Nothing}]
+                             else -- holdAmt == amt, we'll just close old hold.
+                                  []
              updateBalances (postingAccount posting)
-             stm $ writeTVar history (acc ++ [newHold] ++ rest)
+             stm $ writeTVar history (acc ++ newHolds ++ [closedHold] ++ rest)
              return True
-        else close (acc ++ [extHold]) op history rest
+        else close (acc ++ [extHold]) history rest
 
+    -- Update balances by amount of posting:
+    -- * for credit posting, decrease creditHolds amount
+    -- * for debit  posting, increase debitHolds  amount
     updateBalances :: AnyAccount -> Atomic l ()
     updateBalances account =
       plusIOList zeroExtBalance (const True) updateExtBalance (accountBalances account)
