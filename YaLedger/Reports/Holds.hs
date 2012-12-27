@@ -44,8 +44,8 @@ showHolds' qry account = do
   debitHolds  <- runAtomically $ readIOList debitHoldsHistory
 
   wrapIO $ do
-    forM_ creditHolds $ \hold ->
+    forM_ (sort creditHolds) $ \hold ->
       putStrLn $ prettyPrint hold
-    forM_ debitHolds $ \hold ->
+    forM_ (sort debitHolds) $ \hold ->
       putStrLn $ prettyPrint hold
 
