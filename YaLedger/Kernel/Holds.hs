@@ -63,7 +63,7 @@ closeHold date posting = do
 
     updateBalances :: AnyAccount -> Atomic l ()
     updateBalances account =
-      plusIOList zeroExtBalance updateExtBalance (accountBalances account)
+      plusIOList zeroExtBalance (const True) updateExtBalance (accountBalances account)
 
     zeroExtBalance =
       Ext {

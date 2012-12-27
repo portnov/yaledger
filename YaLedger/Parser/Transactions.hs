@@ -323,7 +323,7 @@ pInterval = try (go Days "day")
 
 pEntry :: Parser v -> Parser (Transaction v)
 pEntry p = do
-  es <- many1 (try (Left <$> pCreditPosting p) <|> (try (Right <$> pDebitPosting p)))
+  es <- many1 (try (Left <$> pCreditPostingHold p) <|> (try (Right <$> pDebitPostingHold p)))
   corr <- optionMaybe $ do
             spaces
             x <- pPathRelative <?> "corresponding account path"
@@ -447,6 +447,24 @@ pSetRate = SetRate <$> many1 (do
       base <- currency
       optional newline
       return (Implicit c1 c2 base reversible)
+
+pCreditPostingHold :: Parser v -> Parser (Posting v Credit)
+pCreditPostingHold p = do
+  use <- optionMaybe $ reserved "use"
+  case use of
+    Nothing -> pCreditPosting p
+    Just _  -> do
+               posting <- pCreditPosting p
+               return $ posting {creditPostingUseHold = True}
+
+pDebitPostingHold :: Parser v -> Parser (Posting v Debit)
+pDebitPostingHold p = do
+  use <- optionMaybe $ reserved "use"
+  case use of
+    Nothing -> pDebitPosting p
+    Just _  -> do
+               posting <- pDebitPosting p
+               return $ posting {debitPostingUseHold = True}
 
 pCreditPosting :: Parser v -> Parser (Posting v Credit)
 pCreditPosting p = do

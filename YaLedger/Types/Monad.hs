@@ -191,12 +191,13 @@ appendIOList iolist x =
 -- | Update last item of 'IOList'
 plusIOList :: (Throws InternalError l)
            => a          -- ^ Default value (put it to list if it's empty)
+           -> (a -> Bool)
            -> (a -> a)
            -> IOList a
            -> Atomic l ()
-plusIOList def fn iolist =
+plusIOList def p fn iolist =
   stm $ modifyTVar iolist $ \list ->
-    case list of
+    case filter p list of
       [] -> [def]
       (x:xs) -> fn x: x: xs
 

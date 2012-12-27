@@ -44,44 +44,44 @@ import YaLedger.Output.Messages
 import YaLedger.Logger
 
 instance CanDebit (Account Debit) where
-  debit acc@(DAccount {..}) p = do
+  debit acc@(DAccount {..}) e p = do
       balance <- getCurrentBalance AvailableBalance acc
       checkBalance (balance - postingValue (getContent p)) acc
       appendIOList debitAccountPostings p
-      balancePlusPosting p debitAccountBalances
+      balancePlusPosting e p debitAccountBalances
 
   debitHold (DAccount {..}) hold = do
       appendIOList debitAccountHolds hold
       balanceSetHold hold debitAccountBalances
 
 instance CanDebit (Account Free) where
-  debit acc@(FAccount {..}) p = do
+  debit acc@(FAccount {..}) e p = do
       balance <- getCurrentBalance AvailableBalance acc
       checkBalance (balance - postingValue (getContent p)) acc
       appendIOList freeAccountDebitPostings p
-      balancePlusPosting p freeAccountBalances
+      balancePlusPosting e p freeAccountBalances
 
   debitHold (FAccount {..}) hold = do
       appendIOList freeAccountDebitHolds hold
       balanceSetHold hold freeAccountBalances
 
 instance CanCredit (Account Credit) where
-  credit acc@(CAccount {..}) p = do
+  credit acc@(CAccount {..}) e p = do
       balance <- getCurrentBalance AvailableBalance acc
       checkBalance (balance + postingValue (getContent p)) acc
       appendIOList creditAccountPostings p
-      balancePlusPosting p creditAccountBalances
+      balancePlusPosting e p creditAccountBalances
 
   creditHold (CAccount {..}) hold = do
       appendIOList creditAccountHolds hold
       balanceSetHold hold creditAccountBalances
 
 instance CanCredit (Account Free) where
-  credit acc@(FAccount {..}) p = do
+  credit acc@(FAccount {..}) e p = do
       balance <- getCurrentBalance AvailableBalance acc
       checkBalance (balance + postingValue (getContent p)) acc
       appendIOList freeAccountCreditPostings p
-      balancePlusPosting p freeAccountBalances
+      balancePlusPosting e p freeAccountBalances
 
   creditHold (FAccount {..}) hold = do
       appendIOList freeAccountCreditHolds hold
@@ -104,10 +104,11 @@ instance CanDebit (FreeOr Debit Account) where
 -- | Add posting value to balances history
 balancePlusPosting :: forall l t.
                (Throws InternalError l, Sign t)
+            => Entry Decimal Checked
             => Ext (Posting Decimal t)   -- ^ Posting
             -> History Balance Checked   -- ^ Balances history
             -> Atomic l ()
-balancePlusPosting p history = do
+balancePlusPosting entry p history = do
   let s = fromIntegral (sign (undefined :: t))
       value = s * postingValue (getContent p)
       update e@(Ext {getContent = b}) =
@@ -116,11 +117,12 @@ balancePlusPosting p history = do
             extID         = extID p,
             getLocation   = getLocation p,
             getAttributes = getAttributes p,
-            getContent    = b { balanceValue = balanceValue b + value }
+            getContent    = b { causedBy = Just entry,
+                                balanceValue = balanceValue b + value }
           }
-  let zero = Ext (getDate p) (extID p) (getLocation p) (getAttributes p) (Balance Nothing value 0 0)
+  let zero = Ext (getDate p) (extID p) (getLocation p) (getAttributes p) (Balance (Just entry) value 0 0)
   debugSTM $ "balancePlusPosting: updating balance by " ++ show value
-  plusIOList zero update history
+  plusIOList zero (const True) update history
 
 balanceSetHold :: forall l t.
                   (Throws InternalError l, HoldOperations t)
@@ -135,13 +137,13 @@ balanceSetHold hold history = do
             extID         = extID hold,
             getLocation   = getLocation hold,
             getAttributes = getAttributes hold,
-            getContent    = addHoldSum (undefined :: t) value b
+            getContent    = (addHoldSum (undefined :: t) value b) {causedBy = Nothing}
           }
   let zero = Ext (getDate hold)
                  (extID hold)
                  (getLocation hold)
                  (getAttributes hold) $ justHold (undefined :: t) value
-  plusIOList zero update history
+  plusIOList zero (const True) update history
 
 whenJust :: (Monad m) => Maybe a -> (a -> m ()) -> m ()
 whenJust Nothing  _  = return ()

@@ -122,6 +122,12 @@ instance (Pretty t) => Pretty (Transaction t) where
     printf "call %s %s\n"
            name
            (unwords $ map prettyPrint args)
+  prettyPrint (THold crholds drholds) = unlines $ map prettyPrint crholds ++ map prettyPrint drholds
+  prettyPrint (TCloseCreditHold (Hold p _)) = "close " ++ prettyPrint p ++ "\n"
+  prettyPrint (TCloseDebitHold  (Hold p _)) = "close " ++ prettyPrint p ++ "\n"
+
+instance Pretty v => Pretty (Hold v t) where
+  prettyPrint (Hold p _) = "hold" ++ prettyPrint p
 
 instance Pretty ReconciliationMessage where
   prettyPrint (RWarning msg) = "warning: " ++ prettyPrint msg
@@ -153,11 +159,11 @@ instance (Pretty v) => Pretty (Posting v t) where
            (getName acc)
            (prettyPrint x)
   prettyPrint (DPosting acc x True) =
-    printf "  use dr %s  %s"
+    printf "use dr %s  %s"
            (getName acc)
            (prettyPrint x)
   prettyPrint (CPosting acc x True) =
-    printf "  use cr %s  %s"
+    printf "use cr %s  %s"
            (getName acc)
            (prettyPrint x)
 

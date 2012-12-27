@@ -13,6 +13,7 @@ class CanCredit a where
   credit :: (Throws InternalError l,
              Throws InsufficientFunds l)
          => a
+         -> Entry Decimal Checked
          -> Ext (Posting Decimal Credit)
          -> Atomic l ()
 
@@ -26,6 +27,7 @@ class CanDebit a where
   debit :: (Throws InternalError l,
             Throws InsufficientFunds l)
         => a
+        -> Entry Decimal Checked
         -> Ext (Posting Decimal Debit)
         -> Atomic l ()
 

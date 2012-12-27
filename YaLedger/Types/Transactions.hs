@@ -24,8 +24,6 @@ data Transaction v =
   | THold [Hold v Credit] [Hold v Debit]
   | TCloseCreditHold (Hold v Credit)
   | TCloseDebitHold  (Hold v Debit)
-  | TUseCreditHold (Hold v Credit) (Entry v Unchecked)
-  | TUseDebitHold  (Hold v Debit)  (Entry v Unchecked)
   deriving (Eq, Show)
 
 data ReconciliationMessage =

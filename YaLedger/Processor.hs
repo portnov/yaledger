@@ -49,27 +49,32 @@ processEntry :: (Throws NoSuchRate l,
 processEntry date tranID pos attrs uentry = do
   -- First, check the entry
   entry@(CEntry dt cr rd) <- checkEntry date attrs uentry
+  debug $ "Processing entry:\n" ++ prettyPrint uentry
   queue <- gets lsTranQueue
 
   -- All postings are done in single STM transaction.
   runAtomically $ do
       -- Process debit postings
       forM dt $ \p -> do
+          when (debitPostingUseHold p) $ do
+              infoSTM $ "Closing hold: " ++ prettyPrint p
+              closeHold date p
           let account = debitPostingAccount p
-          bal <- getCurrentBalance AvailableBalance account
-          debugSTM $ show date ++ ": Balance before posting: " ++ show bal
-          debit  account (Ext date 0 pos attrs p)
+          debit  account entry (Ext date 0 pos attrs p)
           -- Add link to this entry for last balance (caused by previous call of `debit')
-          modifyLastItem (\b -> b {causedBy = Just entry}) (accountBalances account)
+          -- modifyLastItem (\b -> b {causedBy = Just entry}) (accountBalances account)
           -- Run all needed rules
           runRules EDebit date tranID attrs p $ \tranID tran -> stm (enqueue tranID tran queue)
 
       -- Process credit postings
       forM cr $ \p -> do
+          when (creditPostingUseHold p) $ do
+              infoSTM $ "Closing hold: " ++ prettyPrint p
+              closeHold date p
           let account = creditPostingAccount p
-          credit account (Ext date 0 pos attrs p)
+          credit account entry (Ext date 0 pos attrs p)
           -- Add link to this entry for last balance (caused by previous call of `credit')
-          modifyLastItem (\b -> b {causedBy = Just entry}) (accountBalances account)
+          -- modifyLastItem (\b -> b {causedBy = Just entry}) (accountBalances account)
           -- Run all needed rules
           runRules ECredit date tranID attrs p $ \tranID tran -> stm (enqueue tranID tran queue)
 
@@ -78,15 +83,15 @@ processEntry date tranID pos attrs uentry = do
         OneCurrency -> return () -- There is no any difference
         CreditDifference p -> do
             let account = creditPostingAccount p
-            credit (creditPostingAccount p) (Ext date 0 pos attrs p)
-            modifyLastItem (\b -> b {causedBy = Just entry}) (accountBalances account)
+            credit (creditPostingAccount p) entry (Ext date 0 pos attrs p)
+            -- modifyLastItem (\b -> b {causedBy = Just entry}) (accountBalances account)
             runRules ECredit date tranID attrs p $ \tranID tran -> stm (enqueue tranID tran queue)
         -- For debit difference, there might be many postings,
         -- caused by debit redirection
         DebitDifference  ps -> forM_ ps $ \ p -> do
               let account = debitPostingAccount p
-              debit  (debitPostingAccount  p) (Ext date 0 pos attrs p)
-              modifyLastItem (\b -> b {causedBy = Just entry}) (accountBalances account)
+              debit  (debitPostingAccount  p) entry (Ext date 0 pos attrs p)
+              -- modifyLastItem (\b -> b {causedBy = Just entry}) (accountBalances account)
               runRules EDebit date tranID attrs p $ \tranID tran -> stm (enqueue tranID tran queue)
   return ()
 
