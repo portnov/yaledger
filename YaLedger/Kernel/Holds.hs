@@ -25,6 +25,9 @@ checkHold :: (Decimal -> Decimal -> Bool) -- ^ Operation to check hold amount, (
           -> Bool
 checkHold op date amt extHold =
     (getDate extHold <= date) &&
+    (case holdEndDate (getContent extHold) of
+       Nothing -> True
+       Just dt -> dt >= date ) &&
     ((postingValue $ holdPosting $ getContent extHold) `op` amt)
 
 -- | Close one hold.
