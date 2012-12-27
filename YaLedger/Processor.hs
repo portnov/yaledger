@@ -57,8 +57,7 @@ processEntry date tranID pos attrs uentry = do
       -- Process debit postings
       forM dt $ \p -> do
           when (debitPostingUseHold p) $ do
-              infoSTM $ "Closing hold: " ++ prettyPrint p
-              closeHold date p
+              closeHold date (Just entry) (>=) p
           let account = debitPostingAccount p
           debit  account entry (Ext date 0 pos attrs p)
           -- Add link to this entry for last balance (caused by previous call of `debit')
@@ -69,8 +68,7 @@ processEntry date tranID pos attrs uentry = do
       -- Process credit postings
       forM cr $ \p -> do
           when (creditPostingUseHold p) $ do
-              infoSTM $ "Closing hold: " ++ prettyPrint p
-              closeHold date p
+              closeHold date (Just entry) (>=) p
           let account = creditPostingAccount p
           credit account entry (Ext date 0 pos attrs p)
           -- Add link to this entry for last balance (caused by previous call of `credit')
@@ -83,6 +81,8 @@ processEntry date tranID pos attrs uentry = do
         OneCurrency -> return () -- There is no any difference
         CreditDifference p -> do
             let account = creditPostingAccount p
+            when (creditPostingUseHold p) $ do
+                closeHold date (Just entry) (>=) p
             credit (creditPostingAccount p) entry (Ext date 0 pos attrs p)
             -- modifyLastItem (\b -> b {causedBy = Just entry}) (accountBalances account)
             runRules ECredit date tranID attrs p $ \tranID tran -> stm (enqueue tranID tran queue)
@@ -90,6 +90,8 @@ processEntry date tranID pos attrs uentry = do
         -- caused by debit redirection
         DebitDifference  ps -> forM_ ps $ \ p -> do
               let account = debitPostingAccount p
+              when (debitPostingUseHold p) $ do
+                  closeHold date (Just entry) (>=) p
               debit  (debitPostingAccount  p) entry (Ext date 0 pos attrs p)
               -- modifyLastItem (\b -> b {causedBy = Just entry}) (accountBalances account)
               runRules EDebit date tranID attrs p $ \tranID tran -> stm (enqueue tranID tran queue)
@@ -305,10 +307,10 @@ processTransaction tranID (Ext date _ pos attrs (THold crholds dtholds)) = do
 processTransaction tranID (Ext date _ pos attrs (TCloseCreditHold (Hold p@(CPosting acc amt _) _))) = do
     setPos pos
     p' <- convertPosting' (Just date) p
-    runAtomically $ closeHold date p'
+    runAtomically $ closeHold date Nothing (==) p'
 
 processTransaction tranID (Ext date _ pos attrs (TCloseDebitHold (Hold p@(DPosting acc amt _) _))) = do
     setPos pos
     p' <- convertPosting' (Just date) p
-    runAtomically $ closeHold date p'
+    runAtomically $ closeHold date Nothing (==) p'
 

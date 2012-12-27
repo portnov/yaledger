@@ -35,10 +35,13 @@ closeHold :: forall t l.
              (HoldOperations t,
               Throws NoSuchHold l,
               Throws InternalError l)
-           => DateTime               -- ^ Transaction date/time
-           -> Posting Decimal t      -- ^ Hold posting
+           => DateTime                     -- ^ Transaction date/time
+           -> Maybe (Entry Decimal Checked)
+           -> (Decimal -> Decimal -> Bool) -- ^ Operation to check hold amount, (==) or (>=) 
+           -> Posting Decimal t            -- ^ Hold posting
            -> Atomic l ()
-closeHold date posting = do
+closeHold date mbEntry op posting = do
+    infoSTM $ "Closing hold: " ++ prettyPrint posting
     let account = postingAccount' posting
         history = getHolds account
     holds <- readIOList history
@@ -56,7 +59,7 @@ closeHold date posting = do
         stm $ writeTVar history acc
         return False
     close acc history (extHold: rest) =
-      if checkHold (>=) date amt extHold
+      if checkHold op date amt extHold
         then do
              let oldHold = getContent extHold
                  holdAmt = postingValue $ holdPosting oldHold
@@ -96,7 +99,7 @@ closeHold date posting = do
         extID = 0,
         getLocation = nowhere,
         getAttributes = M.empty,
-        getContent = addHoldSum (undefined :: t) (negate amt) (getContent extBalance)
+        getContent = (addHoldSum (undefined :: t) (negate amt) (getContent extBalance)) {causedBy = Nothing}
       }
 
 -- | Smart constructor for NoSuchHold
