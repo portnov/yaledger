@@ -18,28 +18,30 @@ data Posting v t where
   DPosting :: {
     -- Debit posting should use debit or free account
     debitPostingAccount :: FreeOr Debit Account,
-    debitPostingAmount :: v
+    debitPostingAmount  :: v,
+    debitPostingUseHold :: Bool
   } -> Posting v Debit
 
   CPosting :: {
     -- Credit posting should use credit or free account
     creditPostingAccount :: FreeOr Credit Account,
-    creditPostingAmount  :: v
+    creditPostingAmount  :: v,
+    creditPostingUseHold :: Bool
   } -> Posting v Credit
 
 instance Eq v => Eq (Posting v Debit) where
-  (DPosting a1 x1) == (DPosting a2 x2) = (a1 == a2) && (x1 == x2)
+  (DPosting a1 x1 b1) == (DPosting a2 x2 b2) = (a1 == a2) && (x1 == x2) && (b1 == b2)
 
 instance Eq v => Eq (Posting v Credit) where
-  (CPosting a1 x1) == (CPosting a2 x2) = (a1 == a2) && (x1 == x2)
+  (CPosting a1 x1 b1) == (CPosting a2 x2 b2) = (a1 == a2) && (x1 == x2) && (b1 == b2)
 
 instance Show v => Show (Posting v t) where
-  show (DPosting acc x) = "dr " ++ showFA acc ++ " " ++ show x
-  show (CPosting acc x) = "cr " ++ showFA acc ++ " " ++ show x
+  show (DPosting acc x b) = "dr " ++ showFA acc ++ " " ++ show x ++ if b then " (use hold)" else ""
+  show (CPosting acc x b) = "cr " ++ showFA acc ++ " " ++ show x ++ if b then " (use hold)" else ""
 
 instance Hashable v => Hashable (Posting v t) where
-  hashWithSalt s (DPosting acc x) = s `hashWithSalt` (1000000*getID acc) `hashWithSalt` x
-  hashWithSalt s (CPosting acc x) = s `hashWithSalt` (2000000*getID acc) `hashWithSalt` x
+  hashWithSalt s (DPosting acc x b) = s `hashWithSalt` (1000000*getID acc) `hashWithSalt` x `hashWithSalt` b
+  hashWithSalt s (CPosting acc x b) = s `hashWithSalt` (2000000*getID acc) `hashWithSalt` x `hashWithSalt` b
 
 postingValue :: Posting v t -> v
 postingValue (DPosting {..}) = debitPostingAmount
@@ -50,20 +52,20 @@ postingAccount (DPosting {..}) = either (WFree M.empty) (WDebit M.empty) debitPo
 postingAccount (CPosting {..}) = either (WFree M.empty) (WCredit M.empty) creditPostingAccount
 
 postingAccount' :: Posting v t -> FreeOr t Account
-postingAccount' (DPosting acc _) = acc
-postingAccount' (CPosting acc _) = acc
+postingAccount' (DPosting acc _ _) = acc
+postingAccount' (CPosting acc _ _) = acc
 
 showFA :: FreeOr t Account -> String
 showFA (Left a) = show a
 showFA (Right a) = show a
 
 instance HasCurrency (Posting Amount t) where
-  getCurrency (DPosting _ (_ :# c)) = c
-  getCurrency (CPosting _ (_ :# c)) = c
+  getCurrency (DPosting _ (_ :# c) _) = c
+  getCurrency (CPosting _ (_ :# c) _) = c
 
 instance HasCurrency (Posting Decimal t) where
-  getCurrency (DPosting acc _) = getCurrency acc
-  getCurrency (CPosting acc _) = getCurrency acc
+  getCurrency (DPosting acc _ _) = getCurrency acc
+  getCurrency (CPosting acc _ _) = getCurrency acc
 
 data Hold v t = Hold {
     holdPosting :: Posting v t
@@ -90,12 +92,12 @@ instance Show PostingType where
   show ECredit = "credit"
 
 instance HasAmount (Posting Amount t) where
-  getAmount (DPosting _ x) = x
-  getAmount (CPosting _ x) = x
+  getAmount (DPosting _ x _) = x
+  getAmount (CPosting _ x _) = x
 
 instance HasAmount (Posting Decimal t) where
-  getAmount (DPosting acc x) = x :# getCurrency acc
-  getAmount (CPosting acc x) = x :# getCurrency acc
+  getAmount (DPosting acc x _) = x :# getCurrency acc
+  getAmount (CPosting acc x _) = x :# getCurrency acc
 
 instance (HasAmount a, HasAmount b) => HasAmount (Either a b) where
   getAmount (Left x)  = getAmount x

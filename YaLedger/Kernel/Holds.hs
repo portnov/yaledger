@@ -85,11 +85,11 @@ closeHold date posting = do
 
 -- | Smart constructor for NoSuchHold
 noSuchHold :: (Throws NoSuchHold l) => Posting Decimal t -> Atomic l b
-noSuchHold (CPosting acc amt) = do
+noSuchHold (CPosting acc amt _) = do
   coa <- gets lsCoA
   let Just path = accountFullPath (getID acc) coa
   throwP (NoSuchHold ECredit amt path)
-noSuchHold (DPosting acc amt) = do
+noSuchHold (DPosting acc amt _) = do
   coa <- gets lsCoA
   let Just path = accountFullPath (getID acc) coa
   throwP (NoSuchHold EDebit amt path)

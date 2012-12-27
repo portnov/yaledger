@@ -297,12 +297,12 @@ processTransaction tranID (Ext date _ pos attrs (THold crholds dtholds)) = do
       p <- convertPosting' (Just date) posting
       runAtomically $ debitHold (postingAccount' p) $ Ext date 0 pos attrs (Hold p mbEnd)
 
-processTransaction tranID (Ext date _ pos attrs (TCloseCreditHold (Hold p@(CPosting acc amt) _))) = do
+processTransaction tranID (Ext date _ pos attrs (TCloseCreditHold (Hold p@(CPosting acc amt _) _))) = do
     setPos pos
     p' <- convertPosting' (Just date) p
     runAtomically $ closeHold date p'
 
-processTransaction tranID (Ext date _ pos attrs (TCloseDebitHold (Hold p@(DPosting acc amt) _))) = do
+processTransaction tranID (Ext date _ pos attrs (TCloseDebitHold (Hold p@(DPosting acc amt _) _))) = do
     setPos pos
     p' <- convertPosting' (Just date) p
     runAtomically $ closeHold date p'

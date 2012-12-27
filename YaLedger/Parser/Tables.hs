@@ -242,15 +242,15 @@ convertRow pc currs coa path rowN row = do
 cposting :: AnyAccount -> Amount -> IO [Posting Amount Credit]
 cposting acc x =
   case acc of
-    WCredit _ a -> return [CPosting (Right a) x]
-    WFree   _ a -> return [CPosting (Left  a) x]
+    WCredit _ a -> return [CPosting (Right a) x False]
+    WFree   _ a -> return [CPosting (Left  a) x False]
     WDebit  _ a -> fail $ "Invalid account type: debit instead of credit: " ++ getName a ++ " " ++ show x
 
 dposting :: AnyAccount -> Amount -> IO [Posting Amount Debit]
 dposting acc x =
   case acc of
-    WDebit   _ a -> return [DPosting (Right a) x]
-    WFree    _ a -> return [DPosting (Left  a) x]
+    WDebit   _ a -> return [DPosting (Right a) x False]
+    WFree    _ a -> return [DPosting (Left  a) x False]
     WCredit  _ a -> fail $ "Invalid account type: credit instead of debit: " ++ getName a ++ " " ++ show x
 
 instance Show Errno where

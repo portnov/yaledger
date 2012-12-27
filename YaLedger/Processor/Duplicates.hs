@@ -45,7 +45,7 @@ getCreditAccount r =
     Transaction (TEntry (UEntry _ cr _ _)) ->
       case cr of
         [] -> Nothing
-        (CPosting acc _: _) -> Just (getID acc)
+        (CPosting acc _ _: _) -> Just (getID acc)
     _ -> Nothing
 
 getDebitAccount :: Ext Record -> Maybe AccountID
@@ -54,7 +54,7 @@ getDebitAccount r =
     Transaction (TEntry (UEntry dt _ _ _)) ->
       case dt of
         [] -> Nothing
-        (DPosting acc _: _) -> Just (getID acc)
+        (DPosting acc _ _: _) -> Just (getID acc)
     _ -> Nothing
 
 -- | Search for record with matching attributes in list.

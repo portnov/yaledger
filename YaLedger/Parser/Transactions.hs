@@ -462,7 +462,7 @@ pCreditPosting p = do
   amount <- p
   whiteSpace
   many newline
-  return $ CPosting account amount
+  return $ CPosting account amount False
 
 pDebitPosting :: Parser v -> Parser (Posting v Debit)
 pDebitPosting p = do
@@ -478,7 +478,7 @@ pDebitPosting p = do
   amount <- p
   whiteSpace
   many newline
-  return $ DPosting account amount
+  return $ DPosting account amount False
 
 pAmount :: Parser Amount
 pAmount = try numberFirst <|> currencyFirst

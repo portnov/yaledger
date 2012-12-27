@@ -53,16 +53,16 @@ trimPath (Just n) ps =
         xs -> intercalate "/" (reverse $ map fst xs)
 
 showPostingAccount :: Maybe Int -> ChartOfAccounts -> Posting v t -> String
-showPostingAccount t coa (CPosting acc _) = maybe "" (trimPath t) $ accountFullPath (getID acc) coa
-showPostingAccount t coa (DPosting acc _) = maybe "" (trimPath t) $ accountFullPath (getID acc) coa
+showPostingAccount t coa (CPosting acc _ _) = maybe "" (trimPath t) $ accountFullPath (getID acc) coa
+showPostingAccount t coa (DPosting acc _ _) = maybe "" (trimPath t) $ accountFullPath (getID acc) coa
 
 showPostingValueD :: Posting Decimal t -> String
-showPostingValueD (CPosting acc x) = show (x :# getCurrency acc)
-showPostingValueD (DPosting acc x) = show (x :# getCurrency acc)
+showPostingValueD (CPosting acc x _) = show (x :# getCurrency acc)
+showPostingValueD (DPosting acc x _) = show (x :# getCurrency acc)
 
 showPostingValue :: Posting Amount t -> String
-showPostingValue (CPosting _ x) = show x
-showPostingValue (DPosting _ x) = show x
+showPostingValue (CPosting _ x _) = show x
+showPostingValue (DPosting _ x _) = show x
 
 showE :: Ext (Entry Decimal Checked) -> Row
 showE (Ext {getDate = date, getContent = (CEntry dt cr rd)}) =
@@ -116,8 +116,8 @@ showB' t coa currency (Ext {getDate = date, getContent = balance}) =
        padding ++ [show bd ++ show currency]]
 
 posting :: Posting Decimal t -> String
-posting (DPosting acc x) = getName acc ++ ": " ++ show (x :# getCurrency acc)
-posting (CPosting acc x) = getName acc ++ ": " ++ show (x :# getCurrency acc)
+posting (DPosting acc x _) = getName acc ++ ": " ++ show (x :# getCurrency acc)
+posting (CPosting acc x _) = getName acc ++ ": " ++ show (x :# getCurrency acc)
 
 showEntries :: (TableFormat a) => a -> Amount -> [Ext (Entry Decimal Checked)] -> String
 showEntries fmt totals list =

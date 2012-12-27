@@ -144,12 +144,20 @@ instance (Pretty v) => Pretty (Entry v c) where
       Just acc -> "  " ++ getName acc ++ "\n")
 
 instance (Pretty v) => Pretty (Posting v t) where
-  prettyPrint (DPosting acc x) =
+  prettyPrint (DPosting acc x False) =
     printf "  dr %s  %s"
            (getName acc)
            (prettyPrint x)
-  prettyPrint (CPosting acc x) =
+  prettyPrint (CPosting acc x False) =
     printf "  cr %s  %s"
+           (getName acc)
+           (prettyPrint x)
+  prettyPrint (DPosting acc x True) =
+    printf "  use dr %s  %s"
+           (getName acc)
+           (prettyPrint x)
+  prettyPrint (CPosting acc x True) =
+    printf "  use cr %s  %s"
            (getName acc)
            (prettyPrint x)
 

@@ -85,21 +85,21 @@ instance ATemplate Param where
 instance ATemplate (Posting Param t) where
   type Result (Posting Param t) = Posting Amount t
 
-  nParams (DPosting _ a) = nParams a
-  nParams (CPosting _ a) = nParams a
+  nParams (DPosting _ a _) = nParams a
+  nParams (CPosting _ a _) = nParams a
 
-  subst (DPosting acc a) =
+  subst (DPosting acc a b) =
     case a of
       FromBalance c -> do
         balance <- lift $ liftTemplate (getCurrentBalance AvailableBalance acc)
-        return $ DPosting acc (balance *. c :# getCurrency acc)
-      _ -> DPosting acc <$> subst a
-  subst (CPosting acc a) =
+        return $ DPosting acc (balance *. c :# getCurrency acc) b
+      _ -> DPosting acc <$> subst a <*> return b
+  subst (CPosting acc a b) =
     case a of
       FromBalance c -> do
         balance <- lift $ liftTemplate (getCurrentBalance AvailableBalance acc)
-        return $ CPosting acc (balance *. c :# getCurrency acc)
-      _ -> CPosting acc <$> subst a
+        return $ CPosting acc (balance *. c :# getCurrency acc) b
+      _ -> CPosting acc <$> subst a <*> return b
 
 fillTemplate :: (TemplateMonad m, Throws InternalError l)
               => Transaction Param

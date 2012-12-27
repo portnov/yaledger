@@ -393,24 +393,24 @@ convertPosting :: Throws NoSuchRate l
                -> Currency            -- ^ Target currency
                -> Posting Amount t
                -> Ledger l (Posting Decimal t)
-convertPosting mbDate to (DPosting acc a) = do
+convertPosting mbDate to (DPosting acc a b) = do
   x :# _ <- convert mbDate to a
-  return $ DPosting acc x
-convertPosting mbDate to (CPosting acc a) = do
+  return $ DPosting acc x b
+convertPosting mbDate to (CPosting acc a b) = do
   x :# _ <- convert mbDate to a
-  return $ CPosting acc x
+  return $ CPosting acc x b
 
 -- | Convert a posting to currency of it's account.
 convertPosting' :: Throws NoSuchRate l
                => Maybe DateTime        -- ^ Date of exchange rates
                -> Posting Amount t
                -> Ledger l (Posting Decimal t)
-convertPosting' mbDate (DPosting acc a) = do
+convertPosting' mbDate (DPosting acc a b) = do
   x :# _ <- convert mbDate (getCurrency acc) a
-  return $ DPosting acc x
-convertPosting' mbDate (CPosting acc a) = do
+  return $ DPosting acc x b
+convertPosting' mbDate (CPosting acc a b) = do
   x :# _ <- convert mbDate (getCurrency acc) a
-  return $ CPosting acc x
+  return $ CPosting acc x b
 
 -- | Convert Posting Decimal. Returns only an amount in target currency.
 convertDecimal :: Throws NoSuchRate l
@@ -418,16 +418,16 @@ convertDecimal :: Throws NoSuchRate l
                -> Currency
                -> Posting Decimal t
                -> Ledger l Decimal
-convertDecimal mbDate to (DPosting acc a) = do
+convertDecimal mbDate to (DPosting acc a _) = do
   x :# _ <- convert mbDate to (a :# getCurrency acc)
   return x
-convertDecimal mbDate to (CPosting acc a) = do
+convertDecimal mbDate to (CPosting acc a _) = do
   x :# _ <- convert mbDate to (a :# getCurrency acc)
   return x
 
 setZero :: Posting Decimal t -> Posting Decimal t
-setZero (CPosting a _) = CPosting a 0
-setZero (DPosting a _) = DPosting a 0
+setZero (CPosting a _ b) = CPosting a 0 b
+setZero (DPosting a _ b) = DPosting a 0 b
 
 -- | Check an entry:
 --
@@ -518,10 +518,10 @@ checkEntry date attrs (UEntry dt cr mbCorr currs) = do
                           if diffD < 0
                             then do
                                  account <- accountAsCredit oneAccount
-                                 return $ CreditDifference $ CPosting account (-diffD)
+                                 return $ CreditDifference $ CPosting account (-diffD) False
                             else do
                                  account <- accountAsDebit oneAccount
-                                 return $ DebitDifference [ DPosting account diffD ]
+                                 return $ DebitDifference [ DPosting account diffD False ]
                         Left debitPostings -> do
                           postings <- mapM (convertPosting' $ Just date) debitPostings
                           return $ DebitDifference postings
@@ -580,7 +580,7 @@ lookupCorrespondence qry date amount@(value :# currency) mbCorr = do
                      -- toDebit and currentBalance are both in currency of
                      -- found account.
                      if toDebit <= currentBalance
-                       then return $ Left [DPosting (Left account) (toDebit :# accountCurrency)]
+                       then return $ Left [DPosting (Left account) (toDebit :# accountCurrency) False]
                        else do
                             info $ "Account `" ++ getName account ++ "' has current balance only of " ++
                                    show currentBalance ++ ", while needed to be debited by " ++
@@ -599,7 +599,7 @@ lookupCorrespondence qry date amount@(value :# currency) mbCorr = do
                                                           (cqAttributes qry)
                                        }
                             -- first posting will get all available balance of this account.
-                            let firstPosting = DPosting (Left account) (currentBalance :# accountCurrency)
+                            let firstPosting = DPosting (Left account) (currentBalance :# accountCurrency) False
                             -- search for other accounts to redirect part of amount.
                             -- NB: this recursive call can return one account
                             -- or list of postings.
@@ -612,7 +612,7 @@ lookupCorrespondence qry date amount@(value :# currency) mbCorr = do
                                 let lastCurrency = getCurrency hop
                                 lastDebit :# _ <- convert (Just date) lastCurrency (toRedirect :# accountCurrency)
                                 hop' <- accountAsDebit hop
-                                let last  = DPosting hop' (lastDebit :# lastCurrency)
+                                let last  = DPosting hop' (lastDebit :# lastCurrency) False
                                 return $ Left [firstPosting, last]
                               Left postings -> 
                                 return $ Left (firstPosting: postings)
@@ -651,7 +651,7 @@ fillEntry qry date dt cr mbCorr amount@(value :# _) = do
                                  ++ show (getCurrency account)
                          return (dt, cr)
                 else do
-                     let e = CPosting account (-value')
+                     let e = CPosting account (-value') False
                      return (dt, e:cr)
          else do
               account <- accountAsDebit oneAccount
@@ -667,7 +667,7 @@ fillEntry qry date dt cr mbCorr amount@(value :# _) = do
                                  ++ show (getCurrency account)
                          return (dt, cr)
                 else do
-                     let e = DPosting account value'
+                     let e = DPosting account value' False
                      return (e:dt, cr)
     Left debitPostings -> do
       let diffValue = sum [x | x :# _ <- map postingValue debitPostings]
@@ -715,11 +715,11 @@ reconciliate date account amount tgt msg = do
          if diff > 0
            then do
                 account' <- accountAsCredit account
-                let posting = CPosting account' (diff :# accountCurrency)
+                let posting = CPosting account' (diff :# accountCurrency) False
                 return $ Just $ UEntry [] [posting] tgt [getCurrency amount]
            else do
                 account' <- accountAsDebit account
-                let posting = DPosting account' ((-diff) :# accountCurrency)
+                let posting = DPosting account' ((-diff) :# accountCurrency) False
                 return $ Just $ UEntry [posting] [] tgt [getCurrency amount]
     else return Nothing
 
