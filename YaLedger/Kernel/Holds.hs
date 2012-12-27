@@ -69,7 +69,8 @@ closeHold date mbEntry op posting = do
                                   -- We must add new hold for difference.
                                   let account = postingAccount' $ holdPosting oldHold
                                       newPosting = createPosting account (holdAmt - amt)
-                                  in  [extHold {getContent = Hold newPosting Nothing}]
+                                  in  [extHold {getDate = date,
+                                                getContent = Hold newPosting Nothing}]
                              else -- holdAmt == amt, we'll just close old hold.
                                   []
              updateBalances (postingAccount posting)
