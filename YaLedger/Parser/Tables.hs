@@ -14,6 +14,7 @@ import qualified Codec.Text.IConv as IConv
 import Data.Maybe
 import Data.Decimal
 import Data.String
+import Data.Char (toLower)
 import Data.Yaml
 import Data.Dates.Formats hiding (Fixed)
 import Text.Regex.PCRE
@@ -54,6 +55,7 @@ data GenericParserConfig = GenericParserConfig {
     pcAmount     :: FieldConfig,
     pcAccount    :: FieldConfig,
     pcAccount2   :: Maybe FieldConfig,
+    pcUseHold    :: Maybe FieldConfig,
     pcRowsFilter :: [RowsFilter],
     pcOther      :: [(String, FieldConfig)] }
   deriving (Eq, Show)
@@ -80,6 +82,7 @@ parseGenericConfig reserved v =
       <*> v .:  "amount"
       <*> v .:  "account"
       <*> v .:? "account2"
+      <*> v .:? "hold"
       <*> v .:?  "filter" .!= []
       <*> getOther reserved v
 
@@ -92,7 +95,9 @@ instance FromJSON FieldConfig where
       <*> getRules v
   parseJSON (String str) =
     pure $ FixedValue (T.unpack str)
-  parseJSON _ = fail "Field config: invalid object"
+  parseJSON (Bool b) =
+    pure $ FixedValue (show b)
+  parseJSON x = fail $ "Field config: invalid object: " ++ show x
 
 getRules :: Object -> Parser [(String, String)]
 getRules obj = do
@@ -111,7 +116,7 @@ reservedFields =
   ["separator", "currency", "amount",
    "account", "account2",
    "dateformat", "date",
-   "filter"]
+   "filter", "hold"]
 
 getOther :: [T.Text] -> Object -> Parser [(String, FieldConfig)]
 getOther reserved obj = do
@@ -181,6 +186,9 @@ convertRow pc currs coa path rowN row = do
       account2 = case pcAccount2 pc of
                    Just fc -> Just $ field fc row
                    Nothing -> Nothing
+      useHold = case pcUseHold pc of
+                  Nothing -> False
+                  Just fc -> (map toLower $ field fc row) `elem` ["true", "1", "yes", "on", "enable"]
       attribute fc value =
         case fc of
           FixedValue ('?':str) -> Optional str
@@ -225,32 +233,32 @@ convertRow pc currs coa path rowN row = do
 
   entry <- case s of
              ECredit -> do
-               posting <- cposting acc (amount :# currency)
+               posting <- cposting acc (amount :# currency) useHold
                corr <- case acc2 of
-                         Just acc -> dposting acc (amount :# currency)
+                         Just acc -> dposting acc (amount :# currency) False
                          Nothing  -> return []
                return $ UEntry corr posting Nothing []
              EDebit -> do
-               posting <- dposting acc (amount :# currency)
+               posting <- dposting acc (amount :# currency) useHold
                corr <- case acc2 of
-                         Just acc -> cposting acc (amount :# currency)
+                         Just acc -> cposting acc (amount :# currency) False
                          Nothing  -> return []
                return $ UEntry posting corr Nothing []
   let pos = newPos path rowN 1
   return $ Ext date 0 pos attrs (Transaction $ TEntry entry)
 
-cposting :: AnyAccount -> Amount -> IO [Posting Amount Credit]
-cposting acc x =
+cposting :: AnyAccount -> Amount -> Bool -> IO [Posting Amount Credit]
+cposting acc x useHold =
   case acc of
-    WCredit _ a -> return [CPosting (Right a) x False]
-    WFree   _ a -> return [CPosting (Left  a) x False]
+    WCredit _ a -> return [CPosting (Right a) x useHold]
+    WFree   _ a -> return [CPosting (Left  a) x useHold]
     WDebit  _ a -> fail $ "Invalid account type: debit instead of credit: " ++ getName a ++ " " ++ show x
 
-dposting :: AnyAccount -> Amount -> IO [Posting Amount Debit]
-dposting acc x =
+dposting :: AnyAccount -> Amount -> Bool -> IO [Posting Amount Debit]
+dposting acc x useHold =
   case acc of
-    WDebit   _ a -> return [DPosting (Right a) x False]
-    WFree    _ a -> return [DPosting (Left  a) x False]
+    WDebit   _ a -> return [DPosting (Right a) x useHold]
+    WFree    _ a -> return [DPosting (Left  a) x useHold]
     WCredit  _ a -> fail $ "Invalid account type: credit instead of debit: " ++ getName a ++ " " ++ show x
 
 instance Show Errno where
