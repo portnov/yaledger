@@ -33,9 +33,6 @@ instance Arbitrary Currency where
                 <*> return Nothing
                 <*> elements [2,3,4]
 
-nowhere :: SourcePos
-nowhere = newPos "<nowhere>" 0 0
-
 instance Arbitrary Attributes where
   arbitrary = M.fromList <$> arbitrary
 
