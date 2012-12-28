@@ -30,8 +30,8 @@ instance FromJSON ParserConfig where
 readHTML :: ParserConfig -> FilePath -> IO [[String]]
 readHTML pc path = do
   bstr <- L.readFile path
-  let string = convertToUtf8 (pcEncoding pc) bstr
-      doc = readString [withParseHTML yes, withWarnings no] string
+  string <- convertToUtf8 path (pcEncoding pc) bstr
+  let doc = readString [withParseHTML yes, withWarnings no] string
   table <- runX $ getTable (pcTableSelector pc) doc
   return $ map (map clean) table
 

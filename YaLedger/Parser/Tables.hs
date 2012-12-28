@@ -1,8 +1,9 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, StandaloneDeriving #-}
 module YaLedger.Parser.Tables where
 
 import Control.Applicative
 import Control.Monad
+import qualified Control.Exception as EX
 import qualified Data.Text as T
 import qualified Data.HashMap.Strict as H
 import qualified Data.Map as M
@@ -15,6 +16,7 @@ import Data.String
 import Data.Yaml
 import Data.Dates.Formats hiding (Fixed)
 import Text.Regex.PCRE
+import Foreign.C.Error (Errno (..))
 
 import YaLedger.Types
 
@@ -246,8 +248,16 @@ dposting acc x =
     WFree    _ a -> return [DPosting (Left  a) x]
     WCredit  _ a -> fail $ "Invalid account type: credit instead of debit: " ++ getName a ++ " " ++ show x
 
-convertToUtf8 :: Maybe String -> L.ByteString -> String
-convertToUtf8 Nothing str = TL.unpack $ E.decodeUtf8 str
-convertToUtf8 (Just encoding) str =
-  TL.unpack $ E.decodeUtf8 $ IConv.convert encoding "UTF8" str
+instance Show Errno where
+  show (Errno x) = show x
+
+deriving instance Show IConv.ConversionError
+
+convertToUtf8 :: FilePath -> Maybe String -> L.ByteString -> IO String
+convertToUtf8 path Nothing str = return $ TL.unpack $ E.decodeUtf8 str
+convertToUtf8 path (Just encoding) str =
+  (TL.unpack . E.decodeUtf8) <$> (case IConv.convertStrictly encoding "UTF8" str of
+                                    Right err -> fail $ "Error converting " ++ path ++ " from " ++ encoding ++ " to UTF8: " ++ show err
+                                    Left res -> return res )
+                                  
 

@@ -44,6 +44,6 @@ loadCSV :: FilePath -> Currencies -> ChartOfAccounts -> FilePath -> IO [Ext Reco
 loadCSV configPath currs coa csvPath = do
   config <- loadParserConfig configPath 
   bstr <- L.readFile csvPath
-  let csv = convertToUtf8 (pcEncoding config) bstr
+  csv <- convertToUtf8 csvPath (pcEncoding config) bstr
   parseCSV config csvPath currs coa csv
 
