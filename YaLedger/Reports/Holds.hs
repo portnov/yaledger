@@ -74,7 +74,8 @@ showHolds' qry options account = do
                              WDebit _ a -> debitAccountHolds a
   creditHolds <- runAtomically $ readIOList creditHoldsHistory
   debitHolds  <- runAtomically $ readIOList debitHoldsHistory
-  let allHolds = map Left creditHolds ++ map Right debitHolds
+  let allHolds = map Left  (filter (checkQuery qry) creditHolds) ++
+                 map Right (filter (checkQuery qry) debitHolds)
 
   let format = case [s | HCSV s <- options] of
                  []    -> holdsTable fullCoA ASCII
