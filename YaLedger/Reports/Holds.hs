@@ -77,13 +77,25 @@ showHolds' qry options account = do
   let allHolds = map Left  (filter (checkQuery qry) creditHolds) ++
                  map Right (filter (checkQuery qry) debitHolds)
 
+  let checkEnd :: Ext (Hold Decimal t) -> Bool
+      checkEnd extHold = case holdEndDate (getContent extHold) of
+                           Nothing -> True
+                           Just dt -> case qEnd qry of
+                                        Nothing -> True
+                                        Just dt' -> dt > dt'
+  let checkHold
+        | HOpenOnly `elem` options = either checkEnd checkEnd
+        | otherwise = const True
+
+  let holds = filter checkHold allHolds
+
   let format = case [s | HCSV s <- options] of
                  []    -> holdsTable fullCoA ASCII
                  (x:_) -> holdsTable fullCoA (CSV x)
 
-  when (not $ null allHolds) $ do
+  when (not $ null holds) $ do
     let Just path = accountFullPath (getID account) fullCoA
     wrapIO $ do
         putStrLn $ intercalate "/" path ++ ":"
-        putStrLn $ format allHolds
+        putStrLn $ format holds
 
