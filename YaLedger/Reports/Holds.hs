@@ -1,35 +1,67 @@
-{-# LANGUAGE ScopedTypeVariables, FlexibleContexts, OverlappingInstances, TypeFamilies, RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables, FlexibleContexts, OverlappingInstances, TypeFamilies, RecordWildCards, GADTs #-}
 
 module YaLedger.Reports.Holds
   (Holds (..)) where
 
 import Control.Concurrent.STM
+import Data.Either (either)
 
 import YaLedger.Reports.API
 
 data Holds = Holds
 
+data HOptions =
+    HOpenOnly
+  | HCSV (Maybe String)
+  deriving (Eq)
+
 instance ReportClass Holds where
-  type Options Holds = ()
-  type Parameters Holds = Path
+  type Options Holds = HOptions
+  type Parameters Holds = Maybe Path
 
-  runReport _ qry _ path = showHolds qry path
+  reportOptions _ = 
+    [Option "o" ["open-only"] (NoArg HOpenOnly) "Show open holds only",
+     Option "C" ["csv"] (OptArg HCSV "SEPARATOR") "Output data in CSV format using given fields delimiter (semicolon by default)"]
 
-  reportHelp _ = "Show all holds for the account."
+  runReport _ qry options path = showHolds qry options path
 
-showHolds qry path = do
-      coa <- getCoAItem (gets lsPosition) (gets lsCoA) path
-      case coa of
-        Leaf {..} -> showHolds' qry leafData
-        _ -> throwP $ NotAnAccount path
-  `catchWithSrcLoc`
-    (\l (e :: NotAnAccount) -> handler l e)
+  reportHelp _ = "Show account holds. One optional parameter: account or accounts group."
+
+showHolds qry options mbPath = do
+      coa <- case mbPath of
+                Nothing   -> gets lsCoA
+                Just path -> getCoAItem (gets lsPosition) (gets lsCoA) path
+      let accounts = map snd $ leafs coa
+      forM_ accounts $ \account ->
+          showHolds' qry options account
   `catchWithSrcLoc`
     (\l (e :: InvalidPath) -> handler l e)
   `catchWithSrcLoc`
     (\l (e :: NoSuchRate) -> handler l e)
 
-showHolds' qry account = do
+showHold :: TableFormat fmt => ChartOfAccounts -> fmt -> Ext (Hold Decimal t) -> Row
+showHold coa fmt (Ext {getDate = date, getContent = (Hold posting cld)}) = 
+  [[prettyPrint date],
+   [showSign posting],
+   [showPostingAccount (maxFieldWidth fmt) coa posting],
+   [prettyPrint (getAmount posting)],
+   [showMaybeDate cld]]
+
+showSign (CPosting {}) = "CR"
+showSign (DPosting {}) = "DR"
+
+holdsTable coa fmt holds =
+  let showH = either (showHold coa fmt) (showHold coa fmt)
+      list = map showH holds
+  in  unlines $
+      tableGrid fmt [(ALeft, ["DATE"]),
+                     (ACenter, ["SIGN"]),
+                     (ALeft, ["ACCOUNT"]),
+                     (ARight, ["AMOUNT"]),
+                     (ALeft, ["CLOSE"]) ] list
+
+showHolds' qry options account = do
+  fullCoA <- gets lsCoA
   e1 <- wrapIO $ newTVarIO []
   e2 <- wrapIO $ newTVarIO []
   let creditHoldsHistory = case account of
@@ -42,10 +74,15 @@ showHolds' qry account = do
                              WDebit _ a -> debitAccountHolds a
   creditHolds <- runAtomically $ readIOList creditHoldsHistory
   debitHolds  <- runAtomically $ readIOList debitHoldsHistory
+  let allHolds = map Left creditHolds ++ map Right debitHolds
 
-  wrapIO $ do
-    forM_ (sort creditHolds) $ \hold ->
-      putStrLn $ prettyPrint hold
-    forM_ (sort debitHolds) $ \hold ->
-      putStrLn $ prettyPrint hold
+  let format = case [s | HCSV s <- options] of
+                 []    -> holdsTable fullCoA ASCII
+                 (x:_) -> holdsTable fullCoA (CSV x)
+
+  when (not $ null allHolds) $ do
+    let Just path = accountFullPath (getID account) fullCoA
+    wrapIO $ do
+        putStrLn $ intercalate "/" path ++ ":"
+        putStrLn $ format allHolds
 
