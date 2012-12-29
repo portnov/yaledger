@@ -44,12 +44,22 @@ instance Monoid LedgerOptions where
                              else deduplicationRules o2,
       reportParams = if null (reportParams o2) then reportParams o1 else reportParams o2 }
 
+chooseDate :: (DateTime -> DateTime -> Bool) -> Maybe DateTime -> Maybe DateTime -> Maybe DateTime
+chooseDate op mbdt1 mbdt2 =
+  case (mbdt1, mbdt2) of
+    (Nothing, Nothing) -> Nothing
+    (Just dt1, Nothing) -> Just dt1
+    (Nothing, Just dt2) -> Just dt2
+    (Just dt1, Just dt2) -> if dt1 `op` dt2
+                              then Just dt1
+                              else Just dt2
+
 instance Monoid Query where
   mempty = Query Nothing Nothing False M.empty
   mappend q1 q2 =
     Query {
-      qStart = qStart q1 `mplus` qStart q2,
-      qEnd   = qEnd   q1 `mplus` qEnd   q2,
+      qStart = chooseDate (>) (qStart q1) (qStart q2),
+      qEnd   = chooseDate (<) (qEnd q1) (qEnd q2),
       qAllAdmin = qAllAdmin q1 || qAllAdmin q2,
       qAttributes = qAttributes q1 `M.union` qAttributes q2 }
 
