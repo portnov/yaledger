@@ -54,11 +54,11 @@ instance ATemplate (Transaction Param) where
   type Result (Transaction Param) = Transaction Amount
 
   nParams (TEntry entry) = nParams entry
-  nParams (TReconciliate _ a _ _) = nParams a
+  nParams (TReconciliate _ _ a _ _) = nParams a
   nParams _ = 0
 
   subst (TEntry entry) = TEntry <$> subst entry
-  subst (TReconciliate p a tgt msg) = (\x -> TReconciliate p x tgt msg) <$> subst a
+  subst (TReconciliate bt p a tgt msg) = (\x -> TReconciliate bt p x tgt msg) <$> subst a
   subst (TCallTemplate n t) = return $ TCallTemplate n t
 
 instance ATemplate (Entry Param Unchecked) where

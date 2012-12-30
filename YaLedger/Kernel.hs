@@ -730,15 +730,16 @@ reconciliate :: (Throws NoSuchRate l,
                  Throws InvalidAccountType l,
                  Throws ReconciliationError l,
                  Throws InternalError l)
-             => DateTime       -- ^ Transaction date/time
+             => BalanceType
+             -> DateTime       -- ^ Transaction date/time
              -> AnyAccount     -- ^ Account
              -> Amount         -- ^ Balance value to set
              -> Maybe AnyAccount            -- ^ User-specified corresponding account
              -> Maybe ReconciliationMessage
              -> Ledger l (Maybe (Entry Amount Unchecked))
-reconciliate date account amount tgt msg = do
+reconciliate btype date account amount tgt msg = do
 
-  calculatedBalance <- runAtomically $ getBalanceAt (Just date) AvailableBalance account
+  calculatedBalance <- runAtomically $ getBalanceAt (Just date) btype account
   actualBalance :# accountCurrency <- convert (Just date) (getCurrency account) amount
 
   -- diff is in accountCurrency

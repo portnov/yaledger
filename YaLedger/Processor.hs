@@ -278,9 +278,9 @@ processTransaction :: forall l. (Throws NoSuchRate l,
 processTransaction tranID (Ext date _ pos attrs (TEntry p)) = do
     setPos pos
     processEntry date tranID pos attrs p
-processTransaction tranID (Ext date _ pos attrs (TReconciliate acc x tgt msg)) = do
+processTransaction tranID (Ext date _ pos attrs (TReconciliate btype acc x tgt msg)) = do
     setPos pos
-    mbEntry <- reconciliate date acc x tgt msg
+    mbEntry <- reconciliate btype date acc x tgt msg
     case mbEntry of
       Nothing -> return ()
       Just entry -> processEntry date tranID pos

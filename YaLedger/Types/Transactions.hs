@@ -20,7 +20,7 @@ data Record =
 
 data Transaction v =
     TEntry (Entry v Unchecked)
-  | TReconciliate AnyAccount v (Maybe AnyAccount) (Maybe ReconciliationMessage)
+  | TReconciliate BalanceType AnyAccount v (Maybe AnyAccount) (Maybe ReconciliationMessage)
   | TCallTemplate String [Amount]
   | THold [Hold v Credit] [Hold v Debit]
   | TCloseHolds [CloseHold v Credit] [CloseHold v Debit]

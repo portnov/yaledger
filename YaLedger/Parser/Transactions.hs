@@ -389,20 +389,28 @@ pCall = do
 
 pReconciliate :: Parser v -> Parser (Transaction v)
 pReconciliate p = do
-  reserved "reconciliate"
-  spaces
-  path <- pPathRelative
-  account <- getAccount getPosition (getCoA <$> getState) path 
-  spaces
-  x <- p
-  targetAccount <- optionMaybe $ try $ do
-                     spaces
-                     reserved "with"
-                     spaces
-                     path <- pPathRelative
-                     getAccount getPosition (getCoA <$> getState) path
-  msg <- optionMaybe pReconMessage
-  return $ TReconciliate account x targetAccount msg
+    reserved "reconciliate"
+    spaces
+    path <- pPathRelative
+    account <- getAccount getPosition (getCoA <$> getState) path 
+    spaces
+    btype <- option AvailableBalance $ do
+               try (bt "available" AvailableBalance) <|>
+                   (bt "ledger"    LedgerBalance)
+    x <- p
+    targetAccount <- optionMaybe $ try $ do
+                       spaces
+                       reserved "with"
+                       spaces
+                       path <- pPathRelative
+                       getAccount getPosition (getCoA <$> getState) path
+    msg <- optionMaybe pReconMessage
+    return $ TReconciliate btype account x targetAccount msg
+  where
+    bt word res = do
+      reserved word
+      spaces
+      return res
 
 defaultReconMessage :: MessageFormat
 defaultReconMessage =

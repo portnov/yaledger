@@ -114,8 +114,10 @@ instance Pretty Param where
 
 instance (Pretty t) => Pretty (Transaction t) where
   prettyPrint (TEntry e) = prettyPrint e
-  prettyPrint (TReconciliate acc x tgt msg) =
-    printf "reconciliate %s %s%s%s" (getName acc) (prettyPrint x)
+  prettyPrint (TReconciliate btype acc x tgt msg) =
+    printf "reconciliate %s %s%s%s%s" (getName acc)
+                                    (if btype == AvailableBalance then "" else "ledger ")
+                                    (prettyPrint x)
                                     (maybe "" ((" "++) . prettyPrint) msg)
                                     (maybe "\n" (getName) tgt)
   prettyPrint (TCallTemplate name args) =

@@ -36,7 +36,7 @@ getRAmount r =
   case getContent r of
     Transaction (TEntry (UEntry dt cr _ _)) ->
       Just $ head $ map postingValue dt ++ map postingValue cr
-    Transaction (TReconciliate _ x _ _) -> Just x
+    Transaction (TReconciliate _ _ x _ _) -> Just x
     _ -> Nothing
 
 getCreditAccount :: Ext Record -> Maybe AccountID
