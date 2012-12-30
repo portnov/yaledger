@@ -153,6 +153,7 @@ instance Show v => Show (Entry v t) where
       showName Nothing = "to be found automatically"
       showName (Just x) = getName x
 
+-- | Historical data
 type History f t = IOList (Ext (f t))
 
 -- | Item of account balances history
@@ -202,6 +203,7 @@ data BalanceInfo v = BalanceInfo {
 noBalanceInfo :: BalanceInfo v
 noBalanceInfo = BalanceInfo Nothing Nothing
 
+-- | Check if balance info is not zero
 isNotZeroBI :: BalanceInfo Amount -> Bool
 isNotZeroBI (BalanceInfo (Just x) Nothing) = isNotZero x
 isNotZeroBI (BalanceInfo Nothing (Just x)) = isNotZero x
@@ -220,6 +222,7 @@ instance (Eq v, Show v) => Show (BalanceInfo v) where
     | a == l = show a
     | otherwise = show a ++ " / " ++ show l
 
+-- | Set currency info for balances info
 balanceInfoSetCurrency :: BalanceInfo Decimal -> Currency -> BalanceInfo Amount
 balanceInfoSetCurrency bi c =
   bi {biAvailable = (:# c) <$> biAvailable bi,
@@ -378,8 +381,10 @@ class (Named a, HasBalances a, HasCurrency a, Sign a) => IsAccount a
 
 instance (Named a, HasBalances a, HasCurrency a, Sign a) => IsAccount a 
 
+-- | Chart of accounts is a tree of accounts and account groups
 type ChartOfAccounts = Tree AccountGroupData AnyAccount
 
+-- | Query to search for a corresponding account
 data CQuery = CQuery {
   cqType :: PostingType,
   cqCurrencies :: [Currency],
