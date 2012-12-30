@@ -87,7 +87,7 @@ showHolds' qry options account = do
         | HOpenOnly `elem` options = either checkEnd checkEnd
         | otherwise = const True
 
-  let holds = filter checkHold allHolds
+  let holds = sort $ filter checkHold allHolds
 
   let format = case [s | HCSV s <- options] of
                  []    -> holdsTable fullCoA ASCII
