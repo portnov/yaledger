@@ -317,5 +317,10 @@ processTransaction tranID (Ext date _ pos attrs (TCloseHolds crholds drholds)) =
                  else (==)
           qry = searchAttributes clh
       p' <- convertPosting' (Just date) p
-      runAtomically $ closeHold date op qry p'
+      runAtomically $ (closeHold date op qry p')
+                        `catchWithSrcLoc` handleNoSuchHold (searchLesserAmount clh)
+
+    handleNoSuchHold :: Bool -> CallTrace -> NoSuchHold -> Atomic l ()
+    handleNoSuchHold True  _ e = infoSTM $ show e
+    handleNoSuchHold False l e = rethrow l e
 
