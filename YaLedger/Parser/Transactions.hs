@@ -355,11 +355,20 @@ pSetHold p = do
 pCloseHold :: Parser v -> Parser (Transaction v)
 pCloseHold p = foldl go zero <$> (many1 $ do
       reserved "close"
+      op <- optionMaybe $ do
+              spaces
+              reservedOp "<="
+      let searchLesser = isJust op
       spaces
       r <- try (Left <$> pCreditPosting p) <|> try (Right <$> pDebitPosting p)
+      attrs <- option M.empty $ do
+                 spaces
+                 reserved "with"
+                 spaces
+                 braces pAttributes 
       case r of
-        Left p  -> return $ Left  $ Hold p Nothing
-        Right p -> return $ Right $ Hold p Nothing )
+        Left p  -> return $ Left  $ CloseHold (Hold p Nothing) searchLesser attrs
+        Right p -> return $ Right $ CloseHold (Hold p Nothing) searchLesser attrs )
   where
     zero = TCloseHolds [] []
     go (TCloseHolds cr dr) (Left h)  = TCloseHolds (h:cr) dr

@@ -1,3 +1,4 @@
+{-# LANGUAGE StandaloneDeriving, FlexibleContexts, UndecidableInstances #-}
 
 module YaLedger.Types.Transactions where
 
@@ -22,8 +23,16 @@ data Transaction v =
   | TReconciliate AnyAccount v (Maybe AnyAccount) (Maybe ReconciliationMessage)
   | TCallTemplate String [Amount]
   | THold [Hold v Credit] [Hold v Debit]
-  | TCloseHolds [Hold v Credit] [Hold v Debit]
+  | TCloseHolds [CloseHold v Credit] [CloseHold v Debit]
   deriving (Eq, Show)
+
+data CloseHold v t = CloseHold {
+    holdToClose :: Hold v t,
+    searchLesserAmount :: Bool,
+    searchAttributes :: Attributes }
+  deriving (Show)
+
+deriving instance (Eq (Posting v t)) => Eq (CloseHold v t)
 
 data ReconciliationMessage =
     RWarning MessageFormat

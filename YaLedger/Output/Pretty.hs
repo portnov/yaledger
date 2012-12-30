@@ -124,7 +124,9 @@ instance (Pretty t) => Pretty (Transaction t) where
            (unwords $ map prettyPrint args)
   prettyPrint (THold crholds drholds) = unlines $ map prettyPrint crholds ++ map prettyPrint drholds
   prettyPrint (TCloseHolds crholds drholds) = unlines $ map go crholds ++ map go drholds
-      where go (Hold p _) = "close " ++ prettyPrint p
+      where go clh = "close " ++ 
+                     (if searchLesserAmount clh then "<= " else "") ++
+                     prettyPrint (holdPosting $ holdToClose clh)
 
 instance Pretty v => Pretty (Hold v t) where
   prettyPrint (Hold p _) = "hold" ++ prettyPrint p

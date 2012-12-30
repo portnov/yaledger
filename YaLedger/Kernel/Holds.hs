@@ -15,6 +15,7 @@ import YaLedger.Exceptions
 import YaLedger.Kernel.Types
 import YaLedger.Kernel.Common
 import YaLedger.Kernel.Balances
+import YaLedger.Kernel.Correspondence
 import YaLedger.Logger
 import YaLedger.Output.Pretty
 
@@ -22,26 +23,30 @@ import YaLedger.Output.Pretty
 checkHold :: (Decimal -> Decimal -> Bool) -- ^ Operation to check hold amount, (==) or (>=)
           -> DateTime                     -- ^ Transaction date/time
           -> Decimal                      -- ^ Transaction amount
+          -> Attributes                   -- ^ Hold attributes
           -> Ext (Hold Decimal t)         -- ^ Hold to check
           -> Bool
-checkHold op date amt extHold =
+checkHold op date amt qry extHold =
     (getDate extHold <= date) &&
     (case holdEndDate (getContent extHold) of
        Nothing -> True
        Just dt -> dt >= date ) &&
-    ((postingValue $ holdPosting $ getContent extHold) `op` amt)
+    ((postingValue $ holdPosting $ getContent extHold) `op` amt) &&
+    (getAttributes extHold `matchAll` qry)
 
--- | Close one hold.
+-- | Close one hold. If found hold's amount is greater than requested,
+-- then close found hold and create a new one, with amount of
+-- (found hold amount - requested amount).
 closeHold :: forall t l.
              (HoldOperations t,
               Throws NoSuchHold l,
               Throws InternalError l)
-           => DateTime                     -- ^ Transaction date/time
-           -> Maybe (Entry Decimal Checked)
-           -> (Decimal -> Decimal -> Bool) -- ^ Operation to check hold amount, (==) or (>=) 
-           -> Posting Decimal t            -- ^ Hold posting
+           => DateTime                      -- ^ Transaction date/time
+           -> (Decimal -> Decimal -> Bool)  -- ^ Operation to check hold amount, such as (==) or (>=) 
+           -> Attributes                    -- ^ Hold attributes
+           -> Posting Decimal t             -- ^ Hold posting
            -> Atomic l ()
-closeHold date mbEntry op posting = do
+closeHold date op qry posting = do
     infoSTM $ "Closing hold: " ++ prettyPrint posting
     let account = postingAccount' posting
         history = getHolds account
@@ -51,30 +56,33 @@ closeHold date mbEntry op posting = do
       then return ()
       else noSuchHold posting
   where
-    amt = postingValue posting
+    searchAmt = postingValue posting
 
     -- Close any appropriate hold
+
+    -- No appropriate holds were found in histroy.
     close [] _ [] = return False
+    -- 
     close acc history [] = do
-        updateBalances (postingAccount posting)
+        updateBalances searchAmt (postingAccount posting)
         stm $ writeTVar history acc
         return False
     close acc history (extHold: rest) =
-      if checkHold op date amt extHold
+      if checkHold op date searchAmt qry extHold
         then do
              let oldHold = getContent extHold
                  holdAmt = postingValue $ holdPosting oldHold
                  closedHold = extHold {getContent = oldHold {holdEndDate = Just date}}
-                 newHolds = if holdAmt > amt
+                 newHolds = if holdAmt > searchAmt
                              then -- Found hold amount > requested posting amount.
                                   -- We must add new hold for difference.
                                   let account = postingAccount' $ holdPosting oldHold
-                                      newPosting = createPosting account (holdAmt - amt)
+                                      newPosting = createPosting account (holdAmt - searchAmt)
                                   in  [extHold {getDate = date,
                                                 getContent = Hold newPosting Nothing}]
-                             else -- holdAmt == amt, we'll just close old hold.
+                             else -- holdAmt <= searchAmt, we'll just close old hold.
                                   []
-             updateBalances (postingAccount posting)
+             updateBalances holdAmt (postingAccount posting)
              stm $ writeTVar history (acc ++ newHolds ++ [closedHold] ++ rest)
              return True
         else close (acc ++ [extHold]) history rest
@@ -82,9 +90,9 @@ closeHold date mbEntry op posting = do
     -- Update balances by amount of posting:
     -- * for credit posting, decrease creditHolds amount
     -- * for debit  posting, increase debitHolds  amount
-    updateBalances :: AnyAccount -> Atomic l ()
-    updateBalances account =
-      plusIOList zeroExtBalance (const True) updateExtBalance (accountBalances account)
+    updateBalances :: Decimal -> AnyAccount -> Atomic l ()
+    updateBalances amt account =
+      plusIOList zeroExtBalance (const True) (updateExtBalance amt) (accountBalances account)
 
     zeroExtBalance =
       Ext {
@@ -94,8 +102,8 @@ closeHold date mbEntry op posting = do
         getAttributes = M.empty,
         getContent = zeroBalance }
 
-    updateExtBalance :: Ext (Balance Checked) -> Ext (Balance Checked)
-    updateExtBalance extBalance =
+    updateExtBalance :: Decimal -> Ext (Balance Checked) -> Ext (Balance Checked)
+    updateExtBalance amt extBalance =
       Ext {
         getDate = date,
         extID = 0,
