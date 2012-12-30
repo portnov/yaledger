@@ -97,9 +97,9 @@ showB currency (Ext {getDate = date, getContent = balance}) =
        map posting cr, map posting dt,
        padding ++ [show bd ++ show currency]]
 
-showB' :: Maybe Int -> ChartOfAccounts -> Currency -> Ext (Balance Checked) -> Row
-showB' t coa currency (Ext {getDate = date, getContent = balance}) =
-  let bd = balanceValue balance
+showB' :: Maybe Int -> BalanceQuery -> ChartOfAccounts -> Currency -> Ext (Balance Checked) -> Row
+showB' t bqry coa currency (Ext {getDate = date, getContent = balance}) =
+  let bi = getBalanceInfo bqry balance
       dt :: [Posting Decimal Debit]
       cr :: [Posting Decimal Credit]
       (dt, cr) = case causedBy balance of
@@ -110,7 +110,7 @@ showB' t coa currency (Ext {getDate = date, getContent = balance}) =
   in  [prettyPrint date: padding,
        map (showPostingAccount t coa) cr, map showPostingValueD cr,
        map (showPostingAccount t coa) dt, map showPostingValueD dt,
-       padding ++ [show bd ++ show currency]]
+       padding ++ [show bi ++ show currency]]
 
 posting :: Posting Decimal t -> String
 posting (DPosting acc x _) = getName acc ++ ": " ++ show (x :# getCurrency acc)
@@ -148,9 +148,9 @@ showEntriesBalances fmt totals list =
                      (ARight, ["DEBIT"]),
                      (ARight, ["BALANCE B/D"])] l ++ footer
 
-showEntriesBalances' :: (TableFormat a) => ChartOfAccounts -> a -> Amount -> [Ext (Balance Checked)] -> String
-showEntriesBalances' coa fmt totals list =
-  let l = map (showB' (maxFieldWidth fmt) coa (getCurrency totals)) list
+showEntriesBalances' :: (TableFormat a) => BalanceQuery -> ChartOfAccounts -> a -> Amount -> [Ext (Balance Checked)] -> String
+showEntriesBalances' bqry coa fmt totals list =
+  let l = map (showB' (maxFieldWidth fmt) bqry coa (getCurrency totals)) list
       footer = ["    TOTALS: " ++ show totals]
   in  unlines $
       tableGrid fmt [(ALeft,  ["DATE"]),

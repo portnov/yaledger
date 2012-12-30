@@ -199,6 +199,14 @@ data BalanceInfo v = BalanceInfo {
   }
   deriving (Eq)
 
+getBalanceInfo :: BalanceQuery -> Balance Checked -> BalanceInfo Decimal
+getBalanceInfo (Only AvailableBalance) b =
+  BalanceInfo (Just $ balanceValue b + debitHolds b) Nothing
+getBalanceInfo (Only LedgerBalance) b =
+  BalanceInfo Nothing (Just $ balanceValue b + creditHolds b)
+getBalanceInfo BothBalances b =
+  BalanceInfo (Just $ balanceValue b + debitHolds b) (Just $ balanceValue b + creditHolds b)
+
 -- | Empty BalanceInfo
 noBalanceInfo :: BalanceInfo v
 noBalanceInfo = BalanceInfo Nothing Nothing

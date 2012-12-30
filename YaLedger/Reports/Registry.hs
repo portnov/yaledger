@@ -7,7 +7,11 @@ import YaLedger.Reports.API
 
 data Registry = Registry
 
-data ROptions = RCSV (Maybe String)
+data ROptions =
+    RLedgerBalances
+  | RBothBalances
+  | RCSV (Maybe String)
+  deriving (Eq)
 
 instance ReportClass Registry where
   type Options Registry = ROptions
@@ -16,7 +20,9 @@ instance ReportClass Registry where
   reportHelp _ = "Show all entries in account or group of accounts."
 
   reportOptions _ =
-    [Option "C" ["csv"] (OptArg RCSV "SEPARATOR") "Output data in CSV format using given fields delimiter (semicolon by default)"]
+    [Option "l" ["ledger"] (NoArg RLedgerBalances) "Show ledger balances instead of available balances",
+     Option "b" ["both"] (NoArg RBothBalances) "Show both available and ledger balances",
+     Option "C" ["csv"] (OptArg RCSV "SEPARATOR") "Output data in CSV format using given fields delimiter (semicolon by default)"]
 
   runReport _ qry options mbPath = 
       registry qry options mbPath
@@ -41,9 +47,14 @@ registry qry options mbPath = do
       Leaf {leafData = account} -> do
           balances <- readIOListL (accountBalances account)
           let balances' = filter (checkQuery qry) balances
+          let bqry = if RBothBalances `elem` options
+                        then BothBalances
+                        else if RLedgerBalances `elem` options
+                              then Only LedgerBalance
+                              else Only AvailableBalance
           let format = case [s | RCSV s <- options] of
-                         []    -> showEntriesBalances' fullCoA ASCII totals
-                         (x:_) -> showEntriesBalances' fullCoA (CSV x) totals
+                         []    -> showEntriesBalances' bqry fullCoA ASCII totals
+                         (x:_) -> showEntriesBalances' bqry fullCoA (CSV x) totals
           wrapIO $ putStrLn $ format (nub $ sort balances')
       Branch {} -> do
           let accounts = map snd $ leafs coa
