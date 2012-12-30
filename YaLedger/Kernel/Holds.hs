@@ -14,6 +14,7 @@ import YaLedger.Types
 import YaLedger.Exceptions
 import YaLedger.Kernel.Types
 import YaLedger.Kernel.Common
+import YaLedger.Kernel.Balances
 import YaLedger.Logger
 import YaLedger.Output.Pretty
 
@@ -113,5 +114,4 @@ noSuchHold (DPosting acc amt _) = do
   coa <- gets lsCoA
   let Just path = accountFullPath (getID acc) coa
   throwP (NoSuchHold EDebit amt path)
-
 

@@ -11,6 +11,7 @@ import Text.Parsec
 
 import YaLedger.Types
 import YaLedger.Parser.Common
+import YaLedger.Kernel.Balances
 
 data PState = PState {
     lastAID :: Integer,

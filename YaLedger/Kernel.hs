@@ -2,6 +2,7 @@
 -- | Ledger kernel
 module YaLedger.Kernel
   (module YaLedger.Kernel.Common,
+   module YaLedger.Kernel.Balances,
    CanCredit (..), CanDebit (..),
    HoldOperations (..),
    negateAmount, differenceType,
@@ -41,6 +42,7 @@ import YaLedger.Exceptions
 import YaLedger.Kernel.Types
 import YaLedger.Kernel.Correspondence
 import YaLedger.Kernel.Common
+import YaLedger.Kernel.Balances
 import YaLedger.Output.Pretty
 import YaLedger.Output.Messages
 import YaLedger.Logger
