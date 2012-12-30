@@ -11,6 +11,7 @@ import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Lazy.Encoding as E
 import qualified Data.ByteString.Lazy as L
 import qualified Codec.Text.IConv as IConv
+import Data.Maybe
 import Data.Decimal
 import Data.String
 import Data.Yaml
@@ -19,6 +20,7 @@ import Text.Regex.PCRE
 import Foreign.C.Error (Errno (..))
 
 import YaLedger.Types
+import YaLedger.Logger
 
 data RowsFilter =
   RowsFilter {
@@ -101,7 +103,8 @@ getRules obj = do
         forM (H.toList rules) $ \(name, value) ->
           case value of
             String str -> return (T.unpack name, T.unpack str)
-            _ -> mzero
+            Bool b     -> return (T.unpack name, show b)
+            x -> fail $ "Tables.getRules: invalid object: " ++ show x
 
 reservedFields :: IsString s => [s]
 reservedFields =
@@ -131,9 +134,11 @@ field fc row =
             else []
   in  case fcRules fc of
         [] -> part
-        rules -> case concatMap check rules of
-                   [] -> ""
-                   (x:_) -> x
+        rules -> let rules' = filter (\p -> fst p /= "default") rules
+                     dflt = fromMaybe "" $ lookup "default" rules
+                 in case concatMap check rules of
+                      [] -> dflt
+                      (x:_) -> x
 
 readSum :: Char -> Char -> String -> Either String Decimal
 readSum thousandsSep decimalSep str =
