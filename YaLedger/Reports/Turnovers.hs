@@ -8,6 +8,8 @@ data Turnovers = Turnovers
 
 data TOptions =
     TNoZeros
+  | TLedgerBalances
+  | TBothBalances
   | TShowTotals
   | TCSV (Maybe String)
   deriving (Eq)
@@ -18,7 +20,9 @@ instance ReportClass Turnovers where
   defaultOptions Turnovers = []
   reportHelp _ = "Show debit/credit, and, optionally, total turnovers for each account."
   reportOptions _ =
-    [Option "z" ["no-zeros"] (NoArg TNoZeros) "Do not show accounts with zero balance",
+    [Option "l" ["ledger"] (NoArg TLedgerBalances) "Show ledger balances instead of available balances",
+     Option "b" ["both"] (NoArg TBothBalances) "Show both available and ledger balances",
+     Option "z" ["no-zeros"] (NoArg TNoZeros) "Do not show accounts with zero balance",
      Option "t" ["show-totals"] (NoArg TShowTotals) "Show total turnovers",
      Option "C" ["csv"] (OptArg TCSV "SEPARATOR") "Output data in CSV format using given fields delimiter (semicolon by default)" ]
 
@@ -39,8 +43,8 @@ instance ReportClass Turnovers where
 data TRecord v = TRecord {
   trCredit :: v,
   trDebit  :: v,
-  trIncSaldo :: v,
-  trOutSaldo :: v,
+  trIncSaldo :: BalanceInfo v,
+  trOutSaldo :: BalanceInfo v,
   trTotals   :: Maybe v }
   deriving (Eq, Show)
 
@@ -49,8 +53,8 @@ sumTurnovers mbDate calcTotals ag list = do
   list' <- forM list $ \tr -> do
                 cr' :# _  <- convert mbDate c (trCredit tr)
                 dt' :# _  <- convert mbDate c (trDebit tr)
-                inc' :# _ <- convert mbDate c (trIncSaldo tr)
-                out' :# _ <- convert mbDate c (trOutSaldo tr)
+                inc' <- convertBalanceInfo mbDate c (trIncSaldo tr)
+                out' <- convertBalanceInfo mbDate c (trOutSaldo tr)
                 t'  <- case trTotals tr of
                          Nothing -> return Nothing
                          Just t -> do
@@ -64,35 +68,30 @@ sumTurnovers mbDate calcTotals ag list = do
                            trTotals = t' }
   let credits = sum $ map trCredit list'
       debits  = sum $ map trDebit  list'
-      inc     = sum $ map trIncSaldo list'
-      out     = sum $ map trOutSaldo list'
+      inc     = sumBalanceInfo c $ map trIncSaldo list'
+      out     = sumBalanceInfo c $ map trOutSaldo list'
       totals  = if calcTotals
                   then Just $ (sum $ map (fromJust . trTotals) list') :# c
                   else Nothing
   return $ TRecord {
              trCredit = credits :# c,
              trDebit  = debits  :# c,
-             trIncSaldo = inc :# c,
-             trOutSaldo = out :# c,
+             trIncSaldo = inc,
+             trOutSaldo = out,
              trTotals = totals }
 
-allTurnovers calcTotals qry account = do
+allTurnovers bqry calcTotals qry account = do
   cr :# c <- creditTurnovers qry account
   dt :# _ <- debitTurnovers  qry account
-  incomingSaldo :# _ <-
-      case qStart qry of
-        Nothing -> return (0 :# c)
-        Just date -> do
-            let startQry = qry {
-                   qStart = Nothing,
-                   qEnd   = Just date }
-            saldo startQry account
-  let outgoingSaldo = cr - dt + incomingSaldo
+  incomingSaldo <- case qStart qry of
+                     Nothing    -> return $ BalanceInfo (Just 0) (Just 0)
+                     Just start -> runAtomically $ getBalanceInfoAt (Just start) bqry account
+  outgoingSaldo <- runAtomically $ getBalanceInfoAt (qEnd qry) bqry account
   return $ TRecord {
              trCredit = cr :# c,
              trDebit  = dt :# c,
-             trIncSaldo = incomingSaldo :# c,
-             trOutSaldo = outgoingSaldo :# c,
+             trIncSaldo = balanceInfoSetCurrency incomingSaldo c,
+             trOutSaldo = balanceInfoSetCurrency outgoingSaldo c,
              trTotals = if calcTotals
                           then Just $ (cr + dt) :# c
                           else Nothing }
@@ -118,8 +117,13 @@ turnoversL queries options mbPath = do
 
 byOneAccount queries options account = do
   let calcTotals = TShowTotals `elem` options
+  let bqry = if TBothBalances `elem` options
+                then BothBalances
+                else if TLedgerBalances `elem` options
+                      then Only LedgerBalance
+                      else Only AvailableBalance
   turns <- forM queries $ \qry ->
-               allTurnovers calcTotals qry account
+               allTurnovers bqry calcTotals qry account
   let check
         | TNoZeros `elem` options = noZeroTurns
         | otherwise               = const True
@@ -149,7 +153,12 @@ byOneAccount queries options account = do
 
 turnovers qry options coa = do
   let calcTotals = TShowTotals `elem` options
-  tree <- mapTreeM (sumTurnovers (qEnd qry) calcTotals) (allTurnovers calcTotals qry) coa
+  let bqry = if TBothBalances `elem` options
+                then BothBalances
+                else if TLedgerBalances `elem` options
+                      then Only LedgerBalance
+                      else Only AvailableBalance
+  tree <- mapTreeM (sumTurnovers (qEnd qry) calcTotals) (allTurnovers bqry calcTotals qry) coa
   let tree' = if TNoZeros `elem` options
                 then filterLeafs noZeroTurns tree
                 else tree
