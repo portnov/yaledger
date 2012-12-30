@@ -42,11 +42,12 @@ closeHold :: forall t l.
               Throws NoSuchHold l,
               Throws InternalError l)
            => DateTime                      -- ^ Transaction date/time
+           -> Maybe (Entry Decimal Checked)
            -> (Decimal -> Decimal -> Bool)  -- ^ Operation to check hold amount, such as (==) or (>=) 
            -> Attributes                    -- ^ Hold attributes
            -> Posting Decimal t             -- ^ Hold posting
            -> Atomic l ()
-closeHold date op qry posting = do
+closeHold date mbEntry op qry posting = do
     infoSTM $ "Closing hold: " ++ prettyPrint posting
     let account = postingAccount' posting
         history = getHolds account
@@ -113,7 +114,7 @@ closeHold date op qry posting = do
         extID = 0,
         getLocation = nowhere,
         getAttributes = M.empty,
-        getContent = (addHoldSum (undefined :: t) (negate amt) (getContent extBalance)) {causedBy = Nothing}
+        getContent = (addHoldSum (undefined :: t) (negate amt) (getContent extBalance)) {causedBy = mbEntry}
       }
 
 -- | Smart constructor for NoSuchHold

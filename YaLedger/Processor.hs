@@ -57,7 +57,7 @@ processEntry date tranID pos attrs uentry = do
       -- Process debit postings
       forM dt $ \p -> do
           when (debitPostingUseHold p) $ do
-              closeHold date (>=) M.empty p
+              closeHold date (Just entry) (>=) M.empty p
           let account = debitPostingAccount p
           debit  account entry (Ext date 0 pos attrs p)
           -- Add link to this entry for last balance (caused by previous call of `debit')
@@ -68,7 +68,7 @@ processEntry date tranID pos attrs uentry = do
       -- Process credit postings
       forM cr $ \p -> do
           when (creditPostingUseHold p) $ do
-              closeHold date (>=) M.empty p
+              closeHold date (Just entry) (>=) M.empty p
           let account = creditPostingAccount p
           credit account entry (Ext date 0 pos attrs p)
           -- Add link to this entry for last balance (caused by previous call of `credit')
@@ -82,7 +82,7 @@ processEntry date tranID pos attrs uentry = do
         CreditDifference p -> do
             let account = creditPostingAccount p
             when (creditPostingUseHold p) $ do
-                closeHold date (>=) M.empty p
+                closeHold date (Just entry) (>=) M.empty p
             credit (creditPostingAccount p) entry (Ext date 0 pos attrs p)
             -- modifyLastItem (\b -> b {causedBy = Just entry}) (accountBalances account)
             runRules ECredit date tranID attrs p $ \tranID tran -> stm (enqueue tranID tran queue)
@@ -91,7 +91,7 @@ processEntry date tranID pos attrs uentry = do
         DebitDifference  ps -> forM_ ps $ \ p -> do
               let account = debitPostingAccount p
               when (debitPostingUseHold p) $ do
-                  closeHold date (>=) M.empty p
+                  closeHold date (Just entry) (>=) M.empty p
               debit  (debitPostingAccount  p) entry (Ext date 0 pos attrs p)
               -- modifyLastItem (\b -> b {causedBy = Just entry}) (accountBalances account)
               runRules EDebit date tranID attrs p $ \tranID tran -> stm (enqueue tranID tran queue)
@@ -317,7 +317,7 @@ processTransaction tranID (Ext date _ pos attrs (TCloseHolds crholds drholds)) =
                  else (==)
           qry = searchAttributes clh
       p' <- convertPosting' (Just date) p
-      runAtomically $ (closeHold date op qry p')
+      runAtomically $ (closeHold date Nothing op qry p')
                         `catchWithSrcLoc` handleNoSuchHold (searchLesserAmount clh)
 
     handleNoSuchHold :: Bool -> CallTrace -> NoSuchHold -> Atomic l ()
