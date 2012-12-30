@@ -84,6 +84,9 @@ closeHold date op qry posting = do
                              else -- holdAmt <= searchAmt, we'll just close old hold.
                                   []
              updateBalances holdAmt (postingAccount posting)
+             when ( holdAmt > searchAmt ) $
+               updateBalances (searchAmt - holdAmt) (postingAccount posting)
+                 
              stm $ writeTVar history (acc ++ newHolds ++ [closedHold] ++ rest)
              return True
         else close (acc ++ [extHold]) history rest
