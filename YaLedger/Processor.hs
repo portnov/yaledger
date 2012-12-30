@@ -123,7 +123,7 @@ getNextP p doDelete = do
         return (Just x)
 
 debugPos pos r =
-  lift $ debug $ "Record:\n" ++ prettyPrint r ++ "  at " ++ show pos
+  lift $ debug $ "Record " ++ show (extID r) ++ ":\n" ++ prettyPrint r ++ "  at " ++ show pos
 
 insertRule new [] = [new]
 insertRule new@(name, _, _) list = go list list

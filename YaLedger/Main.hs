@@ -258,6 +258,7 @@ runYaLedger parsers options report params = do
       inputPaths = files options
       qry = query options
       qryReport = reportsQuery options
+  debugIO $ "Deduplication rules: " ++ show rules
   (currsMap, coa, amap) <- loadConfigs cpath coaPath mapPath
                            `E.catch`
                             (\(e :: SomeException) -> do

@@ -10,7 +10,7 @@ import Data.Dates
 import Data.Decimal
 
 import YaLedger.Types
-import YaLedger.Kernel.Correspondence (matchAll)
+import YaLedger.Kernel.Correspondence (match)
 import YaLedger.Output.Pretty
 import YaLedger.Exceptions
 import YaLedger.Logger
@@ -28,7 +28,7 @@ findDRule erecord rules = go  rules
 -- | Check if record is matched by rule
 checkDRule :: Ext Record -> DeduplicationRule -> Bool
 checkDRule erecord rule =
-  getAttributes erecord `matchAll` drNewRecordAttrs rule
+  getAttributes erecord `match` drNewRecordAttrs rule
 
 -- | Get first amount from record, if any
 getRAmount :: Ext Record -> Maybe Amount
@@ -42,18 +42,18 @@ getRAmount r =
 getCreditAccount :: Ext Record -> Maybe AccountID
 getCreditAccount r =
   case getContent r of
-    Transaction (TEntry (UEntry _ cr _ _)) ->
+    Transaction (TEntry (UEntry dr cr corr _)) ->
       case cr of
-        [] -> Nothing
+        [] -> if null dr then Nothing else (getID <$> corr)
         (CPosting acc _ _: _) -> Just (getID acc)
     _ -> Nothing
 
 getDebitAccount :: Ext Record -> Maybe AccountID
 getDebitAccount r =
   case getContent r of
-    Transaction (TEntry (UEntry dt _ _ _)) ->
-      case dt of
-        [] -> Nothing
+    Transaction (TEntry (UEntry dr cr corr _)) ->
+      case dr of
+        [] -> if null cr then Nothing else (getID <$> corr)
         (DPosting acc _ _: _) -> Just (getID acc)
     _ -> Nothing
 
@@ -66,10 +66,12 @@ matchBy :: DateIndex (Ext Record)
         -> [Ext Record]                     -- ^ All other records
         -> (Maybe (Ext Record), [Ext Record])
 matchBy index checks oldAttrs newRecord oldRecords
-    | (CDate dx:_) <- checks = case go (lookupDatePrev (getDate newRecord) dx index) of
+    | (CDate dx:_) <- checks = trace ("Matching " ++ show (extID newRecord)) $
+                               case go (lookupDatePrev (getDate newRecord) dx index) of
                                  Nothing -> (Nothing, oldRecords)
                                  Just r -> (Just r,  filter (r /=) oldRecords)
-    | otherwise = case go oldRecords of
+    | otherwise = trace ("Matching " ++ show (extID newRecord)) $
+                  case go oldRecords of
                     Nothing -> (Nothing, oldRecords)
                     Just r -> (Just r,  filter (r /=) oldRecords)
   where
@@ -80,24 +82,27 @@ matchBy index checks oldAttrs newRecord oldRecords
         else go rs
 
     matches oldRecord (CDate d) =
+      trace (show (extID newRecord) ++ " DATE: " ++ show (getDate newRecord) ++ ", " ++ show (getDate oldRecord)) $
       datesDifference (getDate newRecord) (getDate oldRecord) <= d
     matches oldRecord (CAmount x) =
       case (getRAmount newRecord, getRAmount oldRecord) of
         (Just (a1 :# c1), Just (a2 :# c2)) -> 
           if c1 /= c2
             then False
-            else traceS ("A: " ++ show a1 ++ ", " ++ show a2) $
+            else traceS (show (extID newRecord) ++ " A: " ++ show a1 ++ ", " ++ show a2) $
                  if x == 0
                    then a1 == a2
                    else (max a1 a2) *. (fromIntegral x / 100.0) > (abs $ a1 - a2)
         _ -> False
     matches oldRecord CCreditAccount =
       case (getCreditAccount newRecord, getCreditAccount oldRecord) of
-        (Just aid1, Just aid2) -> trace ("CACC: " ++ show aid1 ++ ", " ++ show aid2) $ aid1 == aid2
+        (Just aid1, Just aid2) -> trace (show (extID newRecord) ++ " CACC: " ++ show aid1 ++ ", " ++ show aid2) $ aid1 == aid2
+        (Nothing,_) -> trace (show (extID newRecord) ++ " No credit account specified") False
         _                      -> False
     matches oldRecord CDebitAccount =
       case (getDebitAccount newRecord, getDebitAccount oldRecord) of
-        (Just aid1, Just aid2) -> trace ("DACC: " ++ show aid1 ++ ", " ++ show aid2) $ aid1 == aid2
+        (Just aid1, Just aid2) -> trace (show (extID newRecord) ++ " DACC: " ++ show aid1 ++ ", " ++ show aid2) $ aid1 == aid2
+        (Nothing, Just _) -> trace (show (extID newRecord) ++ " No debit account specified") False
         (Nothing, Nothing)     -> True
         _                      -> False
     matches oldRecord (CAttribute name) =
@@ -160,7 +165,7 @@ deduplicate rules records = go $ reverse records
     go [] = return []
     go (r:rs) =
       case findDRule r rules of
-        Nothing -> (r:) <$> go rs
+        Nothing -> trace ("No rule for " ++ show (extID r)) $ (r:) <$> go rs
         Just (checks, oldAttrs, action) -> 
           case matchBy index checks oldAttrs r rs of
             (Nothing, _) -> (r:) <$> go rs
