@@ -151,7 +151,7 @@ instance (Pretty v) => Pretty (Entry v c) where
     (unlines $ map prettyPrint dt ++ map prettyPrint cr) ++
     (case corr of
       Nothing -> ""
-      Just acc -> "  " ++ getName acc ++ "\n")
+      Just (acc, useHold) -> "  " ++ (if useHold then "use " else "") ++ getName acc ++ "\n")
 
 instance (Pretty v) => Pretty (Posting v t) where
   prettyPrint (DPosting acc x False) =

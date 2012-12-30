@@ -81,7 +81,9 @@ instance HasCurrency (Hold Decimal t) where
   getCurrency (Hold p _) = getCurrency p
 
 instance Show v => Show (Hold v t) where
-  show (Hold p _) = "hold " ++ show p
+  show (Hold p cld) = "hold " ++ show p ++ maybe "" showD cld
+    where
+      showD dt = " (closed at: " ++ show dt ++ ")"
 
 data PostingType =
     EDebit
@@ -125,7 +127,7 @@ data Entry v c where
     UEntry :: {
       uEntryDebitPostings  :: [Posting v Debit],
       uEntryCreditPostings :: [Posting v Credit], 
-      uEntryCorrespondence :: Maybe AnyAccount,
+      uEntryCorrespondence :: Maybe (AnyAccount, Bool),
       uEntryAdditionalCurrencies :: [Currency]
     } -> Entry v Unchecked
 
@@ -151,7 +153,7 @@ instance Show v => Show (Entry v t) where
       go lst = unlines $ map ("  " ++) $ map show lst
 
       showName Nothing = "to be found automatically"
-      showName (Just x) = getName x
+      showName (Just (x,_)) = getName x
 
 -- | Historical data
 type History f t = IOList (Ext (f t))

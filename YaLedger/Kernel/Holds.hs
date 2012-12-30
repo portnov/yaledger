@@ -68,6 +68,7 @@ closeHold date op qry posting = do
         stm $ writeTVar history acc
         return False
     close acc history (extHold: rest) =
+      trace ("Checking hold: " ++ show extHold) $
       if checkHold op date searchAmt qry extHold
         then do
              let oldHold = getContent extHold

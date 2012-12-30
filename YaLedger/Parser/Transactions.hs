@@ -326,13 +326,19 @@ pEntry p = do
   es <- many1 (try (Left <$> pCreditPostingHold p) <|> (try (Right <$> pDebitPostingHold p)))
   corr <- optionMaybe $ do
             spaces
+            t <- optionMaybe $ do
+                   reserved "use"
+                   spaces
+            let use = isJust t
             x <- pPathRelative <?> "corresponding account path"
-            return x
+            return (x, use)
   let cr = lefts es
       dt = rights es
   account <- case corr of
                Nothing -> return Nothing
-               Just path -> Just <$> getAccount getPosition (getCoA <$> getState) path
+               Just (path, useHold) -> do
+                 acc <- getAccount getPosition (getCoA <$> getState) path
+                 return $ Just (acc, useHold)
   return $ TEntry $ UEntry dt cr account []
 
 pSetHold :: Parser v -> Parser (Transaction v)

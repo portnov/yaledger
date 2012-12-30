@@ -582,7 +582,7 @@ lookupCorrespondence :: (Throws NoCorrespondingAccountFound l,
                      => CQuery              -- ^ Query to search for account
                      -> DateTime            -- ^ Entry date/time
                      -> Amount              -- ^ Amount of credit \/ debit
-                     -> Maybe AnyAccount    -- ^ User-specified corresponding account
+                     -> Maybe (AnyAccount, Bool) -- ^ (User-specified corresponding account; whether to use hold)
                      -> Ledger l (Either [Posting Amount Debit] AnyAccount)
 lookupCorrespondence qry date amount@(value :# currency) mbCorr = do
   coa <- gets lsCoA
@@ -590,11 +590,13 @@ lookupCorrespondence qry date amount@(value :# currency) mbCorr = do
   groupsMap <- gets lsFullGroupsMap
   let mbAccount = runCQuery qry coa
       mbByMap = lookupAMap groupsMap coa amap qry (cqExcept qry)
+      mbCorrespondingAccount = fst <$> mbCorr
+      useHold = fromMaybe False (snd <$> mbCorr)
   -- Search for corresponding account:
   -- 1. Account which is explicitly specified in source record.
   -- 2. Account which is found using accounts map.
   -- 3. Account which is found by given query.
-  case mbCorr `mplus` mbByMap `mplus` mbAccount of
+  case mbCorrespondingAccount `mplus` mbByMap `mplus` mbAccount of
     -- No corresponding account found
     Nothing -> throwP (NoCorrespondingAccountFound qry)
     Just acc ->
@@ -618,7 +620,7 @@ lookupCorrespondence qry date amount@(value :# currency) mbCorr = do
                      -- toDebit and currentBalance are both in currency of
                      -- found account.
                      if toDebit <= currentBalance
-                       then return $ Left [DPosting (Left account) (toDebit :# accountCurrency) False]
+                       then return $ Left [DPosting (Left account) (toDebit :# accountCurrency) useHold]
                        else do
                             info $ "Account `" ++ getName account ++ "' has current balance only of " ++
                                    show currentBalance ++ ", while needed to be debited by " ++
@@ -637,7 +639,7 @@ lookupCorrespondence qry date amount@(value :# currency) mbCorr = do
                                                           (cqAttributes qry)
                                        }
                             -- first posting will get all available balance of this account.
-                            let firstPosting = DPosting (Left account) (currentBalance :# accountCurrency) False
+                            let firstPosting = DPosting (Left account) (currentBalance :# accountCurrency) useHold
                             -- search for other accounts to redirect part of amount.
                             -- NB: this recursive call can return one account
                             -- or list of postings.
@@ -650,7 +652,7 @@ lookupCorrespondence qry date amount@(value :# currency) mbCorr = do
                                 let lastCurrency = getCurrency hop
                                 lastDebit :# _ <- convert (Just date) lastCurrency (toRedirect :# accountCurrency)
                                 hop' <- accountAsDebit hop
-                                let last  = DPosting hop' (lastDebit :# lastCurrency) False
+                                let last  = DPosting hop' (lastDebit :# lastCurrency) useHold
                                 return $ Left [firstPosting, last]
                               Left postings -> 
                                 return $ Left (firstPosting: postings)
@@ -667,11 +669,12 @@ fillEntry :: (Throws NoSuchRate l,
            -> DateTime                  -- ^ Entry date/time
            -> [Posting Decimal Debit]   -- ^ Debit postings
            -> [Posting Decimal Credit]  -- ^ Credit postings
-           -> Maybe AnyAccount          -- ^ User-specified corresponding account
+           -> Maybe (AnyAccount, Bool)  -- ^ (User-specified corresponding account; whether to use hold on it)
            -> Amount                    -- ^ Difference (credit - debit)
            -> Ledger l ([Posting Decimal Debit], [Posting Decimal Credit])
 fillEntry qry date dt cr mbCorr amount@(value :# _) = do
   correspondence <- lookupCorrespondence qry date amount mbCorr
+  let useHold = fromMaybe False (snd <$> mbCorr)
   case correspondence of
     Right oneAccount -> do
       if value < 0
@@ -689,7 +692,7 @@ fillEntry qry date dt cr mbCorr amount@(value :# _) = do
                                  ++ show (getCurrency account)
                          return (dt, cr)
                 else do
-                     let e = CPosting account (-value') False
+                     let e = CPosting account (-value') useHold
                      return (dt, e:cr)
          else do
               account <- accountAsDebit oneAccount
@@ -705,7 +708,7 @@ fillEntry qry date dt cr mbCorr amount@(value :# _) = do
                                  ++ show (getCurrency account)
                          return (dt, cr)
                 else do
-                     let e = DPosting account value' False
+                     let e = DPosting account value' useHold
                      return (e:dt, cr)
     Left debitPostings -> do
       let diffValue = sum [x | x :# _ <- map postingValue debitPostings]
@@ -739,6 +742,8 @@ reconciliate :: (Throws NoSuchRate l,
              -> Ledger l (Maybe (Entry Amount Unchecked))
 reconciliate btype date account amount tgt msg = do
 
+  let correspondence = (\acc -> (acc, False)) <$> tgt
+
   calculatedBalance <- runAtomically $ getBalanceAt (Just date) btype account
   actualBalance :# accountCurrency <- convert (Just date) (getCurrency account) amount
 
@@ -755,11 +760,11 @@ reconciliate btype date account amount tgt msg = do
            then do
                 account' <- accountAsCredit account
                 let posting = CPosting account' (diff :# accountCurrency) False
-                return $ Just $ UEntry [] [posting] tgt [getCurrency amount]
+                return $ Just $ UEntry [] [posting] correspondence [getCurrency amount]
            else do
                 account' <- accountAsDebit account
                 let posting = DPosting account' ((-diff) :# accountCurrency) False
-                return $ Just $ UEntry [posting] [] tgt [getCurrency amount]
+                return $ Just $ UEntry [posting] [] correspondence [getCurrency amount]
     else return Nothing
 
 fireReconMessage :: (Throws InternalError l,

@@ -49,7 +49,7 @@ processEntry :: (Throws NoSuchRate l,
 processEntry date tranID pos attrs uentry = do
   -- First, check the entry
   entry@(CEntry dt cr rd) <- checkEntry date attrs uentry
-  debug $ "Processing entry:\n" ++ prettyPrint uentry
+  debug $ "Processing entry (" ++ show date ++ "):\n" ++ prettyPrint uentry
   queue <- gets lsTranQueue
 
   -- All postings are done in single STM transaction.

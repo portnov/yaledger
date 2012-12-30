@@ -44,7 +44,7 @@ getCreditAccount r =
   case getContent r of
     Transaction (TEntry (UEntry dr cr corr _)) ->
       case cr of
-        [] -> if null dr then Nothing else (getID <$> corr)
+        [] -> if null dr then Nothing else ((getID . fst) <$> corr)
         (CPosting acc _ _: _) -> Just (getID acc)
     _ -> Nothing
 
@@ -53,7 +53,7 @@ getDebitAccount r =
   case getContent r of
     Transaction (TEntry (UEntry dr cr corr _)) ->
       case dr of
-        [] -> if null cr then Nothing else (getID <$> corr)
+        [] -> if null cr then Nothing else ((getID . fst) <$> corr)
         (DPosting acc _ _: _) -> Just (getID acc)
     _ -> Nothing
 
