@@ -9,6 +9,8 @@ data Balances = Balances
 
 data BOptions =
     BNoZeros
+  | BLedgerBalances
+  | BBothBalances
   | BCSV (Maybe String)
   deriving (Eq)
 
@@ -17,6 +19,8 @@ instance ReportClass Balances where
   type Parameters Balances = Maybe Path
   reportOptions _ = 
     [Option "z" ["no-zeros"] (NoArg BNoZeros) "Do not show accounts with zero balance",
+     Option "l" ["ledger"] (NoArg BLedgerBalances) "Show ledger balances instead of available balances",
+     Option "b" ["both"] (NoArg BBothBalances) "Show both available and ledger balances",
      Option "C" ["csv"] (OptArg BCSV "SEPARATOR") "Output data in CSV format using given fields delimiter (semicolon by default)"]
   defaultOptions _ = []
   reportHelp _ = "Show accounts balances. One optional parameter: account or accounts group."
@@ -72,9 +76,14 @@ byOneAccount queries options acc = do
                      (["BALANCE"], ARight, map show results)]
 
 byGroup queries options coa = do
-    results <- treeBalances AvailableBalance queries coa
+    let btype = if BBothBalances `elem` options
+                  then BothBalances
+                  else if BLedgerBalances `elem` options
+                        then Only LedgerBalance
+                        else Only AvailableBalance
+    results <- treeBalances btype queries coa
     let results' = if BNoZeros `elem` options
-                     then filterLeafs (any isNotZero) results
+                     then filterLeafs (any isNotZeroBI) results
                      else results
     let format = case needCSV options of
                    Nothing  -> showTreeList

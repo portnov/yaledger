@@ -178,6 +178,23 @@ getBalanceAt mbDate btype acc = do
              [] -> 0
              (b:_) -> b
 
+-- | Get available \/ ledger \/ both balances of account at given date.
+getBalanceInfoAt :: (HasBalances a,
+                     Throws InternalError l)
+                 => Maybe DateTime
+                 -> BalanceQuery
+                 -> a
+                 -> Atomic l (BalanceInfo Decimal)
+getBalanceInfoAt mbDate bqry acc =
+  case bqry of
+    Only btype -> do
+                  bal <- getBalanceAt mbDate btype acc
+                  return $ setBalanceInfo btype bal noBalanceInfo
+    BothBalances -> do
+                    available <- getBalanceAt mbDate AvailableBalance acc
+                    ledger    <- getBalanceAt mbDate LedgerBalance    acc
+                    return $ BalanceInfo (Just available) (Just ledger)
+
 -- | Check if balance account would be OK.
 -- Issue INFO:, WARNING:, or exception.
 checkBalance :: (Throws InternalError l,
@@ -255,6 +272,21 @@ convert mbDate c' (x :# c)
     -- Round amount to precision of target currency
     let qty = roundTo (fromIntegral $ cPrecision c') (x *. rate)
     return $ qty :# c'
+
+convertBalanceInfo :: (Monad m,
+                       Throws NoSuchRate l)
+                   => Maybe DateTime
+                   -> Currency
+                   -> BalanceInfo Amount
+                   -> LedgerT l m (BalanceInfo Decimal)
+convertBalanceInfo mbDate c bi = do
+  available <- case biAvailable bi of
+                 Nothing -> return Nothing
+                 Just x  -> (Just . (\(a :# _) -> a)) <$> convert mbDate c x
+  ledger    <- case biLedger bi of
+                 Nothing -> return Nothing
+                 Just x  -> (Just . (\(a :# _) -> a)) <$> convert mbDate c x
+  return $ BalanceInfo available ledger
 
 -- | Check if record \/ entry \/ whatever matches to query
 checkQuery :: Query -> Ext a -> Bool
@@ -756,6 +788,20 @@ formatReconMessage format coa account actual calculated diff =
                     ("actual",     prettyPrint actual),
                     ("diff",       prettyPrint diff) ] format
 
+-- | Calculate sum of balance infos in accounts group.
+sumGroupBI :: (Monad m,
+             Throws InternalError l,
+             Throws NoSuchRate l)
+         => Maybe DateTime
+         -> AccountGroupData
+         -> [BalanceInfo Amount]
+         -> LedgerT l m (BalanceInfo Amount)
+sumGroupBI mbDate ag bis = do
+  setPos $ newPos ("accounts group " ++ agName ag) 0 0
+  let c = agCurrency ag
+  bis' <- mapM (convertBalanceInfo mbDate c) bis
+  return $ sumBalanceInfo c bis'
+
 -- | Calculate sum of amounts in accounts group.
 sumGroup :: (Monad m,
              Throws InternalError l,
@@ -796,18 +842,18 @@ treeSaldos queries coa = mapTreeM (sumGroups $ map qEnd queries) saldos coa
 -- | Calculate balances for each account \/ group in CoA.
 treeBalances :: (Throws NoSuchRate l,
                  Throws InternalError l)
-             => BalanceType
+             => BalanceQuery
              -> [Query]
              -> ChartOfAccounts
-             -> Ledger l (Tree [Amount] [Amount])
-treeBalances btype queries coa =
+             -> Ledger l (Tree [BalanceInfo Amount] [BalanceInfo Amount])
+treeBalances bqry queries coa =
     runAtomically $ mapTreeM (sumGroups $ map qEnd queries) balances coa
   where
     balances acc = forM queries $ \qry -> do
-                       b <- getBalanceAt (qEnd qry) btype acc
-                       return $ b :# getCurrency acc
+                       bi <- getBalanceInfoAt (qEnd qry) bqry acc
+                       return $ balanceInfoSetCurrency bi (getCurrency acc)
 
     sumGroups dates ag list =
       forM (zip dates $ transpose list) $ \(date,ams) ->
-        sumGroup date ag ams
+        sumGroupBI date ag ams
 

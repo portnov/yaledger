@@ -15,9 +15,6 @@ import YaLedger.Output
 import YaLedger.Kernel
 import YaLedger.Exceptions
 
-isNotZero :: Amount -> Bool
-isNotZero (x :# _) = x /= 0
-
 datesBackFrom :: DateTime -> DateInterval -> [DateTime]
 datesBackFrom date int = go date
   where

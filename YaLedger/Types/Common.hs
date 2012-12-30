@@ -18,6 +18,7 @@ module YaLedger.Types.Common
    MessageFormat, MessageElement (..),
    SourcePos,
    Queue,
+   isNotZero,
    emptyCurrency,
    sourceLine, sourceColumn, sourceName,
    newPos, nowhere
@@ -136,6 +137,9 @@ class HasCurrency a where
 
 data Amount = Decimal :# Currency
   deriving (Eq)
+
+isNotZero :: Amount -> Bool
+isNotZero (x :# _) = x /= 0
 
 instance Show Amount where
   show (n :# c) = show (roundTo (fromIntegral $ cPrecision c) n) ++ show c

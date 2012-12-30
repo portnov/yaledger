@@ -2,6 +2,7 @@
 
 module YaLedger.Types.Ledger where
 
+import Control.Applicative
 import qualified Data.Map as M
 import Data.Decimal
 import Data.List
@@ -171,6 +172,7 @@ instance Show (Balance c) where
 zeroBalance :: Balance Checked
 zeroBalance = Balance Nothing 0 0 0
 
+-- | Balance checks for each posting for one account
 data BalanceChecks =
   BalanceChecks {
     bcInfo    :: Maybe Decimal,
@@ -182,6 +184,54 @@ data BalanceType =
     LedgerBalance
   | AvailableBalance
   deriving (Eq, Show)
+
+-- | Which balances to query.
+data BalanceQuery =
+    Only BalanceType  -- ^ only specified balance
+  | BothBalances      -- ^ both available and ledger balance
+  deriving (Eq, Show)
+
+-- | Return value of balance querying functions
+data BalanceInfo v = BalanceInfo {
+    biAvailable :: Maybe v  -- ^ Available balance, if queried
+  , biLedger :: Maybe v     -- ^ Ledger balance, if queried
+  }
+  deriving (Eq)
+
+-- | Empty BalanceInfo
+noBalanceInfo :: BalanceInfo v
+noBalanceInfo = BalanceInfo Nothing Nothing
+
+isNotZeroBI :: BalanceInfo Amount -> Bool
+isNotZeroBI (BalanceInfo (Just x) Nothing) = isNotZero x
+isNotZeroBI (BalanceInfo Nothing (Just x)) = isNotZero x
+isNotZeroBI (BalanceInfo (Just x) (Just y)) = isNotZero x || isNotZero y
+
+-- | Set one of balances in BalanceInfo
+setBalanceInfo :: BalanceType -> v -> BalanceInfo v -> BalanceInfo v
+setBalanceInfo AvailableBalance x bi = bi {biAvailable = Just x}
+setBalanceInfo LedgerBalance    x bi = bi {biLedger    = Just x}
+
+instance (Eq v, Show v) => Show (BalanceInfo v) where
+  show (BalanceInfo Nothing Nothing) = "NA"
+  show (BalanceInfo (Just x) Nothing) = show x
+  show (BalanceInfo Nothing (Just x)) = show x
+  show (BalanceInfo (Just a) (Just l))
+    | a == l = show a
+    | otherwise = show a ++ " / " ++ show l
+
+balanceInfoSetCurrency :: BalanceInfo Decimal -> Currency -> BalanceInfo Amount
+balanceInfoSetCurrency bi c =
+  bi {biAvailable = (:# c) <$> biAvailable bi,
+      biLedger    = (:# c) <$> biLedger    bi }
+
+sumBalanceInfo :: Currency -> [BalanceInfo Decimal] -> BalanceInfo Amount
+sumBalanceInfo c bis = balanceInfoSetCurrency (foldr add zero bis) c
+  where
+    zero = BalanceInfo (Just 0) (Just 0)
+    add bi1 bi2 = BalanceInfo {
+                    biAvailable = liftA2 (+) (biAvailable bi1) (biAvailable bi2),
+                    biLedger    = liftA2 (+) (biLedger    bi1) (biLedger    bi2) }
 
 balanceGetter :: BalanceType -> (Balance Checked -> Decimal)
 balanceGetter LedgerBalance    b = balanceValue b + creditHolds b
