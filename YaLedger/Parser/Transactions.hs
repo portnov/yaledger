@@ -353,13 +353,17 @@ pSetHold p = do
       return (Hold posting Nothing)
 
 pCloseHold :: Parser v -> Parser (Transaction v)
-pCloseHold p = do
-  reserved "close"
-  spaces
-  r <- try (Left <$> pCreditPosting p) <|> try (Right <$> pDebitPosting p)
-  case r of
-    Left p  -> return $ TCloseCreditHold $ Hold p Nothing
-    Right p -> return $ TCloseDebitHold  $ Hold p Nothing
+pCloseHold p = foldl go zero <$> (many1 $ do
+      reserved "close"
+      spaces
+      r <- try (Left <$> pCreditPosting p) <|> try (Right <$> pDebitPosting p)
+      case r of
+        Left p  -> return $ Left  $ Hold p Nothing
+        Right p -> return $ Right $ Hold p Nothing )
+  where
+    zero = TCloseHolds [] []
+    go (TCloseHolds cr dr) (Left h)  = TCloseHolds (h:cr) dr
+    go (TCloseHolds cr dr) (Right h) = TCloseHolds cr (h:dr)
 
 pCall :: Parser (Transaction v)
 pCall = do

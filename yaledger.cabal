@@ -45,6 +45,8 @@ library
                    YaLedger.Kernel.Common
                    YaLedger.Kernel.Correspondence
                    YaLedger.Kernel.Queue
+                   YaLedger.Kernel.Holds
+                   YaLedger.Kernel.Balances
                    YaLedger.Config
                    YaLedger.Main
                    YaLedger.Logger
@@ -79,6 +81,7 @@ library
                    YaLedger.Reports.IncomeStatement
                    YaLedger.Reports.Postings
                    YaLedger.Reports.Turnovers
+                   YaLedger.Reports.Holds
                    YaLedger.Tree
                    YaLedger.Types
                    YaLedger.Types.Common

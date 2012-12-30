@@ -22,8 +22,7 @@ data Transaction v =
   | TReconciliate AnyAccount v (Maybe AnyAccount) (Maybe ReconciliationMessage)
   | TCallTemplate String [Amount]
   | THold [Hold v Credit] [Hold v Debit]
-  | TCloseCreditHold (Hold v Credit)
-  | TCloseDebitHold  (Hold v Debit)
+  | TCloseHolds [Hold v Credit] [Hold v Debit]
   deriving (Eq, Show)
 
 data ReconciliationMessage =

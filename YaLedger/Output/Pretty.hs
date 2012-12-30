@@ -123,8 +123,8 @@ instance (Pretty t) => Pretty (Transaction t) where
            name
            (unwords $ map prettyPrint args)
   prettyPrint (THold crholds drholds) = unlines $ map prettyPrint crholds ++ map prettyPrint drholds
-  prettyPrint (TCloseCreditHold (Hold p _)) = "close " ++ prettyPrint p ++ "\n"
-  prettyPrint (TCloseDebitHold  (Hold p _)) = "close " ++ prettyPrint p ++ "\n"
+  prettyPrint (TCloseHolds crholds drholds) = unlines $ map go crholds ++ map go drholds
+      where go (Hold p _) = "close " ++ prettyPrint p
 
 instance Pretty v => Pretty (Hold v t) where
   prettyPrint (Hold p _) = "hold" ++ prettyPrint p
