@@ -23,8 +23,8 @@ instance Exception e => Failure e Identity where
 
 language :: (Stream s m Char, Monad m) => GenLanguageDef s u m
 language    = P.LanguageDef
-               { P.commentStart   = ""
-               , P.commentEnd     = ""
+               { P.commentStart   = "{-"
+               , P.commentEnd     = "-}"
                , P.commentLine    = "--"
                , P.nestedComments = True
                , P.identStart     = letter <|> char '_'
