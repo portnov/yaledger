@@ -62,20 +62,7 @@ holdsTable coa fmt holds =
 
 showHolds' qry options account = do
   fullCoA <- gets lsCoA
-  e1 <- wrapIO $ newTVarIO []
-  e2 <- wrapIO $ newTVarIO []
-  let creditHoldsHistory = case account of
-                             WFree _ a -> freeAccountCreditHolds a
-                             WCredit _ a -> creditAccountHolds a
-                             WDebit _ a -> e1
-      debitHoldsHistory  = case account of
-                             WFree _ a -> freeAccountDebitHolds a
-                             WCredit _ a -> e2
-                             WDebit _ a -> debitAccountHolds a
-  creditHolds <- runAtomically $ readIOList creditHoldsHistory
-  debitHolds  <- runAtomically $ readIOList debitHoldsHistory
-  let allHolds = map Left  (filter (checkQuery qry) creditHolds) ++
-                 map Right (filter (checkQuery qry) debitHolds)
+  allHolds <- getHoldsHistory qry account
 
   let checkEnd :: Ext (Hold Decimal t) -> Bool
       checkEnd extHold = case holdEndDate (getContent extHold) of

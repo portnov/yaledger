@@ -16,6 +16,7 @@ import YaLedger.Kernel.Types
 import YaLedger.Kernel.Common
 import YaLedger.Kernel.Balances
 import YaLedger.Kernel.Correspondence
+import YaLedger.Kernel.Query
 import YaLedger.Logger
 import YaLedger.Output.Pretty
 
@@ -116,6 +117,28 @@ closeHold date mbEntry op qry posting = do
         getAttributes = M.empty,
         getContent = (addHoldSum (undefined :: t) (negate amt) (getContent extBalance)) {causedBy = mbEntry}
       }
+
+-- | Get all holds of given account
+getHoldsHistory :: (Throws InternalError l)
+                => Query
+                -> AnyAccount
+                -> Ledger l [Either (Ext (Hold Decimal Credit)) (Ext (Hold Decimal Debit))]
+getHoldsHistory qry account = do
+  e1 <- wrapIO $ newTVarIO []
+  e2 <- wrapIO $ newTVarIO []
+  let creditHoldsHistory = case account of
+                             WFree _ a -> freeAccountCreditHolds a
+                             WCredit _ a -> creditAccountHolds a
+                             WDebit _ a -> e1
+      debitHoldsHistory  = case account of
+                             WFree _ a -> freeAccountDebitHolds a
+                             WCredit _ a -> e2
+                             WDebit _ a -> debitAccountHolds a
+  creditHolds <- runAtomically $ readIOList creditHoldsHistory
+  debitHolds  <- runAtomically $ readIOList debitHoldsHistory
+  return $ map Left  (filter (checkQuery qry) creditHolds) ++
+           map Right (filter (checkQuery qry) debitHolds)
+
 
 -- | Smart constructor for NoSuchHold
 noSuchHold :: (Throws NoSuchHold l) => Posting Decimal t -> Atomic l b
