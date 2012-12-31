@@ -47,6 +47,8 @@ library
                    YaLedger.Kernel.Queue
                    YaLedger.Kernel.Holds
                    YaLedger.Kernel.Balances
+                   YaLedger.Kernel.Query
+                   YaLedger.Kernel.Rates
                    YaLedger.Config
                    YaLedger.Main
                    YaLedger.Logger
