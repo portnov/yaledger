@@ -1,3 +1,4 @@
+{-# LANGUAGE PatternGuards #-}
 
 module YaLedger.Processor.DateIndex
   (buildIndex,
