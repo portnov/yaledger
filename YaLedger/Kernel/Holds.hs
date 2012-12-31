@@ -20,6 +20,21 @@ import YaLedger.Kernel.Query
 import YaLedger.Logger
 import YaLedger.Output.Pretty
 
+isHoldOpen :: Maybe DateTime       -- ^ If Just date, check if hold was created after this date
+           -> Maybe DateTime       -- ^ If Just date, check if hold was closed after this date
+           -> Ext (Hold Decimal t) -- ^ Hold itself
+           -> Bool
+isHoldOpen mbStart mbEnd extHold =
+  let startOk = case mbStart of
+                  Nothing -> True
+                  Just startDate -> getDate extHold >= startDate
+      endOk   = case mbEnd of
+                  Nothing -> True
+                  Just endDate -> case holdEndDate (getContent extHold) of
+                                    Nothing   -> True
+                                    Just date -> date > endDate
+  in startOk && endOk
+
 -- | Check if hold is suitable to close or use
 checkHold :: (Decimal -> Decimal -> Bool) -- ^ Operation to check hold amount, (==) or (>=)
           -> DateTime                     -- ^ Transaction date/time

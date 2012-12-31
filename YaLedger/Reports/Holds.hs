@@ -65,12 +65,9 @@ showHolds' qry options account = do
   allHolds <- getHoldsHistory qry account
 
   let checkEnd :: Ext (Hold Decimal t) -> Bool
-      checkEnd extHold = case holdEndDate (getContent extHold) of
-                           Nothing -> True
-                           Just dt -> case qEnd qry of
-                                        Nothing -> True
-                                        Just dt' -> dt > dt'
-  let checkHold
+      checkEnd extHold = isHoldOpen Nothing (qEnd qry) extHold
+
+      checkHold
         | HOpenOnly `elem` options = either checkEnd checkEnd
         | otherwise = const True
 
