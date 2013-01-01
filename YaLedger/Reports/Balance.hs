@@ -45,7 +45,7 @@ treeTable n qrys tree =
   let paths = map (intercalate "/") $ allPaths tree
       cols = [map (\l -> show (l !! i)) (allNodes tree) | i <- [0..n-1]]
   in  (["ACCOUNT"], ALeft, paths):
-      [([showInterval qry], ALeft, col) | (col, qry) <- zip cols qrys]
+      [([showMaybeDate $ qEnd qry], ALeft, col) | (col, qry) <- zip cols qrys]
    
 showI :: Query -> [String]
 showI qry = [showD "now" (qEnd qry)]
