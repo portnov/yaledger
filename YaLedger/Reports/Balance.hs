@@ -9,6 +9,7 @@ data Balances = Balances
 
 data BOptions =
     BNoZeros
+  | BHideGroups
   | BLedgerBalances
   | BBothBalances
   | BCSV (Maybe String)
@@ -19,6 +20,7 @@ instance ReportClass Balances where
   type Parameters Balances = Maybe Path
   reportOptions _ = 
     [Option "z" ["no-zeros"] (NoArg BNoZeros) "Do not show accounts with zero balance",
+     Option "g" ["hide-groups"] (NoArg BHideGroups) "Hide accounts groups in CSV output",
      Option "l" ["ledger"] (NoArg BLedgerBalances) "Show ledger balances instead of available balances",
      Option "b" ["both"] (NoArg BBothBalances) "Show both available and ledger balances",
      Option "C" ["csv"] (OptArg BCSV "SEPARATOR") "Output data in CSV format using given fields delimiter (semicolon by default)"]
@@ -41,9 +43,12 @@ showTreeList n qrys tree =
               (["ACCOUNT"], ALeft, struct):
               [(showI qry, ARight, col) | (col,qry) <- zip cols qrys]
 
-treeTable n qrys tree =
-  let paths = map (intercalate "/") $ allPaths tree
-      cols = [map (\l -> show (l !! i)) (allNodes tree) | i <- [0..n-1]]
+treeTable b n qrys tree =
+  let paths = map (intercalate "/") $ getPaths tree
+      cols = [map (\l -> show (l !! i)) (getNodes tree) | i <- [0..n-1]]
+
+      getPaths = if b then allLeafPaths else allPaths
+      getNodes = if b then allLeafs else allNodes
   in  (["ACCOUNT"], ALeft, paths):
       [([showMaybeDate $ qEnd qry], ALeft, col) | (col, qry) <- zip cols qrys]
    
@@ -85,9 +90,10 @@ byGroup queries options coa = do
     let results' = if BNoZeros `elem` options
                      then filterLeafs (any isNotZeroBI) results
                      else results
+    let hideGroups = BHideGroups `elem` options
     let format = case needCSV options of
                    Nothing  -> showTreeList
-                   Just sep -> \n qs rs -> unlines $ tableColumns (CSV sep) (treeTable n qs rs)
+                   Just sep -> \n qs rs -> unlines $ tableColumns (CSV sep) (treeTable hideGroups n qs rs)
 
     wrapIO $ putStrLn $ format (length queries) queries results'
 

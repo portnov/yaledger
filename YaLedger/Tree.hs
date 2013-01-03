@@ -120,10 +120,20 @@ allNodes (Leaf {..}) = [leafData]
 allNodes (Branch {..}) =
     branchData: concatMap allNodes branchChildren
 
+allLeafs :: Tree n a -> [a]
+allLeafs (Leaf {..}) = [leafData]
+allLeafs (Branch {..}) =
+    concatMap allLeafs branchChildren
+
 allPaths :: Tree n a -> [Path]
 allPaths (Leaf {..}) = [[nodeName]]
 allPaths (Branch {..}) =
    [nodeName]: map (nodeName:) (concatMap allPaths branchChildren)
+
+allLeafPaths :: Tree n a -> [Path]
+allLeafPaths (Leaf {..}) = [[nodeName]]
+allLeafPaths (Branch {..}) =
+   map (nodeName:) (concatMap allLeafPaths branchChildren)
 
 -- | Similar to 'forM_', but iterates on all leafs of tree.
 forL :: (Monad m) => Tree n a -> (String -> a -> m b) -> m ()
