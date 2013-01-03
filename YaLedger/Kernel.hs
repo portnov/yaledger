@@ -110,7 +110,7 @@ instance CanDebit (FreeOr Debit Account) where
 -- | Add posting value to balances history
 balancePlusPosting :: forall l t.
                (Throws InternalError l, Sign t)
-            => Entry Decimal Checked
+            => Entry Decimal Checked     -- ^ Entry which caused balance change
             => Ext (Posting Decimal t)   -- ^ Posting
             -> History Balance Checked   -- ^ Balances history
             -> Atomic l ()
@@ -130,10 +130,11 @@ balancePlusPosting entry p history = do
   debugSTM $ "balancePlusPosting: updating balance by " ++ show value
   plusIOList zero (const True) update history
 
+-- | Add hold to balance history
 balanceSetHold :: forall l t.
                   (Throws InternalError l, HoldOperations t)
-                => Ext (Hold Decimal t)
-                -> History Balance Checked
+                => Ext (Hold Decimal t)     -- ^ Hold
+                -> History Balance Checked  -- ^ Balances history
                 -> Atomic l ()
 balanceSetHold hold history = do
   let value = postingValue $ holdPosting (getContent hold)
@@ -251,7 +252,8 @@ debitPostings (WFree   _ (FAccount {..})) = return freeAccountDebitPostings
 filterPostings :: Query -> [Ext (Posting Decimal t)] -> [Posting Decimal t]
 filterPostings query list = map getContent $ filter (checkQuery query) list
 
--- | Calculate account saldo
+-- | Calculate account saldo.
+-- Saldo = sum (credit postings) - sum (debit postings).
 saldo :: (Throws InternalError l)
       => Query              -- ^ Query to select postings
       -> AnyAccount         -- ^ Account
@@ -332,6 +334,7 @@ uniq :: (Eq a) => [a] -> [a]
 uniq [] = []
 uniq (x:xs) = x: uniq (filter (/= x) xs)
 
+-- | Set posting's amount to zero.
 setZero :: Posting Decimal t -> Posting Decimal t
 setZero (CPosting a _ b) = CPosting a 0 b
 setZero (DPosting a _ b) = DPosting a 0 b
@@ -602,11 +605,11 @@ reconciliate :: (Throws NoSuchRate l,
                  Throws InvalidAccountType l,
                  Throws ReconciliationError l,
                  Throws InternalError l)
-             => BalanceType
+             => BalanceType    -- ^ Which balance is specified in record
              -> DateTime       -- ^ Transaction date/time
              -> AnyAccount     -- ^ Account
              -> Amount         -- ^ Balance value to set
-             -> Maybe AnyAccount            -- ^ User-specified corresponding account
+             -> Maybe AnyAccount            -- ^ User-specified corresponding account, or Nothing to find it automatically
              -> Maybe ReconciliationMessage
              -> Ledger l (Maybe (Entry Amount Unchecked))
 reconciliate btype date account amount tgt msg = do
@@ -636,6 +639,7 @@ reconciliate btype date account amount tgt msg = do
                 return $ Just $ UEntry [posting] [] correspondence [getCurrency amount]
     else return Nothing
 
+-- | Output reconciliation warning or throw ReconciliationError.
 fireReconMessage :: (Throws InternalError l,
                      Throws ReconciliationError l)
                  => ChartOfAccounts
@@ -651,6 +655,7 @@ fireReconMessage coa (Just (RWarning str)) account actual calculated diff =
 fireReconMessage coa (Just (RError   str)) account actual calculated diff =
   throwP $ ReconciliationError (formatReconMessage str coa account actual calculated diff)
 
+-- | Format reconciliation message
 formatReconMessage :: MessageFormat
                    -> ChartOfAccounts
                    -> AnyAccount      -- ^ Account which we are reconciliating
@@ -671,7 +676,7 @@ formatReconMessage format coa account actual calculated diff =
 sumGroupBI :: (Monad m,
              Throws InternalError l,
              Throws NoSuchRate l)
-         => Maybe DateTime
+         => Maybe DateTime            -- ^ Date of exchange rates
          -> AccountGroupData
          -> [BalanceInfo Amount]
          -> LedgerT l m (BalanceInfo Amount)
