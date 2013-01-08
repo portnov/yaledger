@@ -18,6 +18,8 @@ module YaLedger.Types.Common
    MessageFormat, MessageElement (..),
    SourcePos,
    Queue,
+   amountValue,
+   absAmount,
    isNotZero,
    emptyCurrency,
    sourceLine, sourceColumn, sourceName,
@@ -138,6 +140,17 @@ class HasCurrency a where
 data Amount = Decimal :# Currency
   deriving (Eq)
 
+-- | Get value of amount.
+-- E.g., amountValue (5$) = 5.
+amountValue :: Amount -> Decimal
+amountValue (x :# _) = x
+
+-- | Get absolute value of Amount.
+-- E.g., absAmount (5$) = -5$.
+absAmount :: Amount -> Amount
+absAmount (x :# c) = abs x :# c
+
+-- | Check if amount is not zero.
 isNotZero :: Amount -> Bool
 isNotZero (x :# _) = x /= 0
 

@@ -10,6 +10,9 @@ data Balances = Balances
 data BOptions =
     BNoZeros
   | BHideGroups
+  | BOnlyPositive
+  | BOnlyNegative
+  | BAbsoluteValues
   | BLedgerBalances
   | BBothBalances
   | BCSV (Maybe String)
@@ -20,6 +23,9 @@ instance ReportClass Balances where
   type Parameters Balances = Maybe Path
   reportOptions _ = 
     [Option "z" ["no-zeros"] (NoArg BNoZeros) "Do not show accounts with zero balance",
+     Option "p" ["positive"] (NoArg BOnlyPositive) "Show only accounts with positive balance",
+     Option "n" ["negative"] (NoArg BOnlyNegative) "Show only accounts with negative balance",
+     Option "a" ["absolute"] (NoArg BAbsoluteValues) "Show absolute values of all balances",
      Option "g" ["hide-groups"] (NoArg BHideGroups) "Hide accounts groups in CSV output",
      Option "l" ["ledger"] (NoArg BLedgerBalances) "Show ledger balances instead of available balances",
      Option "b" ["both"] (NoArg BBothBalances) "Show both available and ledger balances",
@@ -58,6 +64,15 @@ showI qry = [showD "now" (qEnd qry)]
     showD s Nothing = s
     showD _ (Just date) = showDate date
 
+selectBalance options bi
+  | (BLedgerBalances `elem` options) || (BBothBalances `elem` options) = maybe 0 amountValue (biLedger bi)
+  | otherwise = maybe 0 amountValue (biAvailable bi)
+
+byBalance options bi
+  | BOnlyPositive `elem` options = selectBalance options bi > 0
+  | BOnlyNegative `elem` options = selectBalance options bi < 0
+  | otherwise = True
+
 balance queries options mbPath = (do
     coa <- case mbPath of
               Nothing   -> gets lsCoA
@@ -87,9 +102,14 @@ byGroup queries options coa = do
                         then Only LedgerBalance
                         else Only AvailableBalance
     results <- treeBalances btype queries coa
-    let results' = if BNoZeros `elem` options
-                     then filterLeafs (any isNotZeroBI) results
-                     else results
+    let filteredResults
+          | (BOnlyPositive `elem` options) ||
+            (BOnlyNegative `elem` options)  = filterLeafs (any (byBalance options)) results
+          | BNoZeros `elem` options = filterLeafs (any isNotZeroBI) results
+          | otherwise = results
+    let results'
+          | BAbsoluteValues `elem` options = mapTree (map absBI) (map absBI) filteredResults
+          | otherwise = filteredResults
     let hideGroups = BHideGroups `elem` options
     let format = case needCSV options of
                    Nothing  -> showTreeList

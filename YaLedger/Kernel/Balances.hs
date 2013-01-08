@@ -32,6 +32,11 @@ isNotZeroBI (BalanceInfo (Just x) Nothing) = isNotZero x
 isNotZeroBI (BalanceInfo Nothing (Just x)) = isNotZero x
 isNotZeroBI (BalanceInfo (Just x) (Just y)) = isNotZero x || isNotZero y
 
+absBI :: BalanceInfo Amount -> BalanceInfo Amount
+absBI bi = bi {
+            biAvailable = absAmount <$> biAvailable bi,
+            biLedger    = absAmount <$> biLedger bi }
+
 -- | Set one of balances in BalanceInfo
 setBalanceInfo :: BalanceType -> v -> BalanceInfo v -> BalanceInfo v
 setBalanceInfo AvailableBalance x bi = bi {biAvailable = Just x}
