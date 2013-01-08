@@ -76,7 +76,7 @@ byOneAccount queries options acc = do
     let format = case needCSV options of
                    Nothing  -> tableColumns ASCII
                    Just sep -> tableColumns (CSV sep)
-    wrapIO $ putStrLn $ unlines $
+    wrapIO $ putStr $ unlines $
              format [(["DATE"],    ALeft, map showMaybeDate ends),
                      (["BALANCE"], ARight, map show results)]
 
@@ -95,5 +95,5 @@ byGroup queries options coa = do
                    Nothing  -> showTreeList
                    Just sep -> \n qs rs -> unlines $ tableColumns (CSV sep) (treeTable hideGroups n qs rs)
 
-    wrapIO $ putStrLn $ format (length queries) queries results'
+    wrapIO $ putStr $ format (length queries) queries results'
 
