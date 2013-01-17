@@ -321,15 +321,18 @@ pInterval = try (go Days "day")
       optional $ char 's'
       return (constructor n)
 
+holdUsage :: Parser HoldUsage
+holdUsage =
+      try (reserved "try" >> spaces >> reserved "use" >> spaces >> return TryUseHold)
+  <|> try (reserved "use" >> spaces >> return UseHold)
+  <|> return DontUseHold
+
 pEntry :: Parser v -> Parser (Transaction v)
 pEntry p = do
   es <- many1 (try (Left <$> pCreditPostingHold p) <|> (try (Right <$> pDebitPostingHold p)))
   corr <- optionMaybe $ do
             spaces
-            t <- optionMaybe $ do
-                   reserved "use"
-                   spaces
-            let use = isJust t
+            use <- holdUsage
             x <- pPathRelative <?> "corresponding account path"
             return (x, use)
   let cr = lefts es
@@ -477,21 +480,15 @@ pSetRate = SetRate <$> many1 (do
 
 pCreditPostingHold :: Parser v -> Parser (Posting v Credit)
 pCreditPostingHold p = do
-  use <- optionMaybe $ reserved "use"
-  case use of
-    Nothing -> pCreditPosting p
-    Just _  -> do
-               posting <- pCreditPosting p
-               return $ posting {creditPostingUseHold = True}
+  use <- holdUsage
+  posting <- pCreditPosting p
+  return $ posting {creditPostingUseHold = use}
 
 pDebitPostingHold :: Parser v -> Parser (Posting v Debit)
 pDebitPostingHold p = do
-  use <- optionMaybe $ reserved "use"
-  case use of
-    Nothing -> pDebitPosting p
-    Just _  -> do
-               posting <- pDebitPosting p
-               return $ posting {debitPostingUseHold = True}
+  use <- holdUsage
+  posting <- pDebitPosting p
+  return $ posting {debitPostingUseHold = use}
 
 pCreditPosting :: Parser v -> Parser (Posting v Credit)
 pCreditPosting p = do
@@ -507,7 +504,7 @@ pCreditPosting p = do
   amount <- p
   whiteSpace
   many newline
-  return $ CPosting account amount False
+  return $ CPosting account amount DontUseHold
 
 pDebitPosting :: Parser v -> Parser (Posting v Debit)
 pDebitPosting p = do
@@ -523,7 +520,7 @@ pDebitPosting p = do
   amount <- p
   whiteSpace
   many newline
-  return $ DPosting account amount False
+  return $ DPosting account amount DontUseHold
 
 pAmount :: Parser Amount
 pAmount = try numberFirst <|> currencyFirst

@@ -170,6 +170,12 @@ filterRows filters rows = filter (\row -> all (ok row) filters) rows
         else let str = list !! (rfField rf - 1)
              in  str =~ rfRegexp rf
 
+parseHoldUsage :: String -> HoldUsage
+parseHoldUsage str
+  | str `elem` ["true", "1", "yes", "on", "enable"] = UseHold
+  | str `elem` ["try"] = TryUseHold
+  | otherwise = DontUseHold
+
 -- | Convert one row of table
 convertRow :: GenericParserConfig
            -> Currencies
@@ -187,8 +193,8 @@ convertRow pc currs coa path rowN row = do
                    Just fc -> Just $ field fc row
                    Nothing -> Nothing
       useHold = case pcUseHold pc of
-                  Nothing -> False
-                  Just fc -> (map toLower $ field fc row) `elem` ["true", "1", "yes", "on", "enable"]
+                  Nothing -> DontUseHold
+                  Just fc -> parseHoldUsage (map toLower $ field fc row)
       attribute fc value =
         case fc of
           FixedValue ('?':str) -> Optional str
@@ -235,26 +241,26 @@ convertRow pc currs coa path rowN row = do
              ECredit -> do
                posting <- cposting acc (amount :# currency) useHold
                corr <- case acc2 of
-                         Just acc -> dposting acc (amount :# currency) False
+                         Just acc -> dposting acc (amount :# currency) DontUseHold
                          Nothing  -> return []
                return $ UEntry corr posting Nothing []
              EDebit -> do
                posting <- dposting acc (amount :# currency) useHold
                corr <- case acc2 of
-                         Just acc -> cposting acc (amount :# currency) False
+                         Just acc -> cposting acc (amount :# currency) DontUseHold
                          Nothing  -> return []
                return $ UEntry posting corr Nothing []
   let pos = newPos path rowN 1
   return $ Ext date 0 pos attrs (Transaction $ TEntry entry)
 
-cposting :: AnyAccount -> Amount -> Bool -> IO [Posting Amount Credit]
+cposting :: AnyAccount -> Amount -> HoldUsage -> IO [Posting Amount Credit]
 cposting acc x useHold =
   case acc of
     WCredit _ a -> return [CPosting (Right a) x useHold]
     WFree   _ a -> return [CPosting (Left  a) x useHold]
     WDebit  _ a -> fail $ "Invalid account type: debit instead of credit: " ++ getName a ++ " " ++ show x
 
-dposting :: AnyAccount -> Amount -> Bool -> IO [Posting Amount Debit]
+dposting :: AnyAccount -> Amount -> HoldUsage -> IO [Posting Amount Debit]
 dposting acc x useHold =
   case acc of
     WDebit   _ a -> return [DPosting (Right a) x useHold]

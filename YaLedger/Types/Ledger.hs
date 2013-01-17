@@ -14,20 +14,32 @@ import YaLedger.Tree
 import YaLedger.Types.Attributes
 import YaLedger.Types.Common
 
+-- | Variants of hold usage by posting
+data HoldUsage =
+    UseHold
+  | TryUseHold
+  | DontUseHold
+  deriving (Eq)
+
+instance Show HoldUsage where
+  show UseHold     = "use hold"
+  show TryUseHold  = "try use hold"
+  show DontUseHold = "don't use hold"
+
 data Posting v t where
   -- Debit posting
   DPosting :: {
     -- Debit posting should use debit or free account
     debitPostingAccount :: FreeOr Debit Account,
     debitPostingAmount  :: v,
-    debitPostingUseHold :: Bool
+    debitPostingUseHold :: HoldUsage
   } -> Posting v Debit
 
   CPosting :: {
     -- Credit posting should use credit or free account
     creditPostingAccount :: FreeOr Credit Account,
     creditPostingAmount  :: v,
-    creditPostingUseHold :: Bool
+    creditPostingUseHold :: HoldUsage
   } -> Posting v Credit
 
 instance Eq v => Eq (Posting v Debit) where
@@ -37,8 +49,13 @@ instance Eq v => Eq (Posting v Credit) where
   (CPosting a1 x1 b1) == (CPosting a2 x2 b2) = (a1 == a2) && (x1 == x2) && (b1 == b2)
 
 instance Show v => Show (Posting v t) where
-  show (DPosting acc x b) = "dr " ++ showFA acc ++ " " ++ show x ++ if b then " (use hold)" else ""
-  show (CPosting acc x b) = "cr " ++ showFA acc ++ " " ++ show x ++ if b then " (use hold)" else ""
+  show (DPosting acc x b) = "dr " ++ showFA acc ++ " " ++ show x ++ "(" ++ show b ++ ")"
+  show (CPosting acc x b) = "cr " ++ showFA acc ++ " " ++ show x ++ "(" ++ show b ++ ")"
+
+instance Hashable HoldUsage where
+  hashWithSalt s UseHold     = hashWithSalt s (1 :: Int)
+  hashWithSalt s TryUseHold  = hashWithSalt s (2 :: Int)
+  hashWithSalt s DontUseHold = hashWithSalt s (3 :: Int)
 
 instance Hashable v => Hashable (Posting v t) where
   hashWithSalt s (DPosting acc x b) = s `hashWithSalt` (1000000*getID acc) `hashWithSalt` x `hashWithSalt` b
@@ -127,7 +144,7 @@ data Entry v c where
     UEntry :: {
       uEntryDebitPostings  :: [Posting v Debit],
       uEntryCreditPostings :: [Posting v Credit], 
-      uEntryCorrespondence :: Maybe (AnyAccount, Bool),
+      uEntryCorrespondence :: Maybe (AnyAccount, HoldUsage),
       uEntryAdditionalCurrencies :: [Currency]
     } -> Entry v Unchecked
 

@@ -151,22 +151,35 @@ instance (Pretty v) => Pretty (Entry v c) where
     (unlines $ map prettyPrint dt ++ map prettyPrint cr) ++
     (case corr of
       Nothing -> ""
-      Just (acc, useHold) -> "  " ++ (if useHold then "use " else "") ++ getName acc ++ "\n")
+      Just (acc, useHold) -> "  " ++ prettyPrint useHold ++ getName acc ++ "\n")
+
+instance Pretty HoldUsage where
+  prettyPrint DontUseHold = ""
+  prettyPrint TryUseHold  = "try use "
+  prettyPrint UseHold     = "use "
 
 instance (Pretty v) => Pretty (Posting v t) where
-  prettyPrint (DPosting acc x False) =
+  prettyPrint (DPosting acc x DontUseHold) =
     printf "  dr %s  %s"
            (getName acc)
            (prettyPrint x)
-  prettyPrint (CPosting acc x False) =
+  prettyPrint (CPosting acc x DontUseHold) =
     printf "  cr %s  %s"
            (getName acc)
            (prettyPrint x)
-  prettyPrint (DPosting acc x True) =
+  prettyPrint (DPosting acc x TryUseHold) =
+    printf "try use dr %s  %s"
+           (getName acc)
+           (prettyPrint x)
+  prettyPrint (CPosting acc x TryUseHold) =
+    printf "try use cr %s  %s"
+           (getName acc)
+           (prettyPrint x)
+  prettyPrint (DPosting acc x UseHold) =
     printf "use dr %s  %s"
            (getName acc)
            (prettyPrint x)
-  prettyPrint (CPosting acc x True) =
+  prettyPrint (CPosting acc x UseHold) =
     printf "use cr %s  %s"
            (getName acc)
            (prettyPrint x)

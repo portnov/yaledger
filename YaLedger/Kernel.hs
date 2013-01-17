@@ -428,10 +428,10 @@ checkEntry date attrs (UEntry dt cr mbCorr currs) = do
                           if diffD < 0
                             then do
                                  account <- accountAsCredit oneAccount
-                                 return $ CreditDifference $ CPosting account (-diffD) False
+                                 return $ CreditDifference $ CPosting account (-diffD) DontUseHold
                             else do
                                  account <- accountAsDebit oneAccount
-                                 return $ DebitDifference [ DPosting account diffD False ]
+                                 return $ DebitDifference [ DPosting account diffD DontUseHold ]
                         Left debitPostings -> do
                           postings <- mapM (convertPosting' $ Just date) debitPostings
                           return $ DebitDifference postings
@@ -454,7 +454,7 @@ lookupCorrespondence :: (Throws NoCorrespondingAccountFound l,
                      => CQuery              -- ^ Query to search for account
                      -> DateTime            -- ^ Entry date/time
                      -> Amount              -- ^ Amount of credit \/ debit
-                     -> Maybe (AnyAccount, Bool) -- ^ (User-specified corresponding account; whether to use hold)
+                     -> Maybe (AnyAccount, HoldUsage) -- ^ (User-specified corresponding account; whether to use hold)
                      -> Ledger l (Either [Posting Amount Debit] AnyAccount)
 lookupCorrespondence qry date amount@(value :# currency) mbCorr = do
   coa <- gets lsCoA
@@ -463,7 +463,7 @@ lookupCorrespondence qry date amount@(value :# currency) mbCorr = do
   let mbAccount = runCQuery qry coa
       mbByMap = lookupAMap groupsMap coa amap qry (cqExcept qry)
       mbCorrespondingAccount = fst <$> mbCorr
-      useHold = fromMaybe False (snd <$> mbCorr)
+      useHold = fromMaybe DontUseHold (snd <$> mbCorr)
   -- Search for corresponding account:
   -- 1. Account which is explicitly specified in source record.
   -- 2. Account which is found using accounts map.
@@ -541,12 +541,12 @@ fillEntry :: (Throws NoSuchRate l,
            -> DateTime                  -- ^ Entry date/time
            -> [Posting Decimal Debit]   -- ^ Debit postings
            -> [Posting Decimal Credit]  -- ^ Credit postings
-           -> Maybe (AnyAccount, Bool)  -- ^ (User-specified corresponding account; whether to use hold on it)
+           -> Maybe (AnyAccount, HoldUsage)  -- ^ (User-specified corresponding account; whether to use hold on it)
            -> Amount                    -- ^ Difference (credit - debit)
            -> Ledger l ([Posting Decimal Debit], [Posting Decimal Credit])
 fillEntry qry date dt cr mbCorr amount@(value :# _) = do
   correspondence <- lookupCorrespondence qry date amount mbCorr
-  let useHold = fromMaybe False (snd <$> mbCorr)
+  let useHold = fromMaybe DontUseHold (snd <$> mbCorr)
   case correspondence of
     Right oneAccount -> do
       if value < 0
@@ -614,7 +614,7 @@ reconciliate :: (Throws NoSuchRate l,
              -> Ledger l (Maybe (Entry Amount Unchecked))
 reconciliate btype date account amount tgt msg = do
 
-  let correspondence = (\acc -> (acc, False)) <$> tgt
+  let correspondence = (\acc -> (acc, DontUseHold)) <$> tgt
 
   calculatedBalance <- runAtomically $ getBalanceAt (Just date) btype account
   actualBalance :# accountCurrency <- convert (Just date) (getCurrency account) amount
@@ -631,11 +631,11 @@ reconciliate btype date account amount tgt msg = do
          if diff > 0
            then do
                 account' <- accountAsCredit account
-                let posting = CPosting account' (diff :# accountCurrency) False
+                let posting = CPosting account' (diff :# accountCurrency) DontUseHold
                 return $ Just $ UEntry [] [posting] correspondence [getCurrency amount]
            else do
                 account' <- accountAsDebit account
-                let posting = DPosting account' ((-diff) :# accountCurrency) False
+                let posting = DPosting account' ((-diff) :# accountCurrency) DontUseHold
                 return $ Just $ UEntry [posting] [] correspondence [getCurrency amount]
     else return Nothing
 

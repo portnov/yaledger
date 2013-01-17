@@ -49,7 +49,7 @@ instance HoldOperations Credit where
   getHolds (Left  a) = freeAccountCreditHolds a
   getHolds (Right a) = creditAccountHolds a
 
-  createPosting account amount = CPosting account amount False
+  createPosting account amount = CPosting account amount DontUseHold
 
 instance HoldOperations Debit where
   justHold _ x = Balance Nothing 0 0 x
@@ -58,5 +58,5 @@ instance HoldOperations Debit where
   getHolds (Left  a) = freeAccountDebitHolds a
   getHolds (Right a) = debitAccountHolds a
 
-  createPosting account amount = DPosting account amount False
+  createPosting account amount = DPosting account amount DontUseHold
 
