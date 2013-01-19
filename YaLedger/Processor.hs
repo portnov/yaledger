@@ -32,6 +32,10 @@ merge (x:xs) (y:ys) =
     then x: merge xs (y:ys)
     else y: merge (x:xs) ys
 
+throwException :: Posting Decimal t -> Bool
+throwException (CPosting {..}) = creditPostingUseHold == UseHold
+throwException (DPosting {..}) = debitPostingUseHold  == UseHold
+
 -- | Process one (unchecked yet) entry.
 processEntry :: forall l.
                 (Throws NoSuchRate l,
@@ -58,6 +62,7 @@ processEntry date tranID pos attrs uentry = do
       useHoldIfNeeded usage p
         | usage == DontUseHold = return ()
         | otherwise = closeHold date (Just entry) (>=) M.empty p
+                       `catchWithSrcLoc` handleNoSuchHold (usage /= UseHold)
 
   -- All postings are done in single STM transaction.
   runAtomically $ do
@@ -327,7 +332,12 @@ processTransaction tranID (Ext date _ pos attrs (TCloseHolds crholds drholds)) =
       runAtomically $ (closeHold date Nothing op qry p')
                         `catchWithSrcLoc` handleNoSuchHold (searchLesserAmount clh)
 
-    handleNoSuchHold :: Bool -> CallTrace -> NoSuchHold -> Atomic l ()
-    handleNoSuchHold True  _ e = infoSTM $ show e
-    handleNoSuchHold False l e = rethrow l e
+handleNoSuchHold :: (Throws InternalError l,
+                     Throws NoSuchHold l)
+                 => Bool
+                 -> CallTrace
+                 -> NoSuchHold
+                 -> Atomic l ()
+handleNoSuchHold True  _ e = infoSTMP $ show e
+handleNoSuchHold False l e = rethrow l e
 

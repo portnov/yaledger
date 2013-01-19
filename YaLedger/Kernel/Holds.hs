@@ -50,10 +50,6 @@ checkHold op date amt qry extHold =
     ((postingValue $ holdPosting $ getContent extHold) `op` amt) &&
     (getAttributes extHold `matchAll` qry)
 
-throwException :: Posting Decimal t -> Bool
-throwException (CPosting {..}) = creditPostingUseHold == UseHold
-throwException (DPosting {..}) = debitPostingUseHold  == UseHold
-
 -- | Close one hold. If found hold's amount is greater than requested,
 -- then close found hold and create a new one, with amount of
 -- (found hold amount - requested amount).
@@ -75,12 +71,7 @@ closeHold date mbEntry op qry posting = do
     anyClosed <- close [] history holds
     if anyClosed
       then return ()
-      else if throwException posting
-             then throwP =<< noSuchHold posting
-             else do
-                  pos <- gets lsPosition
-                  exception <- noSuchHold posting
-                  warningSTM $ show (exception pos)
+      else throwP =<< noSuchHold posting
   where
     searchAmt = postingValue posting
 

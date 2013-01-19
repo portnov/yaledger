@@ -130,11 +130,23 @@ debugSTM _ = return ()
 infoSTM :: Throws InternalError l => String -> Atomic l ()
 infoSTM message = do
   pos <- gets lsPosition
+  logSTM INFO $ "INFO: " ++ message
+
+-- | Similar to 'infoP', but in 'Atomic' monad.
+infoSTMP :: Throws InternalError l => String -> Atomic l ()
+infoSTMP message = do
+  pos <- gets lsPosition
   logSTM INFO $ "INFO: " ++ message ++ "\n    at " ++ show pos
 
 -- | Similar to 'warning', but in 'Atomic' monad.
 warningSTM :: Throws InternalError l => String -> Atomic l ()
 warningSTM message = do
+  pos <- gets lsPosition
+  logSTM WARNING $ "WARNING: " ++ message
+
+-- | Similar to 'warningP', but in 'Atomic' monad.
+warningSTMP :: Throws InternalError l => String -> Atomic l ()
+warningSTMP message = do
   pos <- gets lsPosition
   logSTM WARNING $ "WARNING: " ++ message ++ "\n    at " ++ show pos
 
