@@ -62,7 +62,7 @@ processEntry date tranID pos attrs uentry = do
       useHoldIfNeeded usage p
         | usage == DontUseHold = return ()
         | otherwise = closeHold date (Just entry) (>=) M.empty p
-                       `catchWithSrcLoc` handleNoSuchHold (usage /= UseHold)
+                       `catchWithSrcLoc` handleNoSuchHold (usage /= UseHold) WARNING
 
   -- All postings are done in single STM transaction.
   runAtomically $ do
@@ -330,14 +330,15 @@ processTransaction tranID (Ext date _ pos attrs (TCloseHolds crholds drholds)) =
           qry = searchAttributes clh
       p' <- convertPosting' (Just date) p
       runAtomically $ (closeHold date Nothing op qry p')
-                        `catchWithSrcLoc` handleNoSuchHold (searchLesserAmount clh)
+                        `catchWithSrcLoc` handleNoSuchHold (searchLesserAmount clh) INFO
 
 handleNoSuchHold :: (Throws InternalError l,
                      Throws NoSuchHold l)
                  => Bool
+                 -> Priority
                  -> CallTrace
                  -> NoSuchHold
                  -> Atomic l ()
-handleNoSuchHold True  _ e = infoSTMP $ show e
-handleNoSuchHold False l e = rethrow l e
+handleNoSuchHold True  s _ e = logSTM s $ (show s ++ ": ") ++ show e
+handleNoSuchHold False _ l e = rethrow l e
 
