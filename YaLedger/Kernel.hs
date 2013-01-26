@@ -54,6 +54,7 @@ instance CanDebit (Account Debit) where
       balance <- getCurrentBalance AvailableBalance acc
       checkBalance (balance - postingValue (getContent p)) acc
       appendIOList debitAccountPostings p
+      debugSTM $ "debit " ++ (getName $ postingAccount $ getContent p) ++ ": " ++ show (postingValue $ getContent p)
       balancePlusPosting e p debitAccountBalances
 
   debitHold (DAccount {..}) hold = do
@@ -65,6 +66,7 @@ instance CanDebit (Account Free) where
       balance <- getCurrentBalance AvailableBalance acc
       checkBalance (balance - postingValue (getContent p)) acc
       appendIOList freeAccountDebitPostings p
+      debugSTM $ "debit " ++ (getName $ postingAccount $ getContent p) ++ ": " ++ show (postingValue $ getContent p)
       balancePlusPosting e p freeAccountBalances
 
   debitHold (FAccount {..}) hold = do

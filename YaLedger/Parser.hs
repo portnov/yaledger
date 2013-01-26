@@ -51,8 +51,9 @@ parseInputFiles :: [(String, String, InputParser)] -- ^ List of parsers: (name, 
                 -> [FilePath]                      -- ^ List of files or masks (*.yaledger)
                 -> IO [Ext Record]
 parseInputFiles parsers configs currs coa masks = do
+    debugIO $ "Start parsing input files by masks: " ++ show masks
     inputFiles <- concat <$> mapM glob masks
-    infoIO $ "Input files:\n" ++ unlines inputFiles
+    debugIO $ "Input files:\n" ++ unlines inputFiles
     records <- parallel (map loadFile inputFiles)
     traceEventIO "All files loaded."
     return $ sort $ concat records

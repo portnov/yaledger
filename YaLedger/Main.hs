@@ -267,6 +267,7 @@ runYaLedger parsers options report params = do
 
 
   records <- parseInputFiles parsers configs currsMap coa inputPaths
+  debugIO $ "Records loaded."
   runLedger options coa amap records $ runEMT $ do
     -- Build full map of groups of accounts.
     modify $ \st -> st {
