@@ -201,17 +201,19 @@ appendIOList iolist x =
   stm $ modifyTVar iolist (x:)
 
 -- | Update last item of 'IOList'
-plusIOList :: (Throws InternalError l)
+plusIOList :: (Throws InternalError l, Show a)
            => a          -- ^ Default value (put it to list if it's empty)
            -> (a -> Bool)
            -> (a -> a)
            -> IOList a
            -> Atomic l ()
-plusIOList def p fn iolist =
+plusIOList def p fn iolist = do
   stm $ modifyTVar iolist $ \list ->
     case filter p list of
       [] -> [def]
       (x:xs) -> fn x: x: xs
+  res <- stm $ readTVar iolist
+  debugSTM $ "plusIOList: new item: " ++ show (head res)
 
 modifyLastItem ::  (Throws InternalError l)
                => (a -> a)

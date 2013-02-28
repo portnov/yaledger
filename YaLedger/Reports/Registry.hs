@@ -46,7 +46,7 @@ registry qry options mbPath = do
     case coa of
       Leaf {leafData = account} -> do
           balances <- readIOListL (accountBalances account)
-          let balances' = filter (checkQuery qry) balances
+          let balances' = reverse $ filter (checkQuery qry) balances
           let bqry = if RBothBalances `elem` options
                         then BothBalances
                         else if RLedgerBalances `elem` options
@@ -55,13 +55,13 @@ registry qry options mbPath = do
           let format = case [s | RCSV s <- options] of
                          []    -> showEntriesBalances' bqry fullCoA ASCII totals
                          (x:_) -> showEntriesBalances' bqry fullCoA (CSV x) totals
-          wrapIO $ putStrLn $ format (nub $ sort balances')
+          wrapIO $ putStrLn $ format (nub $ balances')
       Branch {} -> do
           let accounts = map snd $ leafs coa
           allEntries <- forM accounts getEntries
-          let entries = concat $ map (filter $ checkQuery qry) allEntries
+          let entries = reverse $ concat $ map (filter $ checkQuery qry) allEntries
           let format = case [s | RCSV s <- options] of
                          []    -> showEntries' fullCoA ASCII totals
                          (x:_) -> showEntries' fullCoA (CSV x) totals
-          wrapIO $ putStrLn $ format (nub $ sort entries)
+          wrapIO $ putStrLn $ format (nub $ entries)
   

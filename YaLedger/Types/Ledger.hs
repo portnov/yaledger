@@ -187,7 +187,11 @@ data Balance c =
 deriving instance Eq (Entry Decimal c) => Eq (Balance c)
 
 instance Show (Balance c) where
-  show b = show (balanceValue b)
+  show b = printf "Balance value: %s, credit holds: %s, debit holds: %s, caused by: %s"
+                  (show (balanceValue b))
+                  (show (creditHolds b))
+                  (show (debitHolds b))
+                  (show (causedBy b))
 
 -- | Balance checks for each posting for one account
 data BalanceChecks =
