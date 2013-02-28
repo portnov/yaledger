@@ -73,7 +73,7 @@ closeHold date mbEntry op qry posting = do
       then return ()
       else throwP =<< noSuchHold posting
   where
-    searchAmt = postingValue posting
+    searchAmt = traceS "searchAmt" $ postingValue posting
 
     -- Close any appropriate hold
 
@@ -89,15 +89,16 @@ closeHold date mbEntry op qry posting = do
       if checkHold op date searchAmt qry extHold
         then do
              let oldHold = getContent extHold
-                 holdAmt = postingValue $ holdPosting oldHold
+                 holdAmt = traceS "holdAmt" $ postingValue $ holdPosting oldHold
                  closedHold = extHold {getContent = oldHold {holdEndDate = Just date}}
                  newHolds = if holdAmt > searchAmt
                              then -- Found hold amount > requested posting amount.
                                   -- We must add new hold for difference.
                                   let account = postingAccount' $ holdPosting oldHold
                                       newPosting = createPosting account (holdAmt - searchAmt)
-                                  in  [extHold {getDate = date,
-                                                getContent = Hold newPosting Nothing}]
+                                  in  trace ("Creating new hold: holdAmt = " ++ show holdAmt ++ ", searchAmt = " ++ show searchAmt) $
+                                        [extHold {getDate = date,
+                                                  getContent = Hold newPosting Nothing}]
                              else -- holdAmt <= searchAmt, we'll just close old hold.
                                   []
              updateBalances holdAmt (postingAccount posting)
