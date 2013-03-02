@@ -17,6 +17,8 @@ instance ReportClass Saldo where
      Option "p" ["positive"] (NoArg COnlyPositive) "Show only accounts with positive balance",
      Option "n" ["negative"] (NoArg COnlyNegative) "Show only accounts with negative balance",
      Option "a" ["absolute"] (NoArg CAbsoluteValues) "Show absolute values of all balances",
+     Option "g" ["hide-groups"] (NoArg CHideGroups) "Hide accounts groups in CSV output",
+     Option ""  ["no-currencies"] (NoArg CNoCurrencies) "Do not show currencies in amounts",
      Option "C" ["csv"] (OptArg CCSV "SEPARATOR") "Output data in CSV format using given fields delimiter (semicolon by default)"]
   defaultOptions _ = []
   reportHelp _ = "Show accounts balances. One optional parameter: account or accounts group."
@@ -37,12 +39,14 @@ showTreeList n qrys tree =
               (["","ACCOUNT",""], ALeft, struct):
               [(showI qry, ARight, col) | (col,qry) <- zip cols qrys]
 
-treeTable n qrys tree =
-  let paths = map (intercalate "/") $ allPaths tree
-      cols = [map (\l -> show (l !! i)) (allNodes tree) | i <- [0..n-1]]
+treeTable options n qrys tree =
+  let paths = map (intercalate "/") $ getPaths tree
+      hideGroups = CHideGroups `elem` options
+      cols = [map (\l -> showAmt options (l !! i)) (getNodes tree) | i <- [0..n-1]]
+      getPaths = if hideGroups then allLeafPaths else allPaths
+      getNodes = if hideGroups then allLeafs else allNodes
   in  (["ACCOUNT"], ALeft, paths):
       [([showInterval qry], ALeft, col) | (col, qry) <- zip cols qrys]
-   
 
 showI :: Query -> [String]
 showI qry = [showD "beginning" (qStart qry), "...", showD "now" (qEnd qry)]
@@ -78,6 +82,10 @@ mbAbs options = if CAbsoluteValues `elem` options
             then map absAmount
             else id
 
+showAmt options a@(x :# c)
+  | CNoCurrencies `elem` options = prettyPrint x
+  | otherwise = show a
+
 byOneAccount queries options acc = do
     results <- forM queries $ \qry -> saldo qry acc
     let starts = map qStart queries
@@ -94,7 +102,7 @@ byOneAccount queries options acc = do
     wrapIO $ putStrLn $ unlines $
              format [(["FROM"],    ALeft, map showMaybeDate starts),
                      (["TO"],      ALeft, map showMaybeDate ends),
-                     (["BALANCE"], ARight, map show $ prepare results)] ++ 
+                     (["BALANCE"], ARight, map (showAmt options) $ prepare results)] ++ 
              ["    TOTALS: " ++ show totals ++ show (getCurrency acc)]
 
 byGroup queries options coa = do
@@ -107,9 +115,10 @@ byGroup queries options coa = do
     let results' = if CNoZeros `elem` options
                      then filterLeafs (any isNotZero) results
                      else results
+    let hideGroups = CHideGroups `elem` options
     let format = case needCSV options of
                    Nothing  -> showTreeList
-                   Just sep -> \n qs rs -> unlines $ tableColumns (CSV sep) (treeTable n qs rs)
+                   Just sep -> \n qs rs -> unlines $ tableColumns (CSV sep) (treeTable options n qs rs)
 
     wrapIO $ putStrLn $ format (length queries) queries (prepare results')
 
