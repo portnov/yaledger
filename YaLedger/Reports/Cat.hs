@@ -3,7 +3,7 @@
 module YaLedger.Reports.Cat
   (Cat (..)) where
 
-import YaLedger.Reports.API
+import YaLedger.Reports.API hiding (CommonFlags (..))
 
 data Cat = Cat
 

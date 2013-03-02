@@ -7,17 +7,17 @@ import YaLedger.Reports.API
 
 data Saldo = Saldo
 
-data SOptions =
-    SNoZeros
-  | SCSV (Maybe String)
-  deriving (Eq)
+type SOptions = CommonFlags
 
 instance ReportClass Saldo where
   type Options Saldo = SOptions
   type Parameters Saldo = Maybe Path
   reportOptions _ = 
-    [Option "z" ["no-zeros"] (NoArg SNoZeros) "Do not show accounts with zero balance",
-     Option "C" ["csv"] (OptArg SCSV "SEPARATOR") "Output data in CSV format using given fields delimiter (semicolon by default)"]
+    [Option "z" ["no-zeros"] (NoArg CNoZeros) "Do not show accounts with zero balance",
+     Option "p" ["positive"] (NoArg COnlyPositive) "Show only accounts with positive balance",
+     Option "n" ["negative"] (NoArg COnlyNegative) "Show only accounts with negative balance",
+     Option "a" ["absolute"] (NoArg CAbsoluteValues) "Show absolute values of all balances",
+     Option "C" ["csv"] (OptArg CCSV "SEPARATOR") "Output data in CSV format using given fields delimiter (semicolon by default)"]
   defaultOptions _ = []
   reportHelp _ = "Show accounts balances. One optional parameter: account or accounts group."
 
@@ -26,7 +26,7 @@ instance ReportClass Saldo where
 
 needCSV :: [SOptions] -> Maybe (Maybe String)
 needCSV opts =
-  case [s | SCSV s <- opts] of
+  case [s | CCSV s <- opts] of
     [] -> Nothing
     (x:_) -> Just x
 
@@ -62,10 +62,31 @@ getSaldo queries options mbPath = (do
   `catchWithSrcLoc`
     (\l (e :: NoSuchRate) -> handler l e)
 
+onlyPositive :: [Amount] -> [Amount]
+onlyPositive = map go
+  where go a@(x :# c)
+          | x > 0 = a
+          | otherwise = 0 :# c
+
+onlyNegative :: [Amount] -> [Amount]
+onlyNegative = map go
+  where go a@(x :# c)
+          | x < 0 = a
+          | otherwise = 0 :# c
+
+mbAbs options = if CAbsoluteValues `elem` options
+            then map absAmount
+            else id
+
 byOneAccount queries options acc = do
     results <- forM queries $ \qry -> saldo qry acc
     let starts = map qStart queries
         ends   = map qEnd   queries
+    let prepare
+          | COnlyPositive `elem` options = onlyPositive
+          | COnlyNegative `elem` options = mbAbs options . onlyNegative
+          | CAbsoluteValues `elem` options = map absAmount
+          | otherwise = id
     totals <- runAtomically $ getCurrentBalance AvailableBalance acc
     let format = case needCSV options of
                    Nothing  -> tableColumns ASCII
@@ -73,17 +94,22 @@ byOneAccount queries options acc = do
     wrapIO $ putStrLn $ unlines $
              format [(["FROM"],    ALeft, map showMaybeDate starts),
                      (["TO"],      ALeft, map showMaybeDate ends),
-                     (["BALANCE"], ARight, map show results)] ++ 
+                     (["BALANCE"], ARight, map show $ prepare results)] ++ 
              ["    TOTALS: " ++ show totals ++ show (getCurrency acc)]
 
 byGroup queries options coa = do
     results <- treeSaldos queries coa
-    let results' = if SNoZeros `elem` options
+    let prepare
+          | COnlyPositive `elem` options = mapTree onlyPositive onlyPositive
+          | COnlyNegative `elem` options = mapTree (mbAbs options . onlyNegative) (mbAbs options . onlyNegative)
+          | CAbsoluteValues `elem` options = mapTree (map absAmount) (map absAmount)
+          | otherwise = id
+    let results' = if CNoZeros `elem` options
                      then filterLeafs (any isNotZero) results
                      else results
     let format = case needCSV options of
                    Nothing  -> showTreeList
                    Just sep -> \n qs rs -> unlines $ tableColumns (CSV sep) (treeTable n qs rs)
 
-    wrapIO $ putStrLn $ format (length queries) queries results'
+    wrapIO $ putStrLn $ format (length queries) queries (prepare results')
 

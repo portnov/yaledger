@@ -15,6 +15,18 @@ import YaLedger.Output
 import YaLedger.Kernel
 import YaLedger.Exceptions
 
+data CommonFlags =
+    CNoZeros
+  | CHideGroups
+  | COnlyPositive
+  | COnlyNegative
+  | CAbsoluteValues
+  | CLedgerBalances
+  | CBothBalances
+  | CNoCurrencies
+  | CCSV (Maybe String)
+  deriving (Eq)
+
 datesBackFrom :: DateTime -> DateInterval -> [DateTime]
 datesBackFrom date int = go date
   where
