@@ -63,5 +63,5 @@ registry qry options mbPath = do
           let format = case [s | RCSV s <- options] of
                          []    -> showEntries' fullCoA ASCII totals
                          (x:_) -> showEntries' fullCoA (CSV x) totals
-          wrapIO $ putStrLn $ format (nub $ entries)
+          wrapIO $ putStrLn $ format (nub $ sort $ entries)
   
