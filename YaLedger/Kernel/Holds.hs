@@ -103,9 +103,10 @@ closeHold date mbEntry op qry posting = do
                                                 getContent = Hold newPosting Nothing}]
                            else -- holdAmt <= searchAmt, we'll just close old hold.
                                 return []
-             updateBalances holdAmt (postingAccount posting)
-             when ( holdAmt > searchAmt ) $
-               updateBalances (searchAmt - holdAmt) (postingAccount posting)
+             let holdChange = if holdAmt > searchAmt
+                                then searchAmt
+                                else holdAmt
+             updateBalances holdChange (postingAccount posting)
                  
              stm $ writeTVar history (acc ++ newHolds ++ [closedHold] ++ rest)
              return True
@@ -134,7 +135,7 @@ closeHold date mbEntry op qry posting = do
         extID = 0,
         getLocation = nowhere,
         getAttributes = M.empty,
-        getContent = (addHoldSum (undefined :: t) (negate amt) (getContent extBalance)) {causedBy = mbEntry}
+        getContent = (addHoldSum (undefined :: t) (negate amt) (getContent extBalance)) {causedBy = Nothing}
       }
 
 -- | Get all holds of given account
