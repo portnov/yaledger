@@ -82,10 +82,6 @@ mbAbs options = if CAbsoluteValues `elem` options
             then map absAmount
             else id
 
-showAmt options a@(x :# c)
-  | CNoCurrencies `elem` options = prettyPrint x
-  | otherwise = show a
-
 byOneAccount queries options acc = do
     results <- forM queries $ \qry -> saldo qry acc
     let starts = map qStart queries

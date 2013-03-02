@@ -61,6 +61,21 @@ trimPath (Just n) ps =
         [] -> last ps
         xs -> intercalate "/" (reverse $ map fst xs)
 
+-- | Show amount: show currency only if there is no CNoCurrencies flag in options.
+showAmt :: [CommonFlags] -> Amount -> String
+showAmt options a@(x :# c)
+  | CNoCurrencies `elem` options = prettyPrint x
+  | otherwise = show a
+
+-- | Show BalanceInfo: show currency only if there is no CNoCurrencies flag in options.
+showBI :: [CommonFlags] -> BalanceInfo Amount -> String
+showBI _ (BalanceInfo Nothing Nothing) = "NA"
+showBI options (BalanceInfo (Just x) Nothing) = showAmt options x
+showBI options (BalanceInfo Nothing (Just x)) = showAmt options x
+showBI options (BalanceInfo (Just a) (Just l))
+    | a == l = showAmt options a
+    | otherwise = showAmt options a ++ " / " ++ showAmt options l
+
 showPostingAccount :: Maybe Int -> ChartOfAccounts -> Posting v t -> String
 showPostingAccount t coa (CPosting acc _ _) = maybe "" (trimPath t) $ accountFullPath (getID acc) coa
 showPostingAccount t coa (DPosting acc _ _) = maybe "" (trimPath t) $ accountFullPath (getID acc) coa

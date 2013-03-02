@@ -18,6 +18,7 @@ instance ReportClass Balances where
      Option "n" ["negative"] (NoArg COnlyNegative) "Show only accounts with negative balance",
      Option "a" ["absolute"] (NoArg CAbsoluteValues) "Show absolute values of all balances",
      Option "g" ["hide-groups"] (NoArg CHideGroups) "Hide accounts groups in CSV output",
+     Option ""  ["no-currencies"] (NoArg CNoCurrencies) "Do not show currencies in amounts",
      Option "l" ["ledger"] (NoArg CLedgerBalances) "Show ledger balances instead of available balances",
      Option "b" ["both"] (NoArg CBothBalances) "Show both available and ledger balances",
      Option "C" ["csv"] (OptArg CCSV "SEPARATOR") "Output data in CSV format using given fields delimiter (semicolon by default)"]
@@ -33,19 +34,21 @@ needCSV opts =
     [] -> Nothing
     (x:_) -> Just x
 
-showTreeList n qrys tree =
+showTreeList :: [CommonFlags] -> Int -> [Query] -> Tree [BalanceInfo Amount] [BalanceInfo Amount] -> String
+showTreeList options n qrys tree =
   let struct = showTreeStructure tree
-      cols = [map (\l -> show (l !! i)) (allNodes tree) | i <- [0..n-1]]
+      cols = [map (\l -> showBI options (l !! i)) (allNodes tree) | i <- [0..n-1]]
   in  unlines $ tableColumns ASCII $
               (["ACCOUNT"], ALeft, struct):
               [(showI qry, ARight, col) | (col,qry) <- zip cols qrys]
 
-treeTable b n qrys tree =
+treeTable :: [CommonFlags] -> Int -> [Query] -> Tree [BalanceInfo Amount] [BalanceInfo Amount] -> [(Column, Align, Column)]
+treeTable options n qrys tree =
   let paths = map (intercalate "/") $ getPaths tree
-      cols = [map (\l -> show (l !! i)) (getNodes tree) | i <- [0..n-1]]
-
-      getPaths = if b then allLeafPaths else allPaths
-      getNodes = if b then allLeafs else allNodes
+      hideGroups = CHideGroups `elem` options
+      cols = [map (\l -> showBI options (l !! i)) (getNodes tree) | i <- [0..n-1]]
+      getPaths = if hideGroups then allLeafPaths else allPaths
+      getNodes = if hideGroups then allLeafs else allNodes
   in  (["ACCOUNT"], ALeft, paths):
       [([showMaybeDate $ qEnd qry], ALeft, col) | (col, qry) <- zip cols qrys]
    
@@ -101,10 +104,9 @@ byGroup queries options coa = do
     let results'
           | CAbsoluteValues `elem` options = mapTree (map absBI) (map absBI) filteredResults
           | otherwise = filteredResults
-    let hideGroups = CHideGroups `elem` options
     let format = case needCSV options of
-                   Nothing  -> showTreeList
-                   Just sep -> \n qs rs -> unlines $ tableColumns (CSV sep) (treeTable hideGroups n qs rs)
+                   Nothing  -> showTreeList options
+                   Just sep -> \n qs rs -> unlines $ tableColumns (CSV sep) (treeTable options n qs rs)
 
     wrapIO $ putStr $ format (length queries) queries results'
 
