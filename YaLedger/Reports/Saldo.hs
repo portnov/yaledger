@@ -99,11 +99,13 @@ byOneAccount queries options acc = do
     let format = case needCSV options of
                    Nothing  -> tableColumns ASCII
                    Just sep -> tableColumns (CSV sep)
-    wrapIO $ putStrLn $ unlines $
+    let footer = case needCSV options of
+                   Nothing -> ["    TOTALS: " ++ show totals ++ show (getCurrency acc)]
+                   _ -> []
+    wrapIO $ putStr $ unlines $
              format [(["FROM"],    ALeft, map showMaybeDate starts),
                      (["TO"],      ALeft, map showMaybeDate ends),
-                     (["BALANCE"], ARight, map (showAmt options) $ prepare results)] ++ 
-             ["    TOTALS: " ++ show totals ++ show (getCurrency acc)]
+                     (["BALANCE"], ARight, map (showAmt options) $ prepare results)] ++ footer
 
 byGroup queries options coa = do
     results <- treeSaldos queries coa
@@ -120,5 +122,5 @@ byGroup queries options coa = do
                    Nothing  -> showTreeList
                    Just sep -> \n qs rs -> unlines $ tableColumns (CSV sep) (treeTable options n qs rs)
 
-    wrapIO $ putStrLn $ format (length queries) queries (prepare results')
+    wrapIO $ putStr $ format (length queries) queries (prepare results')
 

@@ -64,7 +64,7 @@ registry qry options mbPath = do
           let format = case [s | CCSV s <- options] of
                          []    -> showEntriesBalances' bqry showCurrs fullCoA ASCII totals
                          (x:_) -> showEntriesBalances' bqry showCurrs fullCoA (CSV x) totals
-          wrapIO $ putStrLn $ format (nub $ balances')
+          wrapIO $ putStr $ format (nub $ balances')
       Branch {} -> do
           let accounts = map snd $ leafs coa
           allEntries <- forM accounts getEntries
@@ -72,5 +72,5 @@ registry qry options mbPath = do
           let format = case [s | CCSV s <- options] of
                          []    -> showEntries' fullCoA ASCII totals showCurrs
                          (x:_) -> showEntries' fullCoA (CSV x) totals showCurrs
-          wrapIO $ putStrLn $ format (nub $ sort $ entries)
+          wrapIO $ putStr $ format (nub $ sort $ entries)
   

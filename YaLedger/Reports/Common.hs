@@ -134,7 +134,7 @@ posting (CPosting acc x _) = getName acc ++ ": " ++ show (x :# getCurrency acc)
 showEntries :: (TableFormat a) => a -> Amount -> [Ext (Entry Decimal Checked)] -> String
 showEntries fmt totals list =
   let l = map showE list
-      footer = ["    TOTALS: " ++ show totals]
+      footer = showFooter fmt $ "    TOTALS: " ++ show totals
   in  unlines $
       tableGrid fmt [(ALeft,  ["DATE"]),
                      (ARight, ["CREDIT"]),
@@ -144,7 +144,7 @@ showEntries fmt totals list =
 showEntries' :: (TableFormat a) => ChartOfAccounts -> a -> Amount -> Bool -> [Ext (Entry Decimal Checked)] -> String
 showEntries' coa fmt totals showCurrs list =
   let l = map (showE' (maxFieldWidth fmt) showCurrs coa) list
-      footer = ["    TOTALS: " ++ show totals]
+      footer = showFooter fmt $ "    TOTALS: " ++ show totals
   in  unlines $
       tableGrid fmt [(ALeft,  ["DATE"]),
                      (ALeft,  ["CREDIT ACCOUNT"]),
@@ -156,7 +156,7 @@ showEntries' coa fmt totals showCurrs list =
 showEntriesBalances :: (TableFormat a) => a -> Amount -> [Ext (Balance Checked)] -> String
 showEntriesBalances fmt totals list =
   let l = map (showB $ getCurrency totals) list
-      footer = ["    TOTALS: " ++ show totals]
+      footer = showFooter fmt $ "    TOTALS: " ++ show totals
   in  unlines $
       tableGrid fmt [(ALeft,  ["DATE"]),
                      (ARight, ["CREDIT"]),
@@ -166,7 +166,7 @@ showEntriesBalances fmt totals list =
 showEntriesBalances' :: (TableFormat a) => BalanceQuery -> Bool -> ChartOfAccounts -> a -> Amount -> [Ext (Balance Checked)] -> String
 showEntriesBalances' bqry showCurrs coa fmt totals list =
   let l = map (showB' (maxFieldWidth fmt) showCurrs bqry coa (getCurrency totals)) list
-      footer = ["    TOTALS: " ++ show totals]
+      footer = showFooter fmt $ "    TOTALS: " ++ show totals
   in  unlines $
       tableGrid fmt [(ALeft,  ["DATE"]),
                      (ALeft,  ["CREDIT ACCOUNT"]),

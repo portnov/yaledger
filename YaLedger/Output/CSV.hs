@@ -40,3 +40,5 @@ instance TableFormat CSV where
         cols    = foldr1 (zipWith (++)) rows'
     in  tableColumns csv $ zip3 headers (repeat ALeft) cols
 
+  showFooter _ _ = []
+

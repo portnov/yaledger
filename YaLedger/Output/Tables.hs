@@ -15,6 +15,9 @@ class TableFormat a where
   maxFieldWidth :: a -> Maybe Int
   maxFieldWidth _ = Nothing
 
+  showFooter :: a -> String -> Column
+  showFooter _ s = [s]
+
 padColumns :: Row -> Row
 padColumns columns =
   let m = maximum (map length columns)
