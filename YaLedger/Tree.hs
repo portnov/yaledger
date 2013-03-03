@@ -161,6 +161,19 @@ mapTreeM foldBranch fn tree = go tree
       r <- foldBranch n (lefts res' ++ rights res')
       return $ Branch name r res
 
+mapTreeBranchesM :: (Monad m, Functor m)
+                 => (Tree n a -> m t)
+                 -> (a -> m b)
+                 -> Tree n a
+                 -> m (Tree t b)
+mapTreeBranchesM bf lf tree = go tree
+  where
+    go (Leaf name a) = Leaf name <$> lf a
+    go branch@(Branch name _ children) = do
+      res <- mapM go children
+      r <- bf branch
+      return $ Branch name r res
+
 filterLeafs :: (a -> Bool) -> Tree n a -> Tree n a
 filterLeafs p tree = go tree
   where

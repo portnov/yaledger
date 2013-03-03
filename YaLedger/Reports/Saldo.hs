@@ -26,28 +26,6 @@ instance ReportClass Saldo where
   runReport _ qry opts mbPath = getSaldo [qry] opts mbPath
   runReportL _ queries opts mbPath = getSaldo queries opts mbPath
 
-needCSV :: [SOptions] -> Maybe (Maybe String)
-needCSV opts =
-  case [s | CCSV s <- opts] of
-    [] -> Nothing
-    (x:_) -> Just x
-
-showTreeList n qrys tree =
-  let struct = showTreeStructure tree
-      cols = [map (\l -> show (l !! i)) (allNodes tree) | i <- [0..n-1]]
-  in  unlines $ tableColumns ASCII $
-              (["","ACCOUNT",""], ALeft, struct):
-              [(showI qry, ARight, col) | (col,qry) <- zip cols qrys]
-
-treeTable options n qrys tree =
-  let paths = map (intercalate "/") $ getPaths tree
-      hideGroups = CHideGroups `elem` options
-      cols = [map (\l -> showAmt options (l !! i)) (getNodes tree) | i <- [0..n-1]]
-      getPaths = if hideGroups then allLeafPaths else allPaths
-      getNodes = if hideGroups then allLeafs else allNodes
-  in  (["ACCOUNT"], ALeft, paths):
-      [([showInterval qry], ALeft, col) | (col, qry) <- zip cols qrys]
-
 showI :: Query -> [String]
 showI qry = [showD "beginning" (qStart qry), "...", showD "now" (qEnd qry)]
   where
@@ -115,8 +93,8 @@ byGroup queries options coa = do
                      else results
     let hideGroups = CHideGroups `elem` options
     let format = case needCSV options of
-                   Nothing  -> showTreeList
-                   Just sep -> \n qs rs -> unlines $ tableColumns (CSV sep) (treeTable options n qs rs)
+                   Nothing  -> showTreeList showI (const show) options
+                   Just sep -> \n qs rs -> unlines $ tableColumns (CSV sep) (treeTable showInterval showAmt options n qs rs)
 
     wrapIO $ putStr $ format (length queries) queries (prepare results')
 

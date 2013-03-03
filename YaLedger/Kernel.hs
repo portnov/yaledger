@@ -12,6 +12,7 @@ module YaLedger.Kernel
    getCurrentBalance, getBalanceAt,
    getBalanceInfoAt,
    creditPostings, debitPostings,
+   filterPostings,
    accountByID,
    sumGroup, sumPostings,
    accountAsCredit,

@@ -28,30 +28,6 @@ instance ReportClass Balances where
   runReport _ qry opts mbPath = balance [qry] opts mbPath
   runReportL _ queries opts mbPath = balance queries opts mbPath
 
-needCSV :: [BOptions] -> Maybe (Maybe String)
-needCSV opts =
-  case [s | CCSV s <- opts] of
-    [] -> Nothing
-    (x:_) -> Just x
-
-showTreeList :: [CommonFlags] -> Int -> [Query] -> Tree [BalanceInfo Amount] [BalanceInfo Amount] -> String
-showTreeList options n qrys tree =
-  let struct = showTreeStructure tree
-      cols = [map (\l -> showBI options (l !! i)) (allNodes tree) | i <- [0..n-1]]
-  in  unlines $ tableColumns ASCII $
-              (["ACCOUNT"], ALeft, struct):
-              [(showI qry, ARight, col) | (col,qry) <- zip cols qrys]
-
-treeTable :: [CommonFlags] -> Int -> [Query] -> Tree [BalanceInfo Amount] [BalanceInfo Amount] -> [(Column, Align, Column)]
-treeTable options n qrys tree =
-  let paths = map (intercalate "/") $ getPaths tree
-      hideGroups = CHideGroups `elem` options
-      cols = [map (\l -> showBI options (l !! i)) (getNodes tree) | i <- [0..n-1]]
-      getPaths = if hideGroups then allLeafPaths else allPaths
-      getNodes = if hideGroups then allLeafs else allNodes
-  in  (["ACCOUNT"], ALeft, paths):
-      [([showMaybeDate $ qEnd qry], ALeft, col) | (col, qry) <- zip cols qrys]
-   
 showI :: Query -> [String]
 showI qry = [showD "now" (qEnd qry)]
   where
@@ -104,9 +80,10 @@ byGroup queries options coa = do
     let results'
           | CAbsoluteValues `elem` options = mapTree (map absBI) (map absBI) filteredResults
           | otherwise = filteredResults
+    let showQry = showMaybeDate . qEnd
     let format = case needCSV options of
-                   Nothing  -> showTreeList options
-                   Just sep -> \n qs rs -> unlines $ tableColumns (CSV sep) (treeTable options n qs rs)
+                   Nothing  -> showTreeList showI showBI options
+                   Just sep -> \n qs rs -> unlines $ tableColumns (CSV sep) (treeTable showQry showBI options n qs rs)
 
     wrapIO $ putStr $ format (length queries) queries results'
 

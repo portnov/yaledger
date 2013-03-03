@@ -25,7 +25,13 @@ data CommonFlags =
   | CBothBalances
   | CNoCurrencies
   | CCSV (Maybe String)
-  deriving (Eq)
+  deriving (Eq, Show)
+
+needCSV :: [CommonFlags] -> Maybe (Maybe String)
+needCSV opts =
+  case [s | CCSV s <- opts] of
+    [] -> Nothing
+    (x:_) -> Just x
 
 datesBackFrom :: DateTime -> DateInterval -> [DateTime]
 datesBackFrom date int = go date
@@ -201,4 +207,22 @@ getEntries :: (Throws InternalError l,
 getEntries acc = do
   balances <- readIOListL (accountBalances acc)
   return $ mapMaybe causedByExt balances
+
+treeTable :: (q -> String) -> ([CommonFlags] -> a -> String) -> [CommonFlags] -> Int -> [q] -> Tree [a] [a] -> [(Column, Align, Column)]
+treeTable showQry showX options n qrys tree =
+  let paths = map (intercalate "/") $ getPaths tree
+      hideGroups = CHideGroups `elem` options
+      cols = [map (\l -> showX options (l !! i)) (getNodes tree) | i <- [0..n-1]]
+      getPaths = if hideGroups then allLeafPaths else allPaths
+      getNodes = if hideGroups then allLeafs else allNodes
+  in  (["ACCOUNT"], ALeft, paths):
+      [([showQry qry], ALeft, col) | (col, qry) <- zip cols qrys]
+   
+showTreeList :: Show a => (q -> [String]) -> ([CommonFlags] -> a -> String) -> [CommonFlags] -> Int -> [q] -> Tree [a] [a] -> String
+showTreeList showQry showX options n qrys tree =
+  let struct = showTreeStructure tree
+      cols = [map (\l -> showX options (l !! i)) (allNodes tree) | i <- [0..n-1]]
+  in  unlines $ tableColumns ASCII $
+              (["ACCOUNT"], ALeft, struct):
+              [(showQry qry, ARight, col) | (col,qry) <- zip cols qrys]
 
