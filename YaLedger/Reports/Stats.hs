@@ -161,7 +161,7 @@ calculate d1 d2 v
                         srQ3     = V.head v,
                         srMax    = V.head v,
                         srAvg    = V.head v,
-                        srSd     = V.head v,
+                        srSd     = 0,
                         srClose  = V.head v }
   | otherwise = StatRecord {
                   srFrom   = d1,
