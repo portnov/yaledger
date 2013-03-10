@@ -52,7 +52,7 @@ showTreeStructure tree = struct [True] tree
         [concatMap bar (reverse bs) ++ glyph b ++ name ++ ": "]
 
     bar True  = "  "
-    bar False = "| "
+    bar False = "│ "
 
     glyph True  = "╰—□ "
     glyph False = "├—□ "

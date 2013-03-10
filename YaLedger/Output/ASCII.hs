@@ -61,27 +61,27 @@ twoColumns :: String -> String -> Column -> Column -> Column
 twoColumns h1 h2 l1 l2 =
   let m1 = maximum (map length (h1:l1))
       m2 = maximum (map length (h2:l2))
-      s1 = replicate m1 '='
-      s2 = replicate m2 '='
+      s1 = replicate m1 '═'
+      s2 = replicate m2 '═'
       h1' = align m1 ACenter h1
       h2' = align m2 ACenter h2
-  in  zipS "|" (h1':s1:l1) (h2':s2:l2)
+  in  zipS "│" (h1':s1:l1) (h2':s2:l2)
 
 columns' :: [Column] -> Column
-columns' list = foldr (zipS "|") [] list
+columns' list = foldr (zipS "│") [] list
 
 understrike :: Column -> Column
 understrike list =
   let m = maximum (map length list)
-  in  list ++ [replicate m '=']
+  in  list ++ [replicate m '═']
 
 instance TableFormat ASCII where
   tableColumns ASCII list =
     let ms = [(a, maximum (map length (h ++ l)) + 2) | (h, a, l) <- list]
-        ss = [replicate m '=' | (_,m) <- ms]
+        ss = [replicate m '═' | (_,m) <- ms]
         hs = map (\(x,_,_) -> x) list
         bs = map (\(_,_,x) -> x) list
-    in  foldr (zipS "|") [] [map (alignPad m ACenter) h ++ [s] ++ map (alignPad m a) l
+    in  foldr (zipS "│") [] [map (alignPad m ACenter) h ++ [s] ++ map (alignPad m a) l
                              | (h,(a,m),s,l) <- zip4 hs ms ss bs]
 
   tableGrid ASCII _ [] = []
