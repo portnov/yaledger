@@ -60,7 +60,7 @@ incomeStatement' qry options mbPath = do
         res = twoColumns "INCOMES" "OUTCOMES"
                  (alignMax ALeft $ padE incomesS)
                  (alignMax ALeft $ padE outcomesS)
-        sep = replicate (length $ head res) '='
+        sep = replicate (length $ head res) '═'
         footer = "    TOTALS: " ++ show (incomeD - outcomeD) ++ show defcur
 
     wrapIO $ putStrLn $ unlines (res ++ [sep, footer])
