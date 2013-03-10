@@ -222,7 +222,7 @@ byGroup queries options coa =
             | otherwise = id
       let showD _ x = printf "%0.4f" x
       let format = case needCSV flags of
-                     Nothing  -> showTreeList (\x -> [x]) showD flags
+                     Nothing  -> showTreeList ["ACCOUNT"] (\x -> [x]) showD flags
                      Just sep -> \n qs rs -> unlines $ tableColumns (CSV sep) (treeTable id showD flags n qs rs)
       let columns = ["OPEN", "MIN", "Q1", "MEDIAN", "Q3", "MAX", "AVG", "SD", "CLOSE"]
       wrapIO $ putStrLn $ format (length columns) columns (prepare results)

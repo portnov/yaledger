@@ -218,11 +218,11 @@ treeTable showQry showX options n qrys tree =
   in  (["ACCOUNT"], ALeft, paths):
       [([showQry qry], ALeft, col) | (col, qry) <- zip cols qrys]
    
-showTreeList :: Show a => (q -> [String]) -> ([CommonFlags] -> a -> String) -> [CommonFlags] -> Int -> [q] -> Tree [a] [a] -> String
-showTreeList showQry showX options n qrys tree =
+showTreeList :: Show a => Column -> (q -> [String]) -> ([CommonFlags] -> a -> String) -> [CommonFlags] -> Int -> [q] -> Tree [a] [a] -> String
+showTreeList title showQry showX options n qrys tree =
   let struct = showTreeStructure tree
       cols = [map (\l -> showX options (l !! i)) (allNodes tree) | i <- [0..n-1]]
   in  unlines $ tableColumns ASCII $
-              (["ACCOUNT"], ALeft, struct):
+              (title, ALeft, struct):
               [(showQry qry, ARight, col) | (col,qry) <- zip cols qrys]
 

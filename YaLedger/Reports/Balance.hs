@@ -82,7 +82,7 @@ byGroup queries options coa = do
           | otherwise = filteredResults
     let showQry = showMaybeDate . qEnd
     let format = case needCSV options of
-                   Nothing  -> showTreeList showI showBI options
+                   Nothing  -> showTreeList ["ACCOUNT"] showI showBI options
                    Just sep -> \n qs rs -> unlines $ tableColumns (CSV sep) (treeTable showQry showBI options n qs rs)
 
     wrapIO $ putStr $ format (length queries) queries results'

@@ -93,7 +93,7 @@ byGroup queries options coa = do
                      else results
     let hideGroups = CHideGroups `elem` options
     let format = case needCSV options of
-                   Nothing  -> showTreeList showI (const show) options
+                   Nothing  -> showTreeList ["", "ACCOUNT", ""] showI (const show) options
                    Just sep -> \n qs rs -> unlines $ tableColumns (CSV sep) (treeTable showInterval showAmt options n qs rs)
 
     wrapIO $ putStr $ format (length queries) queries (prepare results')
