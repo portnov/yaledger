@@ -61,11 +61,13 @@ twoColumns :: String -> String -> Column -> Column -> Column
 twoColumns h1 h2 l1 l2 =
   let m1 = maximum (map length (h1:l1))
       m2 = maximum (map length (h2:l2))
-      s1 = replicate m1 '═'
-      s2 = replicate m2 '═'
       h1' = align m1 ACenter h1
       h2' = align m2 ACenter h2
-  in  zipS "│" (h1':s1:l1) (h2':s2:l2)
+  in  tabline TopLine [m1,m2]:
+      ("│" ++ h1' ++ "│" ++ h2' ++ "│"):
+      tabline MidLine [m1,m2]:
+      map (\l -> '│':l ++ "│") (zipS "│" l1 l2) ++
+      [tabline BottomLine [m1, m2]]
 
 columns' :: [Column] -> Column
 columns' list = foldr (zipS "│") [] list
@@ -75,14 +77,42 @@ understrike list =
   let m = maximum (map length list)
   in  list ++ [replicate m '═']
 
+data LineKind = TopLine | MidLine | BottomLine
+  deriving (Eq, Show)
+
+startchar :: LineKind -> Char
+startchar TopLine    = '╒'
+startchar MidLine    = '╞'
+startchar BottomLine = '╘'
+
+midchar :: LineKind -> Char
+midchar TopLine    = '╤'
+midchar MidLine    = '╪'
+midchar BottomLine = '╧'
+
+endchar :: LineKind -> Char
+endchar TopLine    = '╕'
+endchar MidLine    = '╡'
+endchar BottomLine = '╛'
+
+tabline :: LineKind -> [Int] -> String
+tabline k ms = startchar k: concatMap go (init ms) ++ line (last ms) ++ [endchar k]
+  where
+    go m = line m ++ [midchar k]
+    line m = replicate m '═'
+
 instance TableFormat ASCII where
   tableColumns ASCII list =
     let ms = [(a, maximum (map length (h ++ l)) + 2) | (h, a, l) <- list]
+        ws = map snd ms
         ss = [replicate m '═' | (_,m) <- ms]
         hs = map (\(x,_,_) -> x) list
         bs = map (\(_,_,x) -> x) list
-    in  foldr (zipS "│") [] [map (alignPad m ACenter) h ++ [s] ++ map (alignPad m a) l
-                             | (h,(a,m),s,l) <- zip4 hs ms ss bs]
+    in  tabline TopLine ws :
+        map ('│':) ( foldr (zipS "│") [] [map (alignPad m ACenter) h | (h,(a,m),s,l) <- zip4 hs ms ss bs] ) ++
+        [tabline MidLine ws] ++
+        map ('│':) ( foldr (zipS "│") [] [map (alignPad m a) l | (h,(a,m),s,l) <- zip4 hs ms ss bs] ) ++
+        [tabline BottomLine ws]
 
   tableGrid ASCII _ [] = []
   tableGrid ASCII colHeaders rows =

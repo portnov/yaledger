@@ -19,6 +19,7 @@ import Data.Yaml
 import Data.Dates.Formats hiding (Fixed)
 import Text.Regex.PCRE
 import Foreign.C.Error (Errno (..))
+import Text.Printf
 
 import YaLedger.Types
 import YaLedger.Logger
@@ -126,10 +127,15 @@ getOther reserved obj = do
       fc <- parseJSON value
       return (T.unpack name, fc)
 
+elt :: [String] -> Int -> String
+elt list i
+  | length list > i = list !! i
+  | otherwise = error $ printf "Index too large: no element %d in list %s" i (show list)
+
 field :: FieldConfig -> [String] -> String
 field (FixedValue str) _ = str
 field fc row =
-  let str = row !! (fcField fc - 1)
+  let str = elt row (fcField fc - 1)
       part = case fcRegexp fc of
                Nothing -> str
                Just regexp -> str =~ regexp
@@ -167,7 +173,7 @@ filterRows filters rows = filter (\row -> all (ok row) filters) rows
     ok list rf =
       if length list < rfField rf
         then False
-        else let str = list !! (rfField rf - 1)
+        else let str = elt list (rfField rf - 1)
              in  str =~ rfRegexp rf
 
 parseHoldUsage :: String -> HoldUsage
