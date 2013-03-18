@@ -20,6 +20,7 @@ module YaLedger.Reports.API
    module YaLedger.Kernel,
    module YaLedger.Logger,
    module YaLedger.Reports.Common,
+   module YaLedger.Reports.Ledger,
    module YaLedger.Output,
   ) where
 
@@ -38,5 +39,6 @@ import YaLedger.Kernel
 import YaLedger.Exceptions
 import YaLedger.Logger
 import YaLedger.Reports.Common
+import YaLedger.Reports.Ledger
 import YaLedger.Output
 

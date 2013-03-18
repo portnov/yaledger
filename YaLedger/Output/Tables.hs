@@ -1,4 +1,4 @@
-
+{-# LANGUAGE MultiParamTypeClasses #-}
 module YaLedger.Output.Tables where
 
 data Align = ALeft | ACenter | ARight
@@ -17,6 +17,14 @@ class TableFormat a where
 
   showFooter :: a -> String -> Column
   showFooter _ s = [s]
+
+data TableColumn a = TableColumn {
+    columnTitle :: Column,
+    columnAlign :: Align,
+    columnGetter :: a -> Column }
+
+class ToTable opts s where
+  shownColumns :: opts -> [TableColumn s]
 
 padColumns :: Row -> Row
 padColumns columns =
