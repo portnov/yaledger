@@ -9,7 +9,7 @@ module YaLedger.Types.Common
    Rate (..), Rates,
    AccountID, GroupID,
    FreeOr,
-   Ext (..),
+   Ext (..), mapExt,
    HasAmount (..), Named (..),
    HasCurrency (..), HasID (..),
    Amount (..), Param (..),
@@ -121,6 +121,15 @@ data Ext a = Ext {
     getAttributes :: Attributes,
     getContent :: a }
   deriving (Eq, Show)
+
+mapExt :: (a -> b) -> Ext a -> Ext b
+mapExt fn (Ext {..}) =
+  Ext {
+    getDate = getDate,
+    extID = extID,
+    getLocation = getLocation,
+    getAttributes = getAttributes,
+    getContent = fn getContent }
 
 nowhere :: SourcePos
 nowhere = newPos "<nowhere>" 0 0

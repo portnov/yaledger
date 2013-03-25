@@ -44,6 +44,25 @@ needCSV opts =
     [] -> Nothing
     (x:_) -> Just x
 
+checkBalance :: ChartOfAccounts -> Maybe ChartOfAccounts -> Query -> Ext (Balance Checked) -> Bool
+checkBalance coa onlyGroup qry extBal =
+    case onlyGroup of
+      Just grp -> case causedBy (getContent extBal) of
+                       Nothing -> False
+                       Just entry -> checkQuery qry extBal && checkEntryAccs [grp, coa] entry
+      Nothing -> checkQuery qry extBal
+
+checkExtEntry :: ChartOfAccounts -> Maybe ChartOfAccounts -> Query -> Ext (Entry Decimal Checked) -> Bool
+checkExtEntry _ Nothing qry e = checkQuery qry e
+checkExtEntry coa (Just grp) qry e = checkQuery qry e && checkEntryAccs [grp, coa] (getContent e)
+
+checkEntryAccs :: [ChartOfAccounts] -> Entry Decimal Checked -> Bool
+checkEntryAccs coas e =
+    checkPostings coas (cEntryCreditPostings e) && checkPostings coas (cEntryDebitPostings e)
+  where
+    checkPostings :: [ChartOfAccounts] -> [Posting Decimal t] -> Bool
+    checkPostings coas ps = all (\p -> any (postingAccount p `isInCoA`) coas) ps
+
 datesBackFrom :: DateTime -> DateInterval -> [DateTime]
 datesBackFrom date int = go date
   where

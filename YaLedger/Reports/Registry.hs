@@ -41,25 +41,6 @@ absBalance extBalance@(Ext {getContent = balance}) =
                  }
              }
 
-checkBalance :: ChartOfAccounts -> Maybe ChartOfAccounts -> Query -> Ext (Balance Checked) -> Bool
-checkBalance coa onlyGroup qry extBal =
-    case onlyGroup of
-      Just grp -> case causedBy (getContent extBal) of
-                       Nothing -> False
-                       Just entry -> checkQuery qry extBal && checkEntryAccs [grp, coa] entry
-      Nothing -> checkQuery qry extBal
-
-checkExtEntry :: ChartOfAccounts -> Maybe ChartOfAccounts -> Query -> Ext (Entry Decimal Checked) -> Bool
-checkExtEntry coa Nothing qry e = checkQuery qry e
-checkExtEntry coa (Just grp) qry e = checkQuery qry e && checkEntryAccs [grp, coa] (getContent e)
-
-checkEntryAccs :: [ChartOfAccounts] -> Entry Decimal Checked -> Bool
-checkEntryAccs coas e =
-    check coas (cEntryCreditPostings e) && check coas (cEntryDebitPostings e)
-  where
-    check :: [ChartOfAccounts] -> [Posting Decimal t] -> Bool
-    check coas ps = all (\p -> any (postingAccount p `isInCoA`) coas) ps
-
 registry qry options mbPath = do
     fullCoA <- gets lsCoA
     coa <- case mbPath of

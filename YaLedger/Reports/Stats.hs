@@ -15,6 +15,7 @@ data Stats = Stats
 
 data SOptions =
          Amounts
+       | SInternal (Maybe String)
        | Common CommonFlags
   deriving (Eq, Show)
 
@@ -27,6 +28,7 @@ instance ReportClass Stats where
      Option ""  ["no-currencies"] (NoArg $ Common CNoCurrencies) "Do not show currencies in amounts",
      Option "A" ["amounts"] (NoArg Amounts) "Show amounts statistics instead of balances statistics",
      Option "l" ["ledger"] (NoArg $ Common CLedgerBalances) "Show ledger balances instead of available balances",
+     Option "i" ["internal"] (OptArg SInternal "GROUP") "Show only entries where all accounts belong to GROUP",
      Option "C" ["csv"] (OptArg (Common . CCSV) "SEPARATOR") "Output data in CSV format using given fields delimiter (semicolon by default)"]
   defaultOptions _ = []
   reportHelp _ = "Show accounts statistics: min, max, avg, quantilies. One optional parameter: account or accounts group."
@@ -78,17 +80,26 @@ stats queries options mbPath = (do
               Nothing   -> gets lsCoA
               Just path -> getCoAItem (gets lsPosition) (gets lsCoA) path
     case coa of
-      Leaf {..} -> byOneAccount queries options leafData
+      Leaf {..} -> byOneAccount coa queries options leafData
       _         -> byGroup queries options coa )
   `catchWithSrcLoc`
     (\l (e :: InvalidPath) -> handler l e)
   `catchWithSrcLoc`
     (\l (e :: NoSuchRate) -> handler l e)
 
-getPostings :: Throws InternalError l => Query -> AnyAccount -> Ledger l [Ext AnyPosting]
-getPostings qry account = do
-    crp <- filter (checkQuery qry) <$> (readIOListL =<< creditPostings account)
-    drp <- filter (checkQuery qry) <$> (readIOListL =<< debitPostings account)
+checkPosting :: ChartOfAccounts -> Maybe ChartOfAccounts -> Query -> Ext (Posting Decimal t) -> Bool
+checkPosting _ Nothing qry ep = checkQuery qry ep
+checkPosting coa (Just grp) qry ep =
+    checkQuery qry ep &&
+    any (postingAccount (getContent ep) `isInCoA`) [grp,coa]
+
+getPostings :: Throws InternalError l
+            => ChartOfAccounts
+            -> Maybe ChartOfAccounts
+            -> Query -> AnyAccount -> Ledger l [Ext AnyPosting]
+getPostings coa internalGroup qry account = do
+    crp <- filter (checkPosting coa internalGroup qry) <$> (readIOListL =<< creditPostings account)
+    drp <- filter (checkPosting coa internalGroup qry) <$> (readIOListL =<< debitPostings account)
     let toCP (Ext {..}) = Ext {
                             getDate = getDate,
                             extID   = extID,
@@ -107,20 +118,47 @@ postingToDouble :: AnyPosting -> Double
 postingToDouble (CP p) = toDouble $ postingValue p
 postingToDouble (DP p) = negate $ toDouble $ postingValue p
 
-loadData :: Throws InternalError l => [SOptions] -> Query -> AnyAccount -> Ledger l [Ext Double]
-loadData opts qry account
-  | Amounts `elem` opts = do
-      postings <- getPostings qry account
-      let doublePosting (Ext {..}) = Ext {
-                                       getDate = getDate,
-                                       extID = extID,
-                                       getLocation = getLocation,
-                                       getAttributes = getAttributes,
-                                       getContent = postingToDouble getContent }
+getEntryPosting :: AnyAccount -> Ext (Entry Decimal Checked) -> Maybe (Entry Decimal Checked, Ext AnyPosting)
+getEntryPosting acc ee@(Ext {getContent = e}) =
+    case map CP (filter check $ cEntryCreditPostings e) ++ map DP (filter check $ cEntryDebitPostings e) of
+      [] -> Nothing
+      (p:_) -> Just (e, mapExt (const p) ee)
+  where
+    check :: Posting Decimal t -> Bool
+    check p = getID (postingAccount p) == getID acc
+
+getExtEntry :: Ext (Balance Checked) -> Maybe (Ext (Entry Decimal Checked))
+getExtEntry extBal@(Ext {..}) =
+  case causedBy getContent of
+    Nothing -> Nothing
+    Just e -> Just $ mapExt (const e) extBal
+
+loadData :: Throws InternalError l
+         => [SOptions]
+         -> ChartOfAccounts
+         -> Maybe ChartOfAccounts
+         -> Query
+         -> AnyAccount
+         -> Ledger l [Ext Double]
+loadData opts coa internalGroup qry account
+  | Amounts `elem` opts && isJust internalGroup = do
+      let Just grp = internalGroup
+      balances <- readIOListL (accountBalances account)
+      let balances' = reverse $ filter (checkBalance coa internalGroup qry) balances
+          entries   = mapMaybe getExtEntry balances'
+          eps       = mapMaybe (getEntryPosting account) entries
+          postings  = [p | (e,p) <- eps, checkEntryAccs [grp,coa] e]
+      let doublePosting ep = mapExt postingToDouble ep
       return $ map doublePosting (sort postings)
+
+  | Amounts `elem` opts = do
+      postings <- getPostings coa internalGroup qry account
+      let doublePosting ep = mapExt postingToDouble ep
+      return $ map doublePosting (sort postings)
+
   | otherwise = do
       balances <- readIOListL (accountBalances account)
-      let balances' = reverse $ filter (checkQuery qry) balances
+      let balances' = reverse $ filter (checkBalance coa internalGroup qry) balances
           btype = if CLedgerBalances `elem` commonFlags opts
                      then LedgerBalance
                      else AvailableBalance
@@ -132,9 +170,14 @@ loadData opts qry account
                                        getContent = toDouble (balanceGetter btype getContent) }
       return $ map doubleBalance balances'
 
-loadGroupData :: Throws InternalError l => [SOptions] -> Query -> ChartOfAccounts -> Ledger l [Ext Double]
-loadGroupData opts qry coa = do
-    tree <- mapLeafsM (loadData opts qry) coa
+loadGroupData :: Throws InternalError l
+              => [SOptions] 
+              -> Maybe ChartOfAccounts
+              -> Query
+              -> ChartOfAccounts
+              -> Ledger l [Ext Double]
+loadGroupData opts internalGroup qry coa = do
+    tree <- mapLeafsM (loadData opts coa internalGroup qry) coa
     return $ concat $ allLeafs tree
 
 calculate :: Maybe DateTime -> Maybe DateTime -> V.Vector Double -> StatRecord
@@ -179,8 +222,12 @@ calculate d1 d2 v
 isNotZeroSR :: StatRecord -> Bool
 isNotZeroSR sr = any (/= 0.0) (toList sr)
 
-byOneAccount queries options account = do
-  lists <- forM queries $ \qry -> loadData options qry account
+byOneAccount coa queries options account = do
+  internalGroup <- case [val | SInternal val <- options] of
+                     [] -> return Nothing
+                     (Nothing:_) -> return $ Just coa
+                     (Just grp:_) -> Just <$> getCoAItem (gets lsPosition) (gets lsCoA) (mkPath grp)
+  lists <- forM queries $ \qry -> loadData options coa internalGroup qry account
   let starts = map qStart queries
       ends   = map qEnd   queries
       ccy = getCurrency account
@@ -207,14 +254,19 @@ byOneAccount queries options account = do
                    (["SD"],     ARight, map (showDouble options ccy . srSd)     results'),
                    (["CLOSE"],  ARight, map (showDouble options ccy . srClose)  results') ]
 
-byGroup queries options coa =
+byGroup queries options coa = do
+    internalGroup <- case [val | SInternal val <- options] of
+                       [] -> return Nothing
+                       (Nothing:_) -> return $ Just coa
+                       (Just grp:_) -> Just <$> getCoAItem (gets lsPosition) (gets lsCoA) (mkPath grp)
     forM_ queries $ \qry -> do
         wrapIO $ putStrLn $ showInterval qry
-        go qry
+        go internalGroup qry
   where
-    go qry = do
+    go internalGroup qry = do
       let flags = commonFlags options
-      srcData <- mapTreeBranchesM (loadGroupData options qry) (loadData options qry) coa
+      srcData <- mapTreeBranchesM (loadGroupData options internalGroup qry)
+                                  (loadData options coa internalGroup qry) coa
       let calc = toList . calculate (qStart qry) (qEnd qry) . V.fromList . map getContent . sort
       let results = mapTree calc calc srcData
       let prepare
