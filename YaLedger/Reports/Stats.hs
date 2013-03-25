@@ -100,18 +100,8 @@ getPostings :: Throws InternalError l
 getPostings coa internalGroup qry account = do
     crp <- filter (checkPosting coa internalGroup qry) <$> (readIOListL =<< creditPostings account)
     drp <- filter (checkPosting coa internalGroup qry) <$> (readIOListL =<< debitPostings account)
-    let toCP (Ext {..}) = Ext {
-                            getDate = getDate,
-                            extID   = extID,
-                            getLocation = getLocation,
-                            getAttributes = getAttributes,
-                            getContent = CP getContent }
-    let toDP (Ext {..}) = Ext {
-                            getDate = getDate,
-                            extID   = extID,
-                            getLocation = getLocation,
-                            getAttributes = getAttributes,
-                            getContent = DP getContent }
+    let toCP ep = mapExt CP ep
+    let toDP ep = mapExt DP ep
     return $ map toCP crp ++ map toDP drp
 
 postingToDouble :: AnyPosting -> Double
@@ -162,12 +152,7 @@ loadData opts coa internalGroup qry account
           btype = if CLedgerBalances `elem` commonFlags opts
                      then LedgerBalance
                      else AvailableBalance
-          doubleBalance (Ext {..}) = Ext {
-                                       getDate = getDate,
-                                       extID = extID,
-                                       getLocation = getLocation,
-                                       getAttributes = getAttributes,
-                                       getContent = toDouble (balanceGetter btype getContent) }
+          doubleBalance extBal = mapExt (\bal -> toDouble (balanceGetter btype bal)) extBal
       return $ map doubleBalance balances'
 
 loadGroupData :: Throws InternalError l
