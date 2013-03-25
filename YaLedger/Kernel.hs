@@ -155,10 +155,6 @@ balanceSetHold hold history = do
                  (getAttributes hold) $ justHold (undefined :: t) value
   plusIOList zero (const True) update history
 
-whenJust :: (Monad m) => Maybe a -> (a -> m ()) -> m ()
-whenJust Nothing  _  = return ()
-whenJust (Just a) fn = fn a
-
 -- | Get current balance of account.
 -- Value is returned in currency of account.
 getCurrentBalance :: (HasBalances a, Throws InternalError l)

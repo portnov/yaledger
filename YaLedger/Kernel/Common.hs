@@ -2,8 +2,9 @@
 -- | This module contains kernel functions, which do not
 -- require Ledger monad.
 module YaLedger.Kernel.Common
-  (inRange, first,
+  (inRange, first, whenJust,
    filterByAccountType,
+   isInCoA,
    getCoAItem, getCoAItemT,
    getAccount, getAccountT,
    accountFullPath
@@ -17,6 +18,10 @@ import YaLedger.Exceptions
 
 inRange :: Integer -> (Integer, Integer) -> Bool
 inRange i (m, n) = (m < i) && (i <= n)
+
+whenJust :: (Monad m) => Maybe a -> (a -> m ()) -> m ()
+whenJust Nothing  _  = return ()
+whenJust (Just a) fn = fn a
 
 first :: (a -> Maybe b) -> [a] -> Maybe b
 first _ [] = Nothing
@@ -36,6 +41,11 @@ filterByAccountType t coas = filter (check t) coas
     check AGFree   (Leaf {leafData = WFree   _ _}) = True
     check t b@(Branch {}) = agType (branchData b) == t
     check _ _ = False
+
+-- | Check if account belongs to chart of accounts
+isInCoA :: AnyAccount -> ChartOfAccounts -> Bool
+isInCoA acc l@(Leaf {}) = getID acc == getID (leafData l)
+isInCoA acc b@(Branch {}) = getID acc `inRange` agRange (branchData b)
 
 getCoAItem :: (Monad m,
                Failure InvalidPath m)

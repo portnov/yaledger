@@ -7,7 +7,9 @@ import YaLedger.Reports.API
 
 data Registry = Registry
 
-type ROptions = CommonFlags
+data ROptions =
+       RInternal (Maybe String)
+     | Common CommonFlags
 
 instance ReportClass Registry where
   type Options Registry = ROptions
@@ -16,11 +18,12 @@ instance ReportClass Registry where
   reportHelp _ = "Show all entries in account or group of accounts."
 
   reportOptions _ =
-    [Option "l" ["ledger"] (NoArg CLedgerBalances) "Show ledger balances instead of available balances",
-     Option "b" ["both"] (NoArg CBothBalances) "Show both available and ledger balances",
-     Option "a" ["absolute"] (NoArg CAbsoluteValues) "Show absolute values of all balances",
-     Option ""  ["no-currencies"] (NoArg CNoCurrencies) "Do not show currencies in amounts",
-     Option "C" ["csv"] (OptArg CCSV "SEPARATOR") "Output data in CSV format using given fields delimiter (semicolon by default)"]
+    [Option "l" ["ledger"] (NoArg $ Common CLedgerBalances) "Show ledger balances instead of available balances",
+     Option "b" ["both"] (NoArg $ Common CBothBalances) "Show both available and ledger balances",
+     Option "a" ["absolute"] (NoArg $ Common CAbsoluteValues) "Show absolute values of all balances",
+     Option "i" ["internal"] (OptArg RInternal "GROUP") "Show only entries where all accounts belong to GROUP",
+     Option ""  ["no-currencies"] (NoArg $ Common CNoCurrencies) "Do not show currencies in amounts",
+     Option "C" ["csv"] (OptArg (Common . CCSV) "SEPARATOR") "Output data in CSV format using given fields delimiter (semicolon by default)"]
 
   runReport _ qry options mbPath = 
       registry qry options mbPath
@@ -38,6 +41,25 @@ absBalance extBalance@(Ext {getContent = balance}) =
                  }
              }
 
+checkBalance :: ChartOfAccounts -> Maybe ChartOfAccounts -> Query -> Ext (Balance Checked) -> Bool
+checkBalance coa onlyGroup qry extBal =
+    case onlyGroup of
+      Just grp -> case causedBy (getContent extBal) of
+                       Nothing -> False
+                       Just entry -> checkQuery qry extBal && checkEntryAccs [grp, coa] entry
+      Nothing -> checkQuery qry extBal
+
+checkExtEntry :: ChartOfAccounts -> Maybe ChartOfAccounts -> Query -> Ext (Entry Decimal Checked) -> Bool
+checkExtEntry coa Nothing qry e = checkQuery qry e
+checkExtEntry coa (Just grp) qry e = checkQuery qry e && checkEntryAccs [grp, coa] (getContent e)
+
+checkEntryAccs :: [ChartOfAccounts] -> Entry Decimal Checked -> Bool
+checkEntryAccs coas e =
+    check coas (cEntryCreditPostings e) && check coas (cEntryDebitPostings e)
+  where
+    check :: [ChartOfAccounts] -> [Posting Decimal t] -> Bool
+    check coas ps = all (\p -> any (postingAccount p `isInCoA`) coas) ps
+
 registry qry options mbPath = do
     fullCoA <- gets lsCoA
     coa <- case mbPath of
@@ -48,28 +70,35 @@ registry qry options mbPath = do
               case res of
                 Leaf {..}   -> return leafData
                 Branch {..} -> return branchData
-    let showCurrs = CNoCurrencies `notElem` options
+    let flags = [flag | Common flag <- options]
+    let showCurrs = CNoCurrencies `notElem` flags
+    groupInternal <- case [val | RInternal val <- options] of
+                       [] -> return Nothing
+                       (Nothing:_) -> return $ Just coa
+                       (Just grp:_) -> Just <$> getCoAItem (gets lsPosition) (gets lsCoA) (mkPath grp)
+    whenJust groupInternal $ \grp ->
+        debug $ "Restricting to internal entries of group:\n" ++ show grp
     case coa of
       Leaf {leafData = account} -> do
           balances <- readIOListL (accountBalances account)
-          let mbAbs = if CAbsoluteValues `elem` options
+          let mbAbs = if CAbsoluteValues `elem` flags
                         then map absBalance
                         else id
-          let balances' = mbAbs $ reverse $ filter (checkQuery qry) balances
-          let bqry = if CBothBalances `elem` options
+          let balances' = mbAbs $ reverse $ filter (checkBalance coa groupInternal qry) balances
+          let bqry = if CBothBalances `elem` flags
                         then BothBalances
-                        else if CLedgerBalances `elem` options
+                        else if CLedgerBalances `elem` flags
                               then Only LedgerBalance
                               else Only AvailableBalance
-          let format = case [s | CCSV s <- options] of
+          let format = case [s | CCSV s <- flags] of
                          []    -> showEntriesBalances' bqry showCurrs fullCoA ASCII totals
                          (x:_) -> showEntriesBalances' bqry showCurrs fullCoA (CSV x) totals
           wrapIO $ putStr $ format (nub $ balances')
       Branch {} -> do
           let accounts = map snd $ leafs coa
           allEntries <- forM accounts getEntries
-          let entries = reverse $ concat $ map (filter $ checkQuery qry) allEntries
-          let format = case [s | CCSV s <- options] of
+          let entries = reverse $ concat $ map (filter $ checkExtEntry coa groupInternal qry) allEntries
+          let format = case [s | CCSV s <- flags] of
                          []    -> showEntries' fullCoA ASCII totals showCurrs
                          (x:_) -> showEntries' fullCoA (CSV x) totals showCurrs
           wrapIO $ putStr $ format (nub $ sort $ entries)
