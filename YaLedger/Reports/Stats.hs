@@ -1,7 +1,9 @@
 {-# LANGUAGE ScopedTypeVariables, FlexibleContexts, OverlappingInstances, TypeFamilies, RecordWildCards #-}
 
 module YaLedger.Reports.Stats
-  (Stats (..)) where
+  (Stats (..),
+   StatRecord (..),
+   calculate, toDouble, toList) where
 
 import Text.Printf
 import qualified Data.Vector as V
@@ -56,7 +58,8 @@ data StatRecord = StatRecord {
        srMax    :: Double,
        srAvg    :: Double,
        srSd     :: Double,
-       srClose  :: Double }
+       srClose  :: Double,
+       srSum    :: Double }
   deriving (Eq, Show)
 
 data AnyPosting =
@@ -178,7 +181,8 @@ calculate d1 d2 v
                         srMax    = 0,
                         srAvg    = 0,
                         srSd     = 0,
-                        srClose  = 0 }
+                        srClose  = 0,
+                        srSum    = 0 }
   | V.length v == 1 = StatRecord {
                         srFrom   = d1,
                         srTo     = d2,
@@ -190,7 +194,8 @@ calculate d1 d2 v
                         srMax    = V.head v,
                         srAvg    = V.head v,
                         srSd     = 0,
-                        srClose  = V.head v }
+                        srClose  = V.head v,
+                        srSum    = V.head v }
   | otherwise = StatRecord {
                   srFrom   = d1,
                   srTo     = d2,
@@ -202,7 +207,8 @@ calculate d1 d2 v
                   srMax    = V.maximum v,
                   srAvg    = mean v,
                   srSd     = stdDev v,
-                  srClose  = V.last v }
+                  srClose  = V.last v,
+                  srSum    = V.sum v }
 
 isNotZeroSR :: StatRecord -> Bool
 isNotZeroSR sr = any (/= 0.0) (toList sr)

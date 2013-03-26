@@ -351,6 +351,9 @@ instance HasID AnyAccount where
   getID (WDebit  _ a) = getID a
   getID (WFree   _ a) = getID a
 
+instance Ord AnyAccount where
+  compare a1 a2 = compare (getID a1) (getID a2)
+
 accountType :: AnyAccount -> AccountGroupType
 accountType (WCredit _ _) = AGCredit
 accountType (WDebit  _ _) = AGDebit
