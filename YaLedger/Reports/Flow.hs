@@ -83,8 +83,11 @@ groupEntries coa es = foldr insertEntry M.empty es
     insertOuter m1 m2 = M.unionWith (++) m1 m2
 
 flatMap :: EntriesMap -> [(AnyAccount, AnyAccount, [Decimal])]
-flatMap m = concatMap (uncurry go) $ M.assocs (M.map M.assocs m)
+flatMap m = concatMap (uncurry go) $ M.assocs (M.map (sortCredits . M.assocs) m)
   where
+    sortCredits :: [(AnyAccount, [Decimal])] -> [(AnyAccount, [Decimal])]
+    sortCredits = sortBy (compare `on` (negate . sum . snd))
+
     go :: AnyAccount -> [(AnyAccount, [Decimal])] -> [(AnyAccount, AnyAccount, [Decimal])]
     go acc list = [(acc, a2, xs) | (a2, xs) <- list]
 
@@ -99,6 +102,7 @@ flowCoA fullCoA qry opts coaDebit coaCredit = do
 
 flowStats coa qry flags showStats grps = do
     let calc = Stats.calculate (qStart qry) (qEnd qry) . V.fromList . map toDouble
+        showCcy = CNoCurrencies `notElem` flags
         rows = [(a1,a2, calc xs) | (a1,a2,xs) <- grps]
         format = case needCSV flags of
                    Nothing -> tableColumns ASCII
@@ -110,16 +114,17 @@ flowStats coa qry flags showStats grps = do
                              Nothing -> maybe "" (trimPath (maxFieldWidth ASCII)) $ accountFullPath (getID x) coa
                              Just _  -> maybe "" (intercalate "/") $ accountFullPath (getID x) coa
         thrd (_,_,x) = x
+        showF fn (_,crAcc,x) = showDouble showCcy (getCurrency crAcc) (fn x)
     wrapIO $ putStr $ unlines $
              format $ [(["DEBIT"], ALeft, map debitAcc rows),
                        (["CREDIT"], ALeft, map creditAcc rows),
-                       (["SUM"], ARight, map (show . srSum . thrd) rows)] ++
+                       (["SUM"], ARight, map (showF srSum) rows)] ++
                        if showStats
-                         then [(["MIN"], ARight, map (show . srMin . thrd) rows),
-                               (["Q1"],  ARight, map (show . srQ1  . thrd) rows),
-                               (["MEDIAN"], ARight, map (show . srMedian . thrd) rows),
-                               (["Q3"],  ARight, map (show . srQ3  . thrd) rows),
-                               (["MAX"], ARight, map (show . srMax . thrd) rows),
-                               (["AVG"], ARight, map (show . srAvg . thrd) rows),
-                               (["SD"],  ARight, map (show . srSd  . thrd) rows)]
+                         then [(["MIN"], ARight, map (showF srMin) rows),
+                               (["Q1"],  ARight, map (showF srQ1)  rows),
+                               (["MEDIAN"], ARight, map (showF srMedian) rows),
+                               (["Q3"],  ARight, map (showF srQ3)  rows),
+                               (["MAX"], ARight, map (showF srMax) rows),
+                               (["AVG"], ARight, map (showF srAvg) rows),
+                               (["SD"],  ARight, map (showF srSd)  rows)]
                          else []

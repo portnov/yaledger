@@ -71,13 +71,6 @@ toList :: StatRecord -> [Double]
 toList (StatRecord {..}) =
   [srOpen, srMin, srQ1, srMedian, srQ3, srMax, srAvg, srSd, srClose]
 
-showDouble :: [SOptions] -> Currency -> Double -> String
-showDouble options c x =
-    printf "%0.4f" x ++
-    if CNoCurrencies `elem` commonFlags options
-      then ""
-      else show c
-
 stats queries options mbPath = (do
     coa <- case mbPath of
               Nothing   -> gets lsCoA
@@ -224,6 +217,7 @@ byOneAccount coa queries options account = do
       ccy = getCurrency account
       srcData = map (V.fromList . map getContent . sort) lists
       flags = commonFlags options
+      showCcy = CNoCurrencies `notElem` flags
       results = zipWith3 calculate starts ends srcData
       prepare = if CNoZeros `elem` flags
                   then filter isNotZeroSR
@@ -235,15 +229,15 @@ byOneAccount coa queries options account = do
   wrapIO $ putStr $ unlines $
            format [(["FROM"],   ALeft,  map (showMaybeDate . srFrom) results'),
                    (["TO"],     ALeft,  map (showMaybeDate . srTo)   results'),
-                   (["OPEN"],   ARight, map (showDouble options ccy . srOpen)   results'),
-                   (["MIN"],    ARight, map (showDouble options ccy . srMin)    results'),
-                   (["Q1"],     ARight, map (showDouble options ccy . srQ1)     results'),
-                   (["MEDIAN"], ARight, map (showDouble options ccy . srMedian) results'),
-                   (["Q3"],     ARight, map (showDouble options ccy . srQ3)     results'),
-                   (["MAX"],    ARight, map (showDouble options ccy . srMax)    results'),
-                   (["AVG"],    ARight, map (showDouble options ccy . srAvg)    results'),
-                   (["SD"],     ARight, map (showDouble options ccy . srSd)     results'),
-                   (["CLOSE"],  ARight, map (showDouble options ccy . srClose)  results') ]
+                   (["OPEN"],   ARight, map (showDouble showCcy ccy . srOpen)   results'),
+                   (["MIN"],    ARight, map (showDouble showCcy ccy . srMin)    results'),
+                   (["Q1"],     ARight, map (showDouble showCcy ccy . srQ1)     results'),
+                   (["MEDIAN"], ARight, map (showDouble showCcy ccy . srMedian) results'),
+                   (["Q3"],     ARight, map (showDouble showCcy ccy . srQ3)     results'),
+                   (["MAX"],    ARight, map (showDouble showCcy ccy . srMax)    results'),
+                   (["AVG"],    ARight, map (showDouble showCcy ccy . srAvg)    results'),
+                   (["SD"],     ARight, map (showDouble showCcy ccy . srSd)     results'),
+                   (["CLOSE"],  ARight, map (showDouble showCcy ccy . srClose)  results') ]
 
 byGroup queries options coa = do
     internalGroup <- case [val | SInternal val <- options] of

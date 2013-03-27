@@ -9,6 +9,7 @@ import Data.Maybe
 import Data.List
 import Data.Decimal
 import Data.Dates
+import Text.Printf
 
 import YaLedger.Types
 import YaLedger.Output
@@ -96,6 +97,14 @@ trimPath (Just n) ps =
   in  case takeWhile ((< n) . snd) $ zip rlist $ tail $ scanl (+) 0 $ map length rlist of
         [] -> last ps
         xs -> intercalate "/" (reverse $ map fst xs)
+
+showDouble :: Bool -> Currency -> Double -> String
+showDouble showCurrencies c x =
+  let fmt = "%0." ++ show (cPrecision c) ++ "f"
+  in printf fmt x ++
+      if showCurrencies
+        then show c
+        else ""
 
 treeTable :: (q -> String) -> ([CommonFlags] -> a -> String) -> [CommonFlags] -> Int -> [q] -> Tree [a] [a] -> [(Column, Align, Column)]
 treeTable showQry showX options n qrys tree =
