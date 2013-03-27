@@ -29,8 +29,7 @@ instance ReportClass Flow where
   type Options Flow = FOptions
   type Parameters Flow = TwoPaths
   reportOptions _ = 
-    [Option "g" ["hide-groups"] (NoArg $ Common CHideGroups) "Hide accounts groups in CSV output",
-     Option ""  ["no-currencies"] (NoArg $ Common CNoCurrencies) "Do not show currencies in amounts",
+    [Option ""  ["no-currencies"] (NoArg $ Common CNoCurrencies) "Do not show currencies in amounts",
      Option "s" ["stats"] (NoArg FStats) "Show statistics",
      Option "C" ["csv"] (OptArg (Common . CCSV) "SEPARATOR") "Output data in CSV format using given fields delimiter (semicolon by default)"]
   defaultOptions _ = []
@@ -44,8 +43,12 @@ getCoABalances qry coa = do
   balLists <- mapM readIOListL (map accountBalances $ allLeafs coa)
   return $ mergeBalances $ map (filter (checkQuery qry)) (balLists :: [[Ext (Balance Checked)]])
 
-mergeBalances lists =
-  nubBy ((==) `on` (causedBy . getContent)) $ sort $ concat lists
+mergeBalances lists = nubBy ((==) `on` extEntry) $ sort $ concat lists
+  where
+    extEntry extBal =
+      case causedBy (getContent extBal) of
+        Nothing -> Nothing
+        Just entry -> Just $ mapExt (const entry) extBal
 
 flow qry options p1 p2 = (do
     fullCoA <- gets lsCoA
