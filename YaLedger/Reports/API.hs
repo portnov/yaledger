@@ -22,6 +22,8 @@ module YaLedger.Reports.API
    module YaLedger.Reports.Common,
    module YaLedger.Reports.Ledger,
    module YaLedger.Output,
+
+   getCoAItemL
   ) where
 
 import Control.Applicative
@@ -41,4 +43,10 @@ import YaLedger.Logger
 import YaLedger.Reports.Common
 import YaLedger.Reports.Ledger
 import YaLedger.Output
+
+getCoAItemL :: Throws InvalidPath l
+            => Maybe Path
+            -> Ledger l ChartOfAccounts
+getCoAItemL Nothing = gets lsCoA
+getCoAItemL (Just path) = getCoAItem (gets lsPosition) (gets lsCoA) path
 

@@ -44,9 +44,7 @@ byBalance options bi
   | otherwise = True
 
 balance queries options mbPath = (do
-    coa <- case mbPath of
-              Nothing   -> gets lsCoA
-              Just path -> getCoAItem (gets lsPosition) (gets lsCoA) path
+    coa <- getCoAItemL mbPath
     case coa of
       Leaf {..} -> byOneAccount queries options leafData
       _         -> byGroup queries options coa )

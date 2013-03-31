@@ -122,9 +122,7 @@ turnoversL :: (Throws InvalidPath l,
                Throws InternalError l)
            => [Query] -> [TOptions] -> Maybe Path -> Ledger l ()
 turnoversL queries options mbPath = do
-    coa <- case mbPath of
-              Nothing   -> gets lsCoA
-              Just path -> getCoAItem (gets lsPosition) (gets lsCoA) path
+    coa <- getCoAItemL mbPath
     case coa of
       Leaf {..} -> byOneAccount queries options leafData
       _ -> forM_ queries $ \qry -> do

@@ -6,6 +6,7 @@ module YaLedger.Reports.Flow
 import Data.Function (on)
 import qualified Data.Map as M
 import qualified Data.Vector as V
+import Text.Printf
 
 import YaLedger.Reports.API
 import YaLedger.Reports.Stats as Stats
@@ -14,6 +15,7 @@ data Flow = Flow
 
 data FOptions =
        FStats
+     | FDot
      | Common CommonFlags
   deriving (Eq, Show)
 
@@ -31,6 +33,7 @@ instance ReportClass Flow where
   reportOptions _ = 
     [Option ""  ["no-currencies"] (NoArg $ Common CNoCurrencies) "Do not show currencies in amounts",
      Option "s" ["stats"] (NoArg FStats) "Show statistics",
+     Option "D" ["dot"] (NoArg FDot) "Output data (only sums) in DOT format (Graphviz)",
      Option "C" ["csv"] (OptArg (Common . CCSV) "SEPARATOR") "Output data in CSV format using given fields delimiter (semicolon by default)"]
   defaultOptions _ = []
   reportHelp _ = "Show money flow between two groups of accounts. Parameters:\n" ++
@@ -52,10 +55,8 @@ mergeBalances lists = nubBy ((==) `on` extEntry) $ sort $ concat lists
 
 flow qry options p1 p2 = (do
     fullCoA <- gets lsCoA
-    coaDebit <- getCoAItem (gets lsPosition) (gets lsCoA) p1
-    coaCredit <- case p2 of
-                   Nothing   -> gets lsCoA
-                   Just path -> getCoAItem (gets lsPosition) (gets lsCoA) path
+    coaDebit <- getCoAItemL (Just p1)
+    coaCredit <- getCoAItemL p2
     flowCoA fullCoA qry options coaDebit coaCredit )
   `catchWithSrcLoc`
     (\l (e :: InvalidPath) -> handler l e)
@@ -101,9 +102,9 @@ flowCoA fullCoA qry opts coaDebit coaCredit = do
         entries = filter (checkCreditAcc coaCredit) entriesDebit
     debug $ "Selected entries count: " ++ show (length entries)
     let groupped = flatMap $ groupEntries coaDebit entries
-    flowStats fullCoA qry flags (FStats `elem` opts) groupped
+    flowStats fullCoA qry flags (FStats `elem` opts) (FDot `elem` opts) groupped
 
-flowStats coa qry flags showStats grps = do
+flowStats coa qry flags showStats asDot grps = do
     let calc = Stats.calculate (qStart qry) (qEnd qry) . V.fromList . map toDouble
         showCcy = CNoCurrencies `notElem` flags
         rows = [(a1,a2, calc xs) | (a1,a2,xs) <- grps]
@@ -118,7 +119,9 @@ flowStats coa qry flags showStats grps = do
                              Just _  -> maybe "" (intercalate "/") $ accountFullPath (getID x) coa
         thrd (_,_,x) = x
         showF fn (_,crAcc,x) = showDouble showCcy (getCurrency crAcc) (fn x)
-    wrapIO $ putStr $ unlines $
+    if asDot
+      then wrapIO $ putStr $ unlines $ formatDot coa rows
+      else wrapIO $ putStr $ unlines $
              format $ [(["DEBIT"], ALeft, map debitAcc rows),
                        (["CREDIT"], ALeft, map creditAcc rows),
                        (["SUM"], ARight, map (showF srSum) rows)] ++
@@ -131,3 +134,25 @@ flowStats coa qry flags showStats grps = do
                                (["AVG"], ARight, map (showF srAvg) rows),
                                (["SD"],  ARight, map (showF srSd)  rows)]
                          else []
+
+formatDot :: ChartOfAccounts -> [(AnyAccount, AnyAccount, StatRecord)] -> [String]
+formatDot coa rows =
+    ["digraph G {"] ++
+    ["  rankdir = LR;"] ++
+    map node (nub $ sort $ map fst3 rows ++ map snd3 rows) ++
+    map edge (map sum3 rows) ++
+    ["}"]
+  where
+    fst3 (x,_,_) = x
+    snd3 (_,x,_) = x
+    sum3 (x,y,zs) = (x,y, srSum zs)
+    
+    node acc = printf "  \"%d\" [label=\"%s\"];" (getID acc) path
+      where path = maybe "" (intercalate "/") $ accountFullPath (getID acc) coa
+
+    edge (acc1, acc2, x) =
+      printf "  \"%d\" -> \"%d\" [label=\"%s\", weight=\"%d\"];" (getID acc1) (getID acc2) (show x) (toInt x)
+
+    toInt :: Double -> Integer
+    toInt x = round (x * 100)
+    

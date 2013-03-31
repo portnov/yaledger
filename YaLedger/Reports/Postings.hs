@@ -26,9 +26,7 @@ instance ReportClass Postings where
       (\l (e :: InvalidPath) -> handler l e)
 
 postings qry options mbPath = do
-  coa <- case mbPath of
-            Nothing   -> gets lsCoA
-            Just path -> getCoAItem (gets lsPosition) (gets lsCoA) path
+  coa <- getCoAItemL mbPath
   let format = case [s | PCSV s <- options] of
                  []    -> showPostings ASCII
                  (x:_) -> showPostings (CSV x)

@@ -43,9 +43,7 @@ absBalance extBalance@(Ext {getContent = balance}) =
 
 registry qry options mbPath = do
     fullCoA <- gets lsCoA
-    coa <- case mbPath of
-              Nothing   -> return fullCoA
-              Just path -> getCoAItem (gets lsPosition) (gets lsCoA) path
+    coa <- getCoAItemL mbPath
     totals <- do
               res <- treeSaldo qry coa
               case res of
