@@ -158,5 +158,5 @@ formatDot fn toInt coa rows =
       where path = maybe "" (intercalate "/") $ accountFullPath (getID acc) coa
 
     edge (acc1, acc2, x) =
-      printf "  \"%d\" -> \"%d\" [label=\"%s\", weight=\"%d\"];" (getID acc1) (getID acc2) (show x) (toInt x)
+      printf "  \"%d\" -> \"%d\" [label=\"%s\", weight=%d];" (getID acc1) (getID acc2) (show x) (toInt x)
 
