@@ -1,7 +1,11 @@
 {-# LANGUAGE ScopedTypeVariables, FlexibleContexts, OverlappingInstances, TypeFamilies, RecordWildCards, TypeSynonymInstances, FlexibleInstances #-}
 
 module YaLedger.Reports.Flow
-  (Flow (..)) where
+  (Flow (..),
+   EntriesMap,
+   groupEntries,
+   flatMap,
+   formatDot) where
 
 import Data.Function (on)
 import qualified Data.Map as M
@@ -120,7 +124,7 @@ flowStats coa qry flags showStats asDot grps = do
         thrd (_,_,x) = x
         showF fn (_,crAcc,x) = showDouble showCcy (getCurrency crAcc) (fn x)
     if asDot
-      then wrapIO $ putStr $ unlines $ formatDot coa rows
+      then wrapIO $ putStr $ unlines $ formatDot srSum double2int coa rows
       else wrapIO $ putStr $ unlines $
              format $ [(["DEBIT"], ALeft, map debitAcc rows),
                        (["CREDIT"], ALeft, map creditAcc rows),
@@ -135,8 +139,11 @@ flowStats coa qry flags showStats asDot grps = do
                                (["SD"],  ARight, map (showF srSd)  rows)]
                          else []
 
-formatDot :: ChartOfAccounts -> [(AnyAccount, AnyAccount, StatRecord)] -> [String]
-formatDot coa rows =
+double2int :: Double -> Integer
+double2int x = round (x * 100)
+
+formatDot :: (Show d) => (s -> d) -> (d -> Integer) -> ChartOfAccounts -> [(AnyAccount, AnyAccount, s)] -> [String]
+formatDot fn toInt coa rows =
     ["digraph G {"] ++
     ["  rankdir = LR;"] ++
     map node (nub $ sort $ map fst3 rows ++ map snd3 rows) ++
@@ -145,7 +152,7 @@ formatDot coa rows =
   where
     fst3 (x,_,_) = x
     snd3 (_,x,_) = x
-    sum3 (x,y,zs) = (x,y, srSum zs)
+    sum3 (x,y,zs) = (x,y, fn zs)
     
     node acc = printf "  \"%d\" [label=\"%s\"];" (getID acc) path
       where path = maybe "" (intercalate "/") $ accountFullPath (getID acc) coa
@@ -153,6 +160,3 @@ formatDot coa rows =
     edge (acc1, acc2, x) =
       printf "  \"%d\" -> \"%d\" [label=\"%s\", weight=\"%d\"];" (getID acc1) (getID acc2) (show x) (toInt x)
 
-    toInt :: Double -> Integer
-    toInt x = round (x * 100)
-    

@@ -4,12 +4,15 @@ module YaLedger.Reports.Registry
   (Registry (..)) where
 
 import YaLedger.Reports.API
+import qualified YaLedger.Reports.Flow as F
 
 data Registry = Registry
 
 data ROptions =
        RInternal (Maybe String)
+     | RDot
      | Common CommonFlags
+  deriving (Eq, Show)
 
 instance ReportClass Registry where
   type Options Registry = ROptions
@@ -23,6 +26,7 @@ instance ReportClass Registry where
      Option "a" ["absolute"] (NoArg $ Common CAbsoluteValues) "Show absolute values of all balances",
      Option "i" ["internal"] (OptArg RInternal "GROUP") "Show only entries where all accounts belong to GROUP",
      Option ""  ["no-currencies"] (NoArg $ Common CNoCurrencies) "Do not show currencies in amounts",
+     Option "D" ["dot"] (NoArg RDot) "Output data (only credit amount sums) in DOT format (GraphViz)",
      Option "C" ["csv"] (OptArg (Common . CCSV) "SEPARATOR") "Output data in CSV format using given fields delimiter (semicolon by default)"]
 
   runReport _ qry options mbPath = 
@@ -72,7 +76,9 @@ registry qry options mbPath = do
           let format = case [s | CCSV s <- flags] of
                          []    -> showEntriesBalances' bqry showCurrs fullCoA ASCII totals
                          (x:_) -> showEntriesBalances' bqry showCurrs fullCoA (CSV x) totals
-          wrapIO $ putStr $ format (nub $ balances')
+          if RDot `elem` options
+            then wrapIO $ putStr $ unlines $ formatDot fullCoA $ mapMaybe (causedBy . getContent) $ nub $ balances'
+            else wrapIO $ putStr $ format (nub $ balances')
       Branch {} -> do
           let accounts = map snd $ leafs coa
           allEntries <- forM accounts getEntries
@@ -80,5 +86,11 @@ registry qry options mbPath = do
           let format = case [s | CCSV s <- flags] of
                          []    -> showEntries' fullCoA ASCII totals showCurrs
                          (x:_) -> showEntries' fullCoA (CSV x) totals showCurrs
-          wrapIO $ putStr $ format (nub $ sort $ entries)
-  
+          if RDot `elem` options
+            then wrapIO $ putStr $ unlines $ formatDot fullCoA $ map getContent $ nub $ sort $ entries
+            else wrapIO $ putStr $ format (nub $ sort $ entries)
+
+formatDot :: ChartOfAccounts -> [Entry Decimal Checked] -> [String]
+formatDot coa entries =
+    F.formatDot sum decimalMantissa coa $ F.flatMap $ F.groupEntries coa entries
+
