@@ -180,7 +180,8 @@ parseCmdLine argv = do
                            }
                if null params
                  then return opts'
-                 else return $ opts' { reportParams = params }
+                 else return $ opts' { defaultReport = head params,
+                                       reportParams  = tail params }
     (_,_,errs) -> fail $ concat errs ++ usageInfo header options
 
 -- | Lookup for items with keys starting with given prefix
@@ -199,8 +200,17 @@ initialize parsers reports argv = do
          infoIO $ "Using accounts map: " ++ fromJust (accountMap options)
          debugIO $ "Using parser configs:\n" ++
              (unlines $ map (\(name,config) -> name ++ ": " ++ config) (parserConfigs options))
-         let report = head $ reportParams options
-             params = tail $ reportParams options
+         let report = defaultReport options
+         params <- if null (reportParams options)
+                     then case lookupInit report (M.assocs $ defaultReportParams options) of
+                            [] -> return []
+                            [str] -> return $ words str
+                            list -> do
+                                    putStrLn $ "Ambigous report specification: " ++ report ++
+                                               "\nSupported reports are: " ++
+                                               unwords (map fst reports)
+                                    return []
+                        else return $ reportParams options
          case lookupInit report reports of
            [] -> do
                  putStrLn $ "No such report: " ++ report ++

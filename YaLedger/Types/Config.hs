@@ -9,6 +9,7 @@ module YaLedger.Types.Config
 
 import Data.Dates
 import System.Log.Logger
+import qualified Data.Map as M
 
 import YaLedger.Types.Attributes
 import YaLedger.Types.Transactions
@@ -26,6 +27,8 @@ data LedgerOptions =
       logSeverity :: Priority,
       parserConfigs :: [(String, FilePath)],
       deduplicationRules :: [DeduplicationRule],
+      defaultReport :: String,
+      defaultReportParams :: M.Map String String,
       reportParams :: [String] }
   | Help
   deriving (Eq, Show)

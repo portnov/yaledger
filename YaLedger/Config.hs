@@ -42,6 +42,8 @@ instance Monoid LedgerOptions where
       deduplicationRules = if null (deduplicationRules o2)
                              then deduplicationRules o1
                              else deduplicationRules o2,
+      defaultReport = defaultReport o2,
+      defaultReportParams = defaultReportParams o2 `M.union` defaultReportParams o1,
       reportParams = if null (reportParams o2) then reportParams o1 else reportParams o2 }
 
 chooseDate :: (DateTime -> DateTime -> Bool) -> Maybe DateTime -> Maybe DateTime -> Maybe DateTime
@@ -77,6 +79,8 @@ instance FromJSON LedgerOptions where
       <*> v .:? "debug" .!= WARNING
       <*> (parseConfigs =<< (v .:? "parsers"))
       <*> v .:? "deduplicate" .!= []
+      <*> v .:? "default-report" .!= "balance"
+      <*> (parseReportParams =<< (v .:? "reports-options"))
       <*> return []
   parseJSON Null = return mempty
   parseJSON x = fail $ "LedgerOptions: invalid object: " ++ show x
@@ -193,6 +197,10 @@ parseConfigs :: Maybe Object -> Parser [(String, FilePath)]
 parseConfigs Nothing = return []
 parseConfigs (Just obj) = parsePairs obj
 
+parseReportParams :: Maybe Object -> Parser (M.Map String String)
+parseReportParams Nothing = return M.empty
+parseReportParams (Just obj) = M.fromList <$> parsePairs obj
+
 getDefaultLedgerOptions :: IO LedgerOptions
 getDefaultLedgerOptions = do
   now <-  getCurrentDateTime
@@ -216,7 +224,9 @@ getDefaultLedgerOptions = do
         logSeverity = WARNING,
         parserConfigs = [],
         deduplicationRules = [],
-        reportParams = ["balance"] }
+        defaultReport = "balance",
+        defaultReportParams = M.empty,
+        reportParams = [] }
 
 loadConfig :: FilePath -> IO LedgerOptions
 loadConfig configFile = do
