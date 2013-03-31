@@ -48,7 +48,7 @@ showPostingValue (DPosting _ x _) = show x
 showE :: Ext (Entry Decimal Checked) -> Row
 showE (Ext {getDate = date, getContent = (CEntry dt cr rd)}) =
     [prettyPrint date: replicate (m-1) "",
-     map posting cr, map posting dt, rdS]
+     map posting dt, map posting cr, rdS]
   where
     m = max (length cr) (length dt)
     rdS
@@ -58,8 +58,8 @@ showE (Ext {getDate = date, getContent = (CEntry dt cr rd)}) =
 showE' :: Maybe Int -> Bool -> ChartOfAccounts -> Ext (Entry Decimal Checked) -> Row
 showE' t showCurrs coa (Ext {getDate = date, getContent = (CEntry dt cr rd)}) =
     [prettyPrint date: replicate (m-1) "",
-     map (showPostingAccount t coa) cr, map (showPostingValueD showCurrs) cr,
      map (showPostingAccount t coa) dt, map (showPostingValueD showCurrs) dt,
+     map (showPostingAccount t coa) cr, map (showPostingValueD showCurrs) cr,
      rdS]
   where
     m = max (length cr) (length dt)
@@ -107,8 +107,8 @@ showEntries fmt totals list =
       footer = showFooter fmt $ "    TOTALS: " ++ show totals
   in  unlines $
       tableGrid fmt [(ALeft,  ["DATE"]),
-                     (ARight, ["CREDIT"]),
                      (ARight, ["DEBIT"]),
+                     (ARight, ["CREDIT"]),
                      (ARight, ["RATES DIFF."])] l ++ footer
 
 showEntries' :: (TableFormat a) => ChartOfAccounts -> a -> Amount -> Bool -> [Ext (Entry Decimal Checked)] -> String
@@ -117,9 +117,9 @@ showEntries' coa fmt totals showCurrs list =
       footer = showFooter fmt $ "    TOTALS: " ++ show totals
   in  unlines $
       tableGrid fmt [(ALeft,  ["DATE"]),
-                     (ALeft,  ["CREDIT ACCOUNT"]),
-                     (ARight, ["AMOUNT"]),
                      (ALeft,  ["DEBIT ACCOUNT"]),
+                     (ARight, ["AMOUNT"]),
+                     (ALeft,  ["CREDIT ACCOUNT"]),
                      (ARight, ["AMOUNT"]),
                      (ARight, ["RATES DIFF."])] l ++ footer
 
@@ -129,8 +129,8 @@ showEntriesBalances fmt totals list =
       footer = showFooter fmt $ "    TOTALS: " ++ show totals
   in  unlines $
       tableGrid fmt [(ALeft,  ["DATE"]),
-                     (ARight, ["CREDIT"]),
                      (ARight, ["DEBIT"]),
+                     (ARight, ["CREDIT"]),
                      (ARight, ["BALANCE B/D"])] l ++ footer
 
 showEntriesBalances' :: (TableFormat a) => BalanceQuery -> Bool -> ChartOfAccounts -> a -> Amount -> [Ext (Balance Checked)] -> String
@@ -139,9 +139,9 @@ showEntriesBalances' bqry showCurrs coa fmt totals list =
       footer = showFooter fmt $ "    TOTALS: " ++ show totals
   in  unlines $
       tableGrid fmt [(ALeft,  ["DATE"]),
-                     (ALeft,  ["CREDIT ACCOUNT"]),
-                     (ARight, ["AMOUNT"]),
                      (ALeft,  ["DEBIT ACCOUNT"]),
+                     (ARight, ["AMOUNT"]),
+                     (ALeft,  ["CREDIT ACCOUNT"]),
                      (ARight, ["AMOUNT"]),
                      (ARight, ["BALANCE B/D"])] l ++ footer
 
