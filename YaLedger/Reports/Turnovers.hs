@@ -162,8 +162,8 @@ byOneAccount queries options account = do
       [(["FROM"], ALeft, map showMaybeDate starts),
        (["TO"],   ALeft, map showMaybeDate ends),
        (["BALANCE C/F"], ARight, map show inc),
-       (["CREDIT"],      ARight, map show credits),
        (["DEBIT"],       ARight, map show debits),
+       (["CREDIT"],      ARight, map show credits),
        (["BALANCE B/D"], ARight, map show out)] ++
       (if calcTotals
          then [(["TOTALS"], ARight, map (show . fromJust) totals)]
@@ -200,8 +200,8 @@ turnovers qry options coa = do
   wrapIO $ putStrLn $ unlines $ format $
       [(["ACCOUNT"],     ALeft, struct),
        (["BALANCE C/F"], ARight, map show inc),
-       (["CREDIT"],      ARight, map show credits),
        (["DEBIT"],       ARight, map show debits),
+       (["CREDIT"],      ARight, map show credits),
        (["BALANCE B/D"], ARight,  map show out)] ++
       (if calcTotals
          then [(["TOTALS"], ARight, map (show . fromJust) totals)]
