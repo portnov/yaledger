@@ -78,7 +78,7 @@ showB currency (Ext {getDate = date, getContent = balance}) =
       m = max (length cr) (length dt)
       padding = replicate (m-1) ""
   in  [prettyPrint date: padding,
-       map posting cr, map posting dt,
+       map posting dt, map posting cr,
        padding ++ [show bd ++ show currency]]
 
 showB' :: Maybe Int -> Bool -> BalanceQuery -> ChartOfAccounts -> Currency -> Ext (Balance Checked) -> Row
@@ -93,8 +93,8 @@ showB' t showCurrs bqry coa currency (Ext {getDate = date, getContent = balance}
       padding = replicate (m-1) ""
       mbShow c = if showCurrs then show c else ""
   in  [prettyPrint date: padding,
-       map (showPostingAccount t coa) cr, map (showPostingValueD showCurrs) cr,
        map (showPostingAccount t coa) dt, map (showPostingValueD showCurrs) dt,
+       map (showPostingAccount t coa) cr, map (showPostingValueD showCurrs) cr,
        padding ++ [show bi ++ mbShow currency]]
 
 posting :: Posting Decimal t -> String
