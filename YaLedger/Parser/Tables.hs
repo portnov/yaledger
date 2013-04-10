@@ -12,6 +12,7 @@ import qualified Data.Text.Lazy.Encoding as E
 import qualified Data.ByteString.Lazy as L
 import qualified Codec.Text.IConv as IConv
 import Data.Maybe
+import Data.List (intercalate)
 import Data.Decimal
 import Data.String
 import Data.Char (toLower)
@@ -23,6 +24,7 @@ import Text.Printf
 
 import YaLedger.Types
 import YaLedger.Logger
+import YaLedger.Kernel.Common (autoPosting)
 
 data RowsFilter =
   RowsFilter {
@@ -183,14 +185,15 @@ parseHoldUsage str
   | otherwise = DontUseHold
 
 -- | Convert one row of table
-convertRow :: GenericParserConfig
+convertRow :: LedgerOptions
+           -> GenericParserConfig
            -> Currencies
            -> ChartOfAccounts
            -> FilePath
            -> Int
            -> [String]
            -> IO (Ext Record)
-convertRow pc currs coa path rowN row = do
+convertRow opts pc currs coa path rowN row = do
   let dateStr = field (pcDate pc) row
       currencyS = field (pcCurrency pc) row
       amountStr = field (pcAmount pc) row
@@ -214,8 +217,8 @@ convertRow pc currs coa path rowN row = do
       attrs = M.fromList [p | p@(n,v) <- as, v `notElem` [Exactly "", Optional ""]]
 
       lookupAccount path =
-         case lookupTree (mkPath path) coa of
-           [] -> fail $ "No such account: " ++ path ++ "\n" ++ unwords row
+         case lookupTree path coa of
+           [] -> fail $ "No such account: " ++ intercalate "/" path ++ "\n" ++ unwords row
            [a] -> return a
            as -> fail "Ambigous account specification"
 
@@ -227,51 +230,45 @@ convertRow pc currs coa path rowN row = do
             Right d -> return d
             Left err -> fail $ dateStr ++ ":\n" ++ show err
 
-  (s, amount) <- case head amountStr of
+  amt <- case head amountStr of
                    '+' -> case readSum (pcThousandsSep pc) (pcDecimalSep pc) (tail amountStr) of
-                            Right x -> return (ECredit, x)
+                            Right x -> return $ Left $ x :# currency
                             Left err -> fail err
                    '-' -> case readSum (pcThousandsSep pc) (pcDecimalSep pc) (tail amountStr) of
-                            Right x -> return (EDebit, x)
+                            Right x -> return $ Right $ x :# currency
                             Left err -> fail err
                    _   -> case readSum (pcThousandsSep pc) (pcDecimalSep pc) amountStr of
-                            Right x -> return (ECredit, x)
+                            Right x -> return $ Left $ x :# currency
                             Left err -> fail err
 
-  acc <- lookupAccount accountName
+  let accPath = mkPath accountName
+  acc <- lookupAccount accPath
   acc2 <- case account2 of
             Nothing -> return Nothing
-            Just path -> Just <$> lookupAccount path
+            Just path -> do
+                         a <- lookupAccount (mkPath path)
+                         return $ Just (a, DontUseHold)
 
-  entry <- case s of
-             ECredit -> do
-               posting <- cposting acc (amount :# currency) useHold
-               corr <- case acc2 of
-                         Just acc -> dposting acc (amount :# currency) DontUseHold
-                         Nothing  -> return []
-               return $ UEntry corr posting Nothing []
-             EDebit -> do
-               posting <- dposting acc (amount :# currency) useHold
-               corr <- case acc2 of
-                         Just acc -> cposting acc (amount :# currency) DontUseHold
-                         Nothing  -> return []
-               return $ UEntry posting corr Nothing []
+  onePosting <- autoPosting opts amt accPath acc useHold
+  let entry = case onePosting of
+                CP posting -> UEntry [] [posting] acc2 []
+                DP posting -> UEntry [posting] [] acc2 []
   let pos = newPos path rowN 1
   return $ Ext date 0 pos attrs (Transaction $ TEntry entry)
 
 cposting :: AnyAccount -> Amount -> HoldUsage -> IO [Posting Amount Credit]
 cposting acc x useHold =
   case acc of
-    WCredit _ a -> return [CPosting (Right a) x useHold]
-    WFree   _ a -> return [CPosting (Left  a) x useHold]
-    WDebit  _ a -> fail $ "Invalid account type: debit instead of credit: " ++ getName a ++ " " ++ show x
+    WCredit a -> return [CPosting (Right a) x useHold]
+    WFree   a -> return [CPosting (Left  a) x useHold]
+    WDebit  a -> fail $ "Invalid account type: debit instead of credit: " ++ getName a ++ " " ++ show x
 
 dposting :: AnyAccount -> Amount -> HoldUsage -> IO [Posting Amount Debit]
 dposting acc x useHold =
   case acc of
-    WDebit   _ a -> return [DPosting (Right a) x useHold]
-    WFree    _ a -> return [DPosting (Left  a) x useHold]
-    WCredit  _ a -> fail $ "Invalid account type: credit instead of debit: " ++ getName a ++ " " ++ show x
+    WDebit   a -> return [DPosting (Right a) x useHold]
+    WFree    a -> return [DPosting (Left  a) x useHold]
+    WCredit  a -> fail $ "Invalid account type: credit instead of debit: " ++ getName a ++ " " ++ show x
 
 instance Show Errno where
   show (Errno x) = show x

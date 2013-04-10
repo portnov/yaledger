@@ -36,6 +36,10 @@ instance Monoid LedgerOptions where
       files = if null (files o2) then files o1 else files o2,
       query = query o2 `mappend` query o1,
       reportsQuery = reportsQuery o2 `mappend` reportsQuery o1,
+      assetAccounts = assetAccounts o2 `M.union` assetAccounts o1,
+      liabilityAccounts = liabilityAccounts o2 `M.union` liabilityAccounts o1,
+      incomeAccounts = incomeAccounts o2 `M.union` incomeAccounts o1,
+      expenceAccounts = expenceAccounts o2 `M.union` expenceAccounts o1,
       reportsInterval = reportsInterval o2 `mplus` reportsInterval o1,
       logSeverity = min (logSeverity o1) (logSeverity o2),
       parserConfigs = parserConfigs o1 ++ parserConfigs o2,
@@ -76,6 +80,10 @@ instance FromJSON LedgerOptions where
       <*> v .:? "query" .!= mempty
       <*> v .:? "reports-interval"
       <*> v .:? "reports" .!= mempty
+      <*> (parseAttrs [] =<< (v .:? "assets"))
+      <*> (parseAttrs [] =<< (v .:? "liabilities"))
+      <*> (parseAttrs [] =<< (v .:? "incomes"))
+      <*> (parseAttrs [] =<< (v .:? "expences"))
       <*> v .:? "debug" .!= WARNING
       <*> (parseConfigs =<< (v .:? "parsers"))
       <*> v .:? "deduplicate" .!= []
@@ -157,7 +165,7 @@ instance FromJSON Query where
       <$> v .:? "start"
       <*> v .:? "end"
       <*> v .:? "all-admin" .!= False
-      <*> parseAttrs v
+      <*> parseAttrs ["start","end","all-admin"] (Just v)
   parseJSON _ = fail "Invalid object"
 
 instance FromJSON DateTime where
@@ -167,10 +175,11 @@ instance FromJSON DateTime where
          Left err -> fail $ show err
          Right date -> return date
 
-parseAttrs :: Object -> Parser Attributes
-parseAttrs obj = do
+parseAttrs :: [T.Text] -> Maybe Object -> Parser Attributes
+parseAttrs _ Nothing = return M.empty
+parseAttrs excluded (Just obj) = do
   let pairs = H.toList obj
-      pairs' = filter (\(name,_) -> name `notElem` ["start","end"]) pairs
+      pairs' = filter (\(name,_) -> name `notElem` excluded) pairs
 
   attrs <- forM pairs' $ \(name,value) -> do
                value' <- parseValue value
@@ -221,6 +230,10 @@ getDefaultLedgerOptions = do
         query = emptyQuery,
         reportsInterval = Nothing,
         reportsQuery = emptyQuery,
+        assetAccounts = M.fromList [("classifier", Exactly "assets")],
+        liabilityAccounts = M.fromList [("classifier", Exactly "liablities")],
+        incomeAccounts = M.fromList [("classifier", Exactly "incomes")],
+        expenceAccounts = M.fromList [("classifier", Exactly "expences")],
         logSeverity = WARNING,
         parserConfigs = [],
         deduplicationRules = [],

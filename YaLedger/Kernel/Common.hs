@@ -7,14 +7,18 @@ module YaLedger.Kernel.Common
    isInCoA,
    getCoAItem, getCoAItemT,
    getAccount, getAccountT,
-   accountFullPath
+   accountFullPath,
+   autoPosting
   ) where
 
 import Control.Monad
 import Control.Failure
+import Data.List (intercalate)
+import Text.Printf
 
 import YaLedger.Types
 import YaLedger.Exceptions
+import YaLedger.Kernel.Classification
 
 inRange :: Integer -> (Integer, Integer) -> Bool
 inRange i (m, n) = (m < i) && (i <= n)
@@ -34,11 +38,11 @@ first fn (x:xs) =
 filterByAccountType :: AccountGroupType -> [ChartOfAccounts] -> [ChartOfAccounts]
 filterByAccountType t coas = filter (check t) coas
   where
-    check AGCredit (Leaf {leafData = WCredit _ _}) = True
-    check AGCredit (Leaf {leafData = WFree   _ _}) = True
-    check AGDebit  (Leaf {leafData = WDebit  _ _}) = True
-    check AGDebit  (Leaf {leafData = WFree   _ _}) = True
-    check AGFree   (Leaf {leafData = WFree   _ _}) = True
+    check AGCredit (Leaf {leafData = WCredit _}) = True
+    check AGCredit (Leaf {leafData = WFree   _}) = True
+    check AGDebit  (Leaf {leafData = WDebit  _}) = True
+    check AGDebit  (Leaf {leafData = WFree   _}) = True
+    check AGFree   (Leaf {leafData = WFree   _}) = True
     check t b@(Branch {}) = agType (branchData b) == t
     check _ _ = False
 
@@ -107,6 +111,44 @@ getAccountT t getPos fn path = do
   case x of
     Leaf {} -> return (leafData x)
     _ -> failure (NotAnAccount path pos)
+
+autoPosting :: forall v m. (Show v, Monad m)
+            => LedgerOptions
+            -> Either v v  -- ^ Left for credit amount, Right for debit amount
+            -> Path        -- ^ Path to account
+            -> AnyAccount
+            -> HoldUsage
+            -> m (AnyPosting v)
+autoPosting opts amt accPath acc use = do
+    let attrs = accountAttributes acc
+    if isAssets opts attrs
+      then case (amt, acc) of
+             (Left am,  WFree a)   -> return $ DP $ DPosting (Left a)  am use
+             (Right am, WFree a)   -> return $ CP $ CPosting (Left a)  am use
+             (Left am,  WDebit a)  -> return $ DP $ DPosting (Right a) am use
+             (Right am, WCredit a) -> return $ CP $ CPosting (Right a) am use
+             (_,_) -> fail $ printfErr accPath amt acc
+      else case (amt, acc) of
+             (Left am,  WFree a)   -> return $ CP $ CPosting (Left a)  am use
+             (Right am, WFree a)   -> return $ DP $ DPosting (Left a)  am use
+             (Left am,  WCredit a) -> return $ CP $ CPosting (Right a) am use
+             (Right am, WDebit a)  -> return $ DP $ DPosting (Right a) am use
+             (_,_) -> fail $ printfErr accPath amt acc
+  where
+    printfErr :: Path -> Either v v -> AnyAccount -> String
+    printfErr path amt acc = printf "Invalid account type %s: %s instead of %s (amount: %s)"
+                                    (intercalate "/" path) signAmt signAcc (either show show amt)
+      where
+        signAmt :: String
+        signAmt = case amt of
+                    Left _  -> "credit"
+                    Right _ -> "debit"
+
+        signAcc :: String
+        signAcc = case acc of
+                    WFree _   -> "free"
+                    WCredit _ -> "credit"
+                    WDebit _  -> "debit"
 
 -- | Get fully qualfiied path of account
 accountFullPath :: AccountID -> ChartOfAccounts -> Maybe Path

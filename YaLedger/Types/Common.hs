@@ -12,6 +12,7 @@ module YaLedger.Types.Common
    Ext (..), mapExt,
    HasAmount (..), Named (..),
    HasCurrency (..), HasID (..),
+   HasAttributes (..),
    Amount (..), Param (..),
    AccountGroupType (..),
    AccountGroupData (..),
@@ -145,6 +146,9 @@ class HasID a where
 
 class HasCurrency a where
   getCurrency :: a -> Currency
+
+class HasAttributes a where
+  getAttrs :: a -> Attributes
 
 data Amount = Decimal :# Currency
   deriving (Eq)

@@ -61,6 +61,7 @@ group Root {
   };
   group активы {
     currency = "р";
+    classifier = "assets";
     account карточка;
     account карман {
       category = /транспорт/;

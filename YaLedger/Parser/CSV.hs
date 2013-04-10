@@ -29,21 +29,22 @@ csvCells sep str = map parseRow $ lines str
   where
     parseRow = split sep
 
-parseCSV :: ParserConfig
+parseCSV :: LedgerOptions
+         -> ParserConfig
          -> FilePath
          -> Currencies
          -> ChartOfAccounts
          -> String
          -> IO [Ext Record]
-parseCSV pc path currs coa str =
+parseCSV opts pc path currs coa str =
   let rows = csvCells (pcSeparator pc) str
       goodRows = filterRows (pcRowsFilter $ pcGeneric pc) rows
-  in  zipWithM (convertRow (pcGeneric pc) currs coa path) [1..] goodRows
+  in  zipWithM (convertRow opts (pcGeneric pc) currs coa path) [1..] goodRows
 
-loadCSV :: FilePath -> Currencies -> ChartOfAccounts -> FilePath -> IO [Ext Record]
-loadCSV configPath currs coa csvPath = do
+loadCSV :: LedgerOptions -> FilePath -> Currencies -> ChartOfAccounts -> FilePath -> IO [Ext Record]
+loadCSV opts configPath currs coa csvPath = do
   config <- loadParserConfig configPath 
   bstr <- L.readFile csvPath
   csv <- convertToUtf8 csvPath (pcEncoding config) bstr
-  parseCSV config csvPath currs coa csv
+  parseCSV opts config csvPath currs coa csv
 

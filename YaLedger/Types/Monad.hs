@@ -5,6 +5,7 @@
 --
 module YaLedger.Types.Monad where
 
+import Control.Monad.Reader.Class
 import Control.Monad.State
 import Control.Monad.Exception
 import Control.Monad.Exception.Throws
@@ -68,6 +69,16 @@ data LedgerState = LedgerState {
 instance Monad m => MonadState LedgerState (EMT l (LedgerStateT m)) where
   get = lift get
   put s = lift (put s)
+
+instance Monad m => MonadReader LedgerOptions (EMT l (LedgerStateT m)) where
+  ask = gets lsConfig
+
+  local fn m = do
+    st <- get
+    put $ st {lsConfig = fn (lsConfig st)}
+    x <- m
+    put st
+    return x
 
 -- | Create default LedgerState.
 emptyLedgerState :: LedgerOptions -> ChartOfAccounts -> AccountMap -> [Ext Record] -> IO LedgerState

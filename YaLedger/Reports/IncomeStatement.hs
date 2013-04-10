@@ -60,10 +60,10 @@ incomeStatement' qry options mbPath = do
             []  -> ("expences", anyAccountHasClassifier "expences" coa)
             lst -> (last lst, True)
 
-    let isCredit (WCredit _ _) = True
+    let isCredit (WCredit _) = True
         isCredit _             = False
 
-        isDebit (WDebit _ _) = True
+        isDebit (WDebit _) = True
         isDebit _            = False
 
         incomesCheck

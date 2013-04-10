@@ -52,6 +52,11 @@ instance Show v => Show (Posting v t) where
   show (DPosting acc x b) = "dr " ++ showFA acc ++ " " ++ show x ++ "(" ++ show b ++ ")"
   show (CPosting acc x b) = "cr " ++ showFA acc ++ " " ++ show x ++ "(" ++ show b ++ ")"
 
+data AnyPosting v =
+       CP (Posting v Credit)
+     | DP (Posting v Debit)
+  deriving (Eq,Show)
+
 instance Hashable HoldUsage where
   hashWithSalt s UseHold     = hashWithSalt s (1 :: Int)
   hashWithSalt s TryUseHold  = hashWithSalt s (2 :: Int)
@@ -66,8 +71,8 @@ postingValue (DPosting {..}) = debitPostingAmount
 postingValue (CPosting {..}) = creditPostingAmount
 
 postingAccount :: Posting v t -> AnyAccount
-postingAccount (DPosting {..}) = either (WFree M.empty) (WDebit M.empty) debitPostingAccount
-postingAccount (CPosting {..}) = either (WFree M.empty) (WCredit M.empty) creditPostingAccount
+postingAccount (DPosting {..}) = either WFree WDebit  debitPostingAccount
+postingAccount (CPosting {..}) = either WFree WCredit creditPostingAccount
 
 postingAccount' :: Posting v t -> FreeOr t Account
 postingAccount' (DPosting acc _ _) = acc
@@ -233,6 +238,7 @@ data Account t where
     creditAccountName     :: String,
     creditAccountID       :: AccountID,
     creditAccountCurrency :: Currency,
+    creditAccountAttributes :: Attributes,
     -- | For credit accounts, we'll check if balance is GREATER THAN given values
     creditAccountChecks   :: BalanceChecks,
     creditAccountBalances :: History Balance Checked,
@@ -244,6 +250,7 @@ data Account t where
     debitAccountName     :: String,
     debitAccountID       :: AccountID,
     debitAccountCurrency :: Currency,
+    debitAccountAttributes :: Attributes,
     debitAccountChecks   :: BalanceChecks,
     debitAccountBalances :: History Balance Checked,
     debitAccountHolds    :: History (Hold Decimal) Debit,
@@ -254,6 +261,7 @@ data Account t where
     freeAccountName           :: String,
     freeAccountID             :: AccountID,
     freeAccountCurrency       :: Currency,
+    freeAccountAttributes :: Attributes,
     -- | Whenever to partially redirect debits when balance is too small.
     freeAccountRedirect       :: Bool,
     freeAccountChecks         :: BalanceChecks,
@@ -285,13 +293,13 @@ instance HasBalances (FreeOr t Account) where
   accountChecks (Right a) = accountChecks a
 
 instance HasBalances AnyAccount where
-  accountBalances (WCredit _ a) = accountBalances a
-  accountBalances (WDebit  _ a) = accountBalances a
-  accountBalances (WFree   _ a) = accountBalances a
+  accountBalances (WCredit a) = accountBalances a
+  accountBalances (WDebit  a) = accountBalances a
+  accountBalances (WFree   a) = accountBalances a
 
-  accountChecks (WCredit _ a) = accountChecks a
-  accountChecks (WDebit  _ a) = accountChecks a
-  accountChecks (WFree   _ a) = accountChecks a
+  accountChecks (WCredit a) = accountChecks a
+  accountChecks (WDebit  a) = accountChecks a
+  accountChecks (WFree   a) = accountChecks a
 
 instance HasID (Account t) where
   getID (CAccount {..}) = creditAccountID
@@ -326,45 +334,57 @@ instance Show (Account t) where
       (show $ getCurrency x)
 
 data AnyAccount =
-    WFree   Attributes (Account Free)
-  | WCredit Attributes (Account Credit)
-  | WDebit  Attributes (Account Debit)
+    WFree   (Account Free)
+  | WCredit (Account Credit)
+  | WDebit  (Account Debit)
   deriving (Eq)
 
 instance Show AnyAccount where
-  show (WFree   attrs x) = "free: "   ++ show (getID x) ++ ": " ++ show x ++ " " ++ showA attrs
-  show (WCredit attrs x) = "credit: " ++ show (getID x) ++ ": " ++ show x ++ " " ++ showA attrs
-  show (WDebit  attrs x) = "debit: "  ++ show (getID x) ++ ": " ++ show x ++ " " ++ showA attrs
+  show (WFree   x) = "free: "   ++ show (getID x) ++ ": " ++ show x ++ " " ++ showA (freeAccountAttributes x)
+  show (WCredit x) = "credit: " ++ show (getID x) ++ ": " ++ show x ++ " " ++ showA (creditAccountAttributes x)
+  show (WDebit  x) = "debit: "  ++ show (getID x) ++ ": " ++ show x ++ " " ++ showA (debitAccountAttributes x)
 
 instance Named AnyAccount where
-  getName (WFree _ x) = getName x
-  getName (WCredit _ x) = getName x
-  getName (WDebit _ x)  = getName x
+  getName (WFree   x) = getName x
+  getName (WCredit x) = getName x
+  getName (WDebit  x) = getName x
 
 instance HasCurrency AnyAccount where
-  getCurrency (WCredit _ a) = getCurrency a
-  getCurrency (WDebit _ a)  = getCurrency a
-  getCurrency (WFree _ a)   = getCurrency a
+  getCurrency (WCredit a) = getCurrency a
+  getCurrency (WDebit  a)  = getCurrency a
+  getCurrency (WFree   a)   = getCurrency a
 
 instance HasID AnyAccount where
-  getID (WCredit _ a) = getID a
-  getID (WDebit  _ a) = getID a
-  getID (WFree   _ a) = getID a
+  getID (WCredit a) = getID a
+  getID (WDebit  a) = getID a
+  getID (WFree   a) = getID a
 
 instance Ord AnyAccount where
   compare a1 a2 = compare (getID a1) (getID a2)
 
 accountType :: AnyAccount -> AccountGroupType
-accountType (WCredit _ _) = AGCredit
-accountType (WDebit  _ _) = AGDebit
-accountType (WFree   _ _) = AGFree
+accountType (WCredit _) = AGCredit
+accountType (WDebit  _) = AGDebit
+accountType (WFree   _) = AGFree
+
+instance HasAttributes (Account t) where
+  getAttrs (CAccount {..}) = creditAccountAttributes
+  getAttrs (DAccount {..}) = debitAccountAttributes
+  getAttrs (FAccount {..}) = freeAccountAttributes
+
+instance HasAttributes AnyAccount where
+  getAttrs (WCredit a) = creditAccountAttributes a
+  getAttrs (WDebit  a) = debitAccountAttributes a
+  getAttrs (WFree   a) = freeAccountAttributes a
+
+instance HasAttributes (FreeOr t Account) where
+  getAttrs (Left a) = getAttrs a
+  getAttrs (Right a) = getAttrs a
 
 accountAttributes :: AnyAccount -> Attributes
-accountAttributes (WCredit as _) = as
-accountAttributes (WDebit  as _) = as
-accountAttributes (WFree   as _) = as
+accountAttributes acc = getAttrs acc
 
-class (Named a, HasBalances a, HasCurrency a, Sign a) => IsAccount a 
+class (Named a, HasBalances a, HasCurrency a, Sign a) => IsAccount a where
 
 instance (Named a, HasBalances a, HasCurrency a, Sign a) => IsAccount a 
 

@@ -77,15 +77,16 @@ instance Show DuplicatedRecord where
 instance Exception DuplicatedRecord
 
 data InvalidAccountType =
-    InvalidAccountType String AccountGroupType AccountGroupType SourcePos
+    InvalidAccountType String Decimal AccountGroupType AccountGroupType SourcePos
   deriving (Typeable)
 
 instance Show InvalidAccountType where
-  show (InvalidAccountType name t1 t2 pos) = 
+  show (InvalidAccountType name amt t1 t2 pos) = 
     showPos pos $
       "Internal error:\n    Invalid account type: "
        ++ name ++ ": "
        ++ show t1 ++ " instead of " ++ show t2
+       ++ " (amount: " ++ show amt ++ ")"
 
 instance Exception InvalidAccountType
 

@@ -26,7 +26,7 @@ import qualified YaLedger.Parser.CSV as CSV
 import qualified YaLedger.Parser.HTML as HTML
 import qualified YaLedger.Parser.CBR as CBR
 
-type InputParser = FilePath -> Currencies -> ChartOfAccounts -> FilePath -> IO [Ext Record]
+type InputParser = LedgerOptions -> FilePath -> Currencies -> ChartOfAccounts -> FilePath -> IO [Ext Record]
 
 -- | All supported parsers
 allParsers :: [(String, String, InputParser)]
@@ -44,13 +44,14 @@ lookupMask file ((name,mask,parser):xs)
   | otherwise                 = lookupMask file xs
 
 -- | Parse all input files using corresponding parsers
-parseInputFiles :: [(String, String, InputParser)] -- ^ List of parsers: (name, files mask, parser)
+parseInputFiles :: LedgerOptions
+                -> [(String, String, InputParser)] -- ^ List of parsers: (name, files mask, parser)
                 -> [(String, FilePath)]            -- ^ (parser name, config path)
                 -> Currencies                      -- ^ Set of declared currencies
                 -> ChartOfAccounts
                 -> [FilePath]                      -- ^ List of files or masks (*.yaledger)
                 -> IO [Ext Record]
-parseInputFiles parsers configs currs coa masks = do
+parseInputFiles options parsers configs currs coa masks = do
     debugIO $ "Start parsing input files by masks: " ++ show masks
     inputFiles <- concat <$> mapM glob masks
     debugIO $ "Input files:\n" ++ unlines inputFiles
@@ -60,12 +61,14 @@ parseInputFiles parsers configs currs coa masks = do
   where
     loadFile file = do
        case lookupMask (takeFileName file) parsers of
-         Nothing -> fail $ "Unknown file type: " ++ file
+         Nothing -> do
+                    infoIO $ "Unknown file type: " ++ file
+                    return []
          Just (parserName, parser) ->
            let configFile = fromMaybe (parserName ++ ".yaml") $
                                 lookup parserName configs
            in  do
-               rec <- parser configFile currs coa file
+               rec <- parser options configFile currs coa file
                infoIO $ "Read " ++ show (length rec) ++ " records from " ++ file
                traceEventIO $ "File loaded: " ++ file
                return rec

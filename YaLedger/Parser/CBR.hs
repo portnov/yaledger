@@ -134,10 +134,10 @@ pRates :: T.Parser [Ext Record]
 pRates =
   T.ext T.pSetRate `sepEndBy` many newline
 
-loadCache :: Currencies -> ChartOfAccounts -> FilePath -> IO [Ext Record]
-loadCache currs coa cachePath = do
+loadCache :: LedgerOptions -> Currencies -> ChartOfAccounts -> FilePath -> IO [Ext Record]
+loadCache opts currs coa cachePath = do
   now <- getCurrentDateTime
-  let !st = T.emptyPState now coa currs (Just "YYYY/MM/DD")
+  let !st = T.emptyPState now opts coa currs (Just "YYYY/MM/DD")
   content <- readFile cachePath
   case runParser pRates st cachePath content of
     Left err -> fail $ show err
@@ -150,10 +150,10 @@ getChecks recs = concatMap go recs
       [(date, cSymbol $ rateCurrencyFrom r) | r <-  rates]
     go _ = error "Impossible: CBR.getChecks.go"
 
-loadCBR :: FilePath -> Currencies -> ChartOfAccounts -> FilePath -> IO [Ext Record]
-loadCBR configPath currs coa cachePath = do
+loadCBR :: LedgerOptions -> FilePath -> Currencies -> ChartOfAccounts -> FilePath -> IO [Ext Record]
+loadCBR opts configPath currs coa cachePath = do
     config <- loadParserConfig configPath
-    cache <- loadCache currs coa cachePath
+    cache <- loadCache opts currs coa cachePath
     let old = getChecks cache
     now <- getCurrentDateTime
     new <- forM (allChecks now config old) $ \(date, grs) -> do

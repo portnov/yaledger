@@ -147,13 +147,13 @@ getHoldsHistory qry account = do
   e1 <- wrapIO $ newTVarIO []
   e2 <- wrapIO $ newTVarIO []
   let creditHoldsHistory = case account of
-                             WFree _ a -> freeAccountCreditHolds a
-                             WCredit _ a -> creditAccountHolds a
-                             WDebit _ a -> e1
+                             WFree a -> freeAccountCreditHolds a
+                             WCredit a -> creditAccountHolds a
+                             WDebit a -> e1
       debitHoldsHistory  = case account of
-                             WFree _ a -> freeAccountDebitHolds a
-                             WCredit _ a -> e2
-                             WDebit _ a -> debitAccountHolds a
+                             WFree a -> freeAccountDebitHolds a
+                             WCredit a -> e2
+                             WDebit a -> debitAccountHolds a
   creditHolds <- runAtomically $ readIOList creditHoldsHistory
   debitHolds  <- runAtomically $ readIOList debitHoldsHistory
   return $ map Left  (filter (checkQuery qry) creditHolds) ++

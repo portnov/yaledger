@@ -71,7 +71,7 @@ processEntry date tranID pos attrs uentry = do
           let holdUsage = debitPostingUseHold p
           useHoldIfNeeded holdUsage p
           let account = debitPostingAccount p
-          debit  account entry (Ext date 0 pos attrs p)
+          debit account entry (Ext date 0 pos attrs p)
           -- Add link to this entry for last balance (caused by previous call of `debit')
           -- modifyLastItem (\b -> b {causedBy = Just entry}) (accountBalances account)
           -- Run all needed rules

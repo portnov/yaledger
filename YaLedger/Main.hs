@@ -276,7 +276,7 @@ runYaLedger parsers options report params = do
                                        "\nIf you do not have any configs, just run `yaledger init' command." )
 
 
-  records <- parseInputFiles parsers configs currsMap coa inputPaths
+  records <- parseInputFiles options parsers configs currsMap coa inputPaths
   debugIO $ "Records loaded."
   runLedger options coa amap records $ runEMT $ do
     -- Build full map of groups of accounts.

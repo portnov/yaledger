@@ -1,4 +1,4 @@
-{-# LANGUAGE RecordWildCards, OverloadedStrings, BangPatterns #-}
+{-# LANGUAGE RecordWildCards, OverloadedStrings, BangPatterns, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses, ScopedTypeVariables #-}
 -- | Parser for `native' transactions journal file
 module YaLedger.Parser.Transactions
   (loadTransactions,
@@ -21,6 +21,7 @@ import System.Directory
 import YaLedger.Types
 import YaLedger.Processor.Templates
 import YaLedger.Kernel.Common
+import YaLedger.Kernel.Classification
 import YaLedger.Parser.Common
 import YaLedger.Logger
 
@@ -33,6 +34,7 @@ data PState = PState {
   declaredCurrencies :: Currencies,
   defaultAttrs :: Attributes,
   rootPath :: Path,
+  getOptions :: LedgerOptions,
   templates :: M.Map String Int -- ^ Number of parameters
   }
 
@@ -63,8 +65,8 @@ instance FromJSON NativeParserConfig where
 space = oneOf " \t"
 spaces = many space
 
-emptyPState :: DateTime -> ChartOfAccounts -> Currencies -> Maybe String -> PState
-emptyPState now coa currs mbFormat =
+emptyPState :: DateTime -> LedgerOptions -> ChartOfAccounts -> Currencies -> Maybe String -> PState
+emptyPState now opts coa currs mbFormat =
     PState {
       getCoA = coa,
       currentDate = now,
@@ -74,6 +76,7 @@ emptyPState now coa currs mbFormat =
       declaredCurrencies = currs,
       defaultAttrs = M.empty,
       rootPath = [],
+      getOptions = opts,
       templates = M.empty }
   where
     dParser = case mbFormat of
@@ -208,7 +211,7 @@ pRecord = try (ext pTemplate)
       <|> try (ext pSetRate)
       <|> ext (Transaction <$> pTransaction pAmount)
 
-pTransaction :: Parser v -> Parser (Transaction v)
+pTransaction :: Show v => Parser v -> Parser (Transaction v)
 pTransaction p =
         try (pEntry p)
     <|> try (pReconciliate p)
@@ -327,41 +330,32 @@ holdUsage =
   <|> try (reserved "use" >> spaces >> return UseHold)
   <|> return DontUseHold
 
-pEntry :: Parser v -> Parser (Transaction v)
+pEntry :: Show v => Parser v -> Parser (Transaction v)
 pEntry p = do
-  es <- many1 (try (Left <$> pCreditPostingHold p) <|> (try (Right <$> pDebitPostingHold p)))
-  corr <- optionMaybe $ do
-            spaces
-            use <- holdUsage
-            x <- pPathRelative <?> "corresponding account path"
-            return (x, use)
-  let cr = lefts es
-      dt = rights es
-  account <- case corr of
-               Nothing -> return Nothing
-               Just (path, useHold) -> do
-                 acc <- getAccount getPosition (getCoA <$> getState) path
-                 return $ Just (acc, useHold)
-  return $ TEntry $ UEntry dt cr account []
+  rs <- many1 (pPostingHold p)
+  let es = rights rs
+  corr <- case lefts rs of
+            [] -> return Nothing
+            [(use,x)] -> return $ Just (x,use)
+            _ -> fail $ "Only one line in entry can be used without amount"
+  let cr = [p | CP p <- es]
+      dt = [p | DP p <- es]
+  return $ TEntry $ UEntry dt cr corr []
 
-pSetHold :: Parser v -> Parser (Transaction v)
+pSetHold :: Show v => Parser v -> Parser (Transaction v)
 pSetHold p = do
-    hs <- many1 (try (Left <$> pCreditHold) <|> try (Right <$> pDebitHold))
+    hs <- many1 pAnyHold
     return $ THold (lefts hs) (rights hs)
   where
-    pCreditHold = do
+    pAnyHold = do
       reserved "hold"
       spaces
-      posting <- pCreditPosting p
-      return (Hold posting Nothing)
+      anyPosting <- pPosting p
+      case anyPosting of
+        CP cposting -> return $ Left  (Hold cposting Nothing)
+        DP dposting -> return $ Right (Hold dposting Nothing)
 
-    pDebitHold = do
-      reserved "hold"
-      spaces
-      posting <- pDebitPosting p
-      return (Hold posting Nothing)
-
-pCloseHold :: Parser v -> Parser (Transaction v)
+pCloseHold :: Show v => Parser v -> Parser (Transaction v)
 pCloseHold p = foldl go zero <$> (many1 $ do
       reserved "close"
       op <- optionMaybe $ do
@@ -369,15 +363,15 @@ pCloseHold p = foldl go zero <$> (many1 $ do
               reservedOp "<="
       let searchLesser = isJust op
       spaces
-      r <- try (Left <$> pCreditPosting p) <|> try (Right <$> pDebitPosting p)
+      r <- pPosting p
       attrs <- option M.empty $ do
                  spaces
                  reserved "with"
                  spaces
                  braces pAttributes 
       case r of
-        Left p  -> return $ Left  $ CloseHold (Hold p Nothing) searchLesser attrs
-        Right p -> return $ Right $ CloseHold (Hold p Nothing) searchLesser attrs )
+        CP p -> return $ Left  $ CloseHold (Hold p Nothing) searchLesser attrs
+        DP p -> return $ Right $ CloseHold (Hold p Nothing) searchLesser attrs )
   where
     zero = TCloseHolds [] []
     go (TCloseHolds cr dr) (Left h)  = TCloseHolds (h:cr) dr
@@ -478,49 +472,82 @@ pSetRate = SetRate <$> many1 (do
       optional newline
       return (Implicit c1 c2 base reversible)
 
-pCreditPostingHold :: Parser v -> Parser (Posting v Credit)
-pCreditPostingHold p = do
-  use <- holdUsage
-  posting <- pCreditPosting p
-  return $ posting {creditPostingUseHold = use}
+pPostingHold :: Show v => Parser v -> Parser (Either (HoldUsage,AnyAccount) (AnyPosting v))
+pPostingHold p = try (Right <$> posting) <|> (Left <$> account)
+  where
+    account = do
+      spaces
+      use <- holdUsage
+      accPath <- pPathRelative
+      acc <- getAccountT AGCredit getPosition (getCoA <$> getState) accPath
+      many newline
+      return (use, acc)
 
-pDebitPostingHold :: Parser v -> Parser (Posting v Debit)
-pDebitPostingHold p = do
-  use <- holdUsage
-  posting <- pDebitPosting p
-  return $ posting {debitPostingUseHold = use}
+    posting = do
+      spaces
+      use <- holdUsage
+      anyPosting <- pPosting p
+      many newline
+      case anyPosting of
+        CP cposting -> return $ CP $ cposting {creditPostingUseHold = use}
+        DP dposting -> return $ DP $ dposting {debitPostingUseHold  = use}
 
-pCreditPosting :: Parser v -> Parser (Posting v Credit)
-pCreditPosting p = do
-  spaces
-  reserved "cr"
-  accPath <- pPathRelative
-  acc <- getAccountT AGCredit getPosition (getCoA <$> getState) accPath
-  account <- case acc of
-               WFree   _ acc -> return $ Left acc
-               WCredit _ acc -> return $ Right acc
-               _ -> fail $ printf "Invalid account type: %s: debit instead of credit." (intercalate "/" accPath)
-  spaces
-  amount <- p
-  whiteSpace
-  many newline
-  return $ CPosting account amount DontUseHold
+pPosting :: forall v. Show v => Parser v -> Parser (AnyPosting v)
+pPosting p = try (CP <$> explicitCredit) <|> try (DP <$> explicitDebit) <|> implicit
+  where
+    --  Left for credit amount, Right for debit
+    signed :: Parser v -> Parser (Either v v)
+    signed p = do
+      mbMinus <- optionMaybe $ char '-'
+      val <- p
+      case mbMinus of
+        Nothing -> return (Left val)
+        Just _  -> return (Right val)
 
-pDebitPosting :: Parser v -> Parser (Posting v Debit)
-pDebitPosting p = do
-  spaces
-  reserved "dr"
-  accPath <- pPathRelative
-  acc <- getAccountT AGDebit getPosition (getCoA <$> getState) accPath
-  account <- case acc of
-               WFree   _ acc -> return $ Left acc
-               WDebit _ acc -> return $ Right acc
-               _ -> fail $ printf "Invalid account type: %s: credit instead of debit." (intercalate "/" accPath)
-  spaces
-  amount <- p
-  whiteSpace
-  many newline
-  return $ DPosting account amount DontUseHold
+    implicit :: Parser (AnyPosting v)
+    implicit = do
+      spaces
+      accPath <- pPathRelative
+      acc <- getAccountT AGCredit getPosition (getCoA <$> getState) accPath
+      spaces
+      amt <- signed p
+      opts <- getOptions <$> getState
+      p <- autoPosting opts amt accPath acc DontUseHold
+      whiteSpace
+      many newline
+      return p
+
+    explicitCredit :: Parser (Posting v Credit)
+    explicitCredit = do 
+      spaces
+      reserved "cr"
+      accPath <- pPathRelative
+      acc <- getAccountT AGCredit getPosition (getCoA <$> getState) accPath
+      account <- case acc of
+                   WFree   acc -> return $ Left acc
+                   WCredit acc -> return $ Right acc
+                   _ -> fail $ printf "Invalid account type: %s: debit instead of credit." (intercalate "/" accPath)
+      spaces
+      amount <- p
+      whiteSpace
+      many newline
+      return $ CPosting account amount DontUseHold
+
+    explicitDebit :: Parser (Posting v Debit)
+    explicitDebit = do
+      spaces
+      reserved "dr"
+      accPath <- pPathRelative
+      acc <- getAccountT AGDebit getPosition (getCoA <$> getState) accPath
+      account <- case acc of
+                   WFree   acc -> return $ Left acc
+                   WDebit acc -> return $ Right acc
+                   _ -> fail $ printf "Invalid account type: %s: credit instead of debit." (intercalate "/" accPath)
+      spaces
+      amount <- p
+      whiteSpace
+      many newline
+      return $ DPosting account amount DontUseHold
 
 pAmount :: Parser Amount
 pAmount = try numberFirst <|> currencyFirst
@@ -570,12 +597,13 @@ param = try pParam <|> try pBalance <|> (Fixed <$> pAmount)
       return $ FromBalance c
 
 -- | Read transactions from `native' format file (*.yaledger)
-loadTransactions :: FilePath         -- ^ Config file path
+loadTransactions :: LedgerOptions
+                 -> FilePath         -- ^ Parser config file path
                  -> Currencies
                  -> ChartOfAccounts
                  -> FilePath         -- ^ Source file path
                  -> IO [Ext Record]
-loadTransactions configPath currs coa path = do
+loadTransactions opts configPath currs coa path = do
   ex <- doesFileExist configPath
   config <- if ex
               then do
@@ -584,7 +612,7 @@ loadTransactions configPath currs coa path = do
               else return defaultNativeParserConfig
   content <- readFile path
   now <- getCurrentDateTime
-  let !st = emptyPState now coa currs (nativeDateFormat config)
+  let !st = emptyPState now opts coa currs (nativeDateFormat config)
   case runParser pRecords st path content of
     Right res -> return res
     Left err -> fail $ show err

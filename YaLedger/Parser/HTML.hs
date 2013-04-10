@@ -44,19 +44,20 @@ getTable :: String -> IOSArrow a (NTree XNode) -> IOSArrow a [String]
 getTable selector doc =
   doc >>> css selector >>> css "tr" >>> listA (css "td" >>> deep getText >. concat)
 
-parseHTML :: ParserConfig
+parseHTML :: LedgerOptions
+          -> ParserConfig
           -> FilePath
           -> Currencies
           -> ChartOfAccounts
           -> [[String]]
           -> IO [Ext Record]
-parseHTML pc path currs coa table =
-  zipWithM (convertRow (pcGeneric pc) currs coa path) [1..] table
+parseHTML opts pc path currs coa table =
+  zipWithM (convertRow opts (pcGeneric pc) currs coa path) [1..] table
 
-loadHTML :: FilePath -> Currencies -> ChartOfAccounts -> FilePath -> IO [Ext Record]
-loadHTML configPath currs coa htmlPath = do
+loadHTML :: LedgerOptions -> FilePath -> Currencies -> ChartOfAccounts -> FilePath -> IO [Ext Record]
+loadHTML opts configPath currs coa htmlPath = do
   config <- loadParserConfig configPath 
   table <- readHTML config htmlPath
   let goodRows = filterRows (pcRowsFilter $ pcGeneric config) table
-  parseHTML config htmlPath currs coa goodRows
+  parseHTML opts config htmlPath currs coa goodRows
 

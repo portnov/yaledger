@@ -14,38 +14,8 @@ import qualified Data.Map as M
 
 import YaLedger.Types
 import YaLedger.Kernel.Common
-
--- | Match account type
-matchT :: PostingType -> AccountGroupType -> Bool
-matchT _       AGFree   = True
-matchT ECredit AGCredit = True
-matchT EDebit  AGDebit  = True
-matchT _       _        = False
-
--- | Check if attribute value is optional
-isOptional :: AttributeValue -> Bool
-isOptional (Optional _) = True
-isOptional _            = False
-
--- | Match attributes set
-match :: Attributes  -- ^ Set of attributes (of account, for example)
-      -> Attributes  -- ^ Attributes query (attributes of entry, for example)
-      -> Bool
-match attrs qry =
-  let check (name, value) = case M.lookup name attrs of
-                              Nothing -> isOptional value
-                              Just av  -> matchAV value av
-  in  all check $ M.assocs qry
-
--- | Match all attributes
-matchAll :: Attributes -- ^ Set of attributes (of account, for example)
-         -> Attributes -- ^ Attributes query (attributes of entry, for example)
-         -> Bool
-matchAll attrs qry =
-  let check (name, value) = case M.lookup name qry of
-                              Nothing  -> isOptional value
-                              Just av  -> matchAV value av
-  in  all check (M.assocs attrs) && all (`elem` M.keys attrs) (M.keys qry)
+import YaLedger.Kernel.Query
+import YaLedger.Logger
 
 -- | Number of matching optional attributes from given set
 optionalAttributes :: Attributes  -- ^ Attributes query
@@ -94,7 +64,8 @@ runCQuery qry coa =
   case filterCoA qry coa of
     []  -> Nothing
     [x] -> Just x
-    list -> Just $ head $ filterByAddAttributes (cqAttributes qry) list
+    list -> trace ("runCQuery: multiple choice: " ++ show list) $
+            Just $ head $ filterByAddAttributes (cqAttributes qry) list
 
 -- | List of groups IDs of all account's parent groups
 groupIDs :: ChartOfAccounts

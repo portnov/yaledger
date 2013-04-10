@@ -6,6 +6,7 @@ module YaLedger.Kernel
    module YaLedger.Kernel.Holds,
    module YaLedger.Kernel.Query,
    module YaLedger.Kernel.Rates,
+   module YaLedger.Kernel.Classification,
    CanCredit (..), CanDebit (..),
    HoldOperations (..),
    negateAmount, differenceType,
@@ -36,6 +37,7 @@ import Data.List
 import Data.Dates
 import Data.Decimal
 import qualified Data.Map as M
+import Text.Printf
 
 import YaLedger.Types
 import YaLedger.Exceptions
@@ -46,6 +48,7 @@ import YaLedger.Kernel.Query
 import YaLedger.Kernel.Rates
 import YaLedger.Kernel.Balances
 import YaLedger.Kernel.Holds
+import YaLedger.Kernel.Classification
 import YaLedger.Output.Pretty
 import YaLedger.Output.Messages
 import YaLedger.Logger
@@ -56,7 +59,8 @@ instance CanDebit (Account Debit) where
       checkBalance (balance - postingValue (getContent p)) acc
       appendIOList debitAccountPostings p
       debugSTM $ "debit " ++ (getName $ postingAccount $ getContent p) ++ ": " ++ show (postingValue $ getContent p)
-      balancePlusPosting e p debitAccountBalances
+      let attrs = getAttrs acc
+      balancePlusPosting attrs e p debitAccountBalances
 
   debitHold (DAccount {..}) hold = do
       appendIOList debitAccountHolds hold
@@ -68,7 +72,8 @@ instance CanDebit (Account Free) where
       checkBalance (balance - postingValue (getContent p)) acc
       appendIOList freeAccountDebitPostings p
       debugSTM $ "debit " ++ (getName $ postingAccount $ getContent p) ++ ": " ++ show (postingValue $ getContent p)
-      balancePlusPosting e p freeAccountBalances
+      let attrs = getAttrs acc
+      balancePlusPosting attrs e p freeAccountBalances
 
   debitHold (FAccount {..}) hold = do
       appendIOList freeAccountDebitHolds hold
@@ -79,7 +84,8 @@ instance CanCredit (Account Credit) where
       balance <- getCurrentBalance AvailableBalance acc
       checkBalance (balance + postingValue (getContent p)) acc
       appendIOList creditAccountPostings p
-      balancePlusPosting e p creditAccountBalances
+      let attrs = getAttrs acc
+      balancePlusPosting attrs e p creditAccountBalances
 
   creditHold (CAccount {..}) hold = do
       appendIOList creditAccountHolds hold
@@ -90,7 +96,8 @@ instance CanCredit (Account Free) where
       balance <- getCurrentBalance AvailableBalance acc
       checkBalance (balance + postingValue (getContent p)) acc
       appendIOList freeAccountCreditPostings p
-      balancePlusPosting e p freeAccountBalances
+      let attrs = getAttrs acc
+      balancePlusPosting attrs e p freeAccountBalances
 
   creditHold (FAccount {..}) hold = do
       appendIOList freeAccountCreditHolds hold
@@ -113,13 +120,18 @@ instance CanDebit (FreeOr Debit Account) where
 -- | Add posting value to balances history
 balancePlusPosting :: forall l t.
                (Throws InternalError l, Sign t)
-            => Entry Decimal Checked     -- ^ Entry which caused balance change
-            => Ext (Posting Decimal t)   -- ^ Posting
+            => Attributes
+            -> Entry Decimal Checked     -- ^ Entry which caused balance change
+            -> Ext (Posting Decimal t)   -- ^ Posting
             -> History Balance Checked   -- ^ Balances history
             -> Atomic l ()
-balancePlusPosting entry p history = do
+balancePlusPosting attrs entry p history = do
+  opts <- gets lsConfig
   let s = fromIntegral (sign (undefined :: t))
-      value = s * postingValue (getContent p)
+      a = if isAssets opts attrs
+            then -1
+            else 1
+      value = s * a * postingValue (getContent p)
       update e@(Ext {getContent = b}) =
           Ext {
             getDate       = getDate p,
@@ -236,17 +248,17 @@ differenceType x
 creditPostings :: Throws InternalError l
                => AnyAccount
                -> Ledger l (History (Posting Decimal) Credit)
-creditPostings (WCredit _ (CAccount {..})) = return creditAccountPostings
-creditPostings (WDebit  _ (DAccount {..})) = newIOList
-creditPostings (WFree   _ (FAccount {..})) = return freeAccountCreditPostings
+creditPostings (WCredit (CAccount {..})) = return creditAccountPostings
+creditPostings (WDebit  (DAccount {..})) = newIOList
+creditPostings (WFree   (FAccount {..})) = return freeAccountCreditPostings
 
 -- | Get history of account's debit postings
 debitPostings :: Throws InternalError l
               => AnyAccount
               -> Ledger l (History (Posting Decimal) Debit)
-debitPostings (WCredit _ (CAccount {..})) = newIOList
-debitPostings (WDebit  _ (DAccount {..})) = return debitAccountPostings
-debitPostings (WFree   _ (FAccount {..})) = return freeAccountDebitPostings
+debitPostings (WCredit (CAccount {..})) = newIOList
+debitPostings (WDebit  (DAccount {..})) = return debitAccountPostings
+debitPostings (WFree   (FAccount {..})) = return freeAccountDebitPostings
 
 filterPostings :: Query -> [Ext (Posting Decimal t)] -> [Posting Decimal t]
 filterPostings query list = map getContent $ filter (checkQuery query) list
@@ -260,7 +272,10 @@ saldo :: (Throws InternalError l)
 saldo qry account = do
   credit :# c <- creditTurnovers qry account
   debit  :# _ <- debitTurnovers  qry account
-  return $ (credit - debit) :# c
+  opts <- gets lsConfig
+  if isAssets opts (accountAttributes account)
+    then return $ (debit - credit) :# c
+    else return $ (credit - debit) :# c
 
 -- | Calculate credit turnovers of account
 -- (sum of credit postings)
@@ -313,19 +328,21 @@ accountByID i (Leaf _ acc)
 -- or throw an exception.
 accountAsCredit :: (Throws InvalidAccountType l)
                 => AnyAccount
+                -> Decimal
                 -> Ledger l (FreeOr Credit Account)
-accountAsCredit (WDebit  _ a) = throwP $ InvalidAccountType (getName a) AGDebit AGCredit
-accountAsCredit (WCredit _ a) = return $ Right a
-accountAsCredit (WFree   _ a) = return $ Left a
+accountAsCredit (WDebit  a) x = throwP $ InvalidAccountType (getName a) x AGDebit AGCredit
+accountAsCredit (WCredit a) _ = return $ Right a
+accountAsCredit (WFree   a) _ = return $ Left a
 
 -- | Return same account as FreeOr Debit Account,
 -- or throw an exception.
 accountAsDebit :: (Throws InvalidAccountType l)
                 => AnyAccount
+                -> Decimal
                 -> Ledger l (FreeOr Debit Account)
-accountAsDebit (WCredit _ a) = throwP $ InvalidAccountType (getName a) AGCredit AGDebit
-accountAsDebit (WDebit  _ a) = return $ Right a
-accountAsDebit (WFree   _ a) = return $ Left a
+accountAsDebit (WCredit a) x = throwP $ InvalidAccountType (getName a) x AGCredit AGDebit
+accountAsDebit (WDebit  a) _ = return $ Right a
+accountAsDebit (WFree   a) _ = return $ Left a
 
 -- | Similar to Data.List.nub, but removes ALL duplications.
 -- O(n^2).
@@ -389,6 +406,7 @@ checkEntry date attrs (UEntry dt cr mbCorr currs) = do
                                    cqCurrencies = currencies ++ currs,
                                    cqExcept     = accounts,
                                    cqAttributes = M.insert "source" (Optional source) attrs }
+                       debug $ "Kernel.checkEntry: Amount: " ++ show diff ++ "; CQuery: " ++ show qry
                        -- Fill credit / debit entry parts
                        fillEntry qry date dt' cr' mbCorr (diff :# firstCurrency)
   let nCurrencies = length $ nub $ sort $
@@ -426,10 +444,10 @@ checkEntry date attrs (UEntry dt cr mbCorr currs) = do
                         Right oneAccount -> do
                           if diffD < 0
                             then do
-                                 account <- accountAsCredit oneAccount
+                                 account <- accountAsCredit oneAccount (-diffD)
                                  return $ CreditDifference $ CPosting account (-diffD) DontUseHold
                             else do
-                                 account <- accountAsDebit oneAccount
+                                 account <- accountAsDebit oneAccount diffD
                                  return $ DebitDifference [ DPosting account diffD DontUseHold ]
                         Left debitPostings -> do
                           postings <- mapM (convertPosting' $ Just date) debitPostings
@@ -480,7 +498,7 @@ lookupCorrespondence qry date amount@(value :# currency) mbCorr = do
           -- Check if we should redirect part of debit
           case acc of
             -- Debit redirect has sence only for free accounts
-            WFree _ account ->
+            WFree account ->
               if not (freeAccountRedirect account)
                 -- Account redirect is not used for this account
                 then return (Right acc)
@@ -522,7 +540,7 @@ lookupCorrespondence qry date amount@(value :# currency) mbCorr = do
                                 -- We can debit `hop' acccount by toRedirect
                                 let lastCurrency = getCurrency hop
                                 lastDebit :# _ <- convert (Just date) lastCurrency (toRedirect :# accountCurrency)
-                                hop' <- accountAsDebit hop
+                                hop' <- accountAsDebit hop lastDebit
                                 let last  = DPosting hop' (lastDebit :# lastCurrency) useHold
                                 return $ Left [firstPosting, last]
                               Left postings -> 
@@ -550,7 +568,7 @@ fillEntry qry date dt cr mbCorr amount@(value :# _) = do
     Right oneAccount -> do
       if value < 0
          then do
-              account <- accountAsCredit oneAccount
+              account <- accountAsCredit oneAccount value
               -- Convert value into currency of found account
               value' :# _ <- convert (Just date) (getCurrency account) amount
               if value' == 0
@@ -566,7 +584,7 @@ fillEntry qry date dt cr mbCorr amount@(value :# _) = do
                      let e = CPosting account (-value') useHold
                      return (dt, e:cr)
          else do
-              account <- accountAsDebit oneAccount
+              account <- accountAsDebit oneAccount value
               -- Convert value into currency of found account
               value' :# _ <- convert (Just date) (getCurrency account) amount
               if value' == 0
@@ -620,6 +638,8 @@ reconciliate btype date account amount tgt msg = do
 
   -- diff is in accountCurrency
   let diff = actualBalance - calculatedBalance
+  debug $ printf "Kernel.reconciliate: calculated %s, actual %s, diff %s"
+                 (show calculatedBalance) (show actualBalance) (show diff)
   if diff /= 0
     then do
          coa <- gets lsCoA
@@ -627,15 +647,17 @@ reconciliate btype date account amount tgt msg = do
                           (actualBalance :# accountCurrency)
                           (calculatedBalance :# accountCurrency)
                           (diff :# accountCurrency)
-         if diff > 0
-           then do
-                account' <- accountAsCredit account
-                let posting = CPosting account' (diff :# accountCurrency) DontUseHold
-                return $ Just $ UEntry [] [posting] correspondence [getCurrency amount]
-           else do
-                account' <- accountAsDebit account
-                let posting = DPosting account' ((-diff) :# accountCurrency) DontUseHold
-                return $ Just $ UEntry [posting] [] correspondence [getCurrency amount]
+         let amt = if diff > 0
+                     then Left (diff :# accountCurrency)
+                     else Right (negate diff :# accountCurrency)
+         opts <- gets lsConfig
+         let accPath = case accountFullPath (getID account) coa of
+                         Nothing -> error $ "Impossible: Kernel.reconciliate: no account: " ++ show account
+                         Just p  -> p
+         posting <- autoPosting opts amt accPath account DontUseHold
+         case posting of
+           CP p -> return $ Just $ UEntry [] [p] correspondence [getCurrency amount]
+           DP p -> return $ Just $ UEntry [p] [] correspondence [getCurrency amount]
     else return Nothing
 
 -- | Output reconciliation warning or throw ReconciliationError.

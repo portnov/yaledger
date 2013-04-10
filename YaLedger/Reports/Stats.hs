@@ -62,11 +62,6 @@ data StatRecord = StatRecord {
        srSum    :: Double }
   deriving (Eq, Show)
 
-data AnyPosting =
-       CP (Posting Decimal Credit)
-     | DP (Posting Decimal Debit)
-  deriving (Eq)
-
 toList :: StatRecord -> [Double]
 toList (StatRecord {..}) =
   [srOpen, srMin, srQ1, srMedian, srQ3, srMax, srAvg, srSd, srClose]
@@ -92,7 +87,7 @@ checkPosting coa (Just grp) qry ep =
 getPostings :: Throws InternalError l
             => ChartOfAccounts
             -> Maybe ChartOfAccounts
-            -> Query -> AnyAccount -> Ledger l [Ext AnyPosting]
+            -> Query -> AnyAccount -> Ledger l [Ext (AnyPosting Decimal)]
 getPostings coa internalGroup qry account = do
     crp <- filter (checkPosting coa internalGroup qry) <$> (readIOListL =<< creditPostings account)
     drp <- filter (checkPosting coa internalGroup qry) <$> (readIOListL =<< debitPostings account)
@@ -100,11 +95,11 @@ getPostings coa internalGroup qry account = do
     let toDP ep = mapExt DP ep
     return $ map toCP crp ++ map toDP drp
 
-postingToDouble :: AnyPosting -> Double
+postingToDouble :: AnyPosting Decimal -> Double
 postingToDouble (CP p) = toDouble $ postingValue p
 postingToDouble (DP p) = negate $ toDouble $ postingValue p
 
-getEntryPosting :: AnyAccount -> Ext (Entry Decimal Checked) -> Maybe (Entry Decimal Checked, Ext AnyPosting)
+getEntryPosting :: AnyAccount -> Ext (Entry Decimal Checked) -> Maybe (Entry Decimal Checked, Ext (AnyPosting Decimal))
 getEntryPosting acc ee@(Ext {getContent = e}) =
     case map CP (filter check $ cEntryCreditPostings e) ++ map DP (filter check $ cEntryDebitPostings e) of
       [] -> Nothing

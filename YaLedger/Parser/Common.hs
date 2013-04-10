@@ -1,4 +1,4 @@
-{-# LANGUAGE NoMonomorphismRestriction, FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
+{-# LANGUAGE NoMonomorphismRestriction, FlexibleContexts, FlexibleInstances, MultiParamTypeClasses, ScopedTypeVariables #-}
 
 module YaLedger.Parser.Common where
 
@@ -6,6 +6,8 @@ import Control.Applicative ((<$>))
 import Control.Failure
 import Control.Exception hiding (try)
 import Data.Functor.Identity
+import Data.Either (either)
+import Data.List (intercalate)
 import Data.Decimal
 import qualified Data.ByteString as B
 import qualified Data.Map as M
@@ -13,10 +15,12 @@ import Data.Yaml
 import Text.Parsec
 import qualified Text.Parsec.Token as P
 import Text.Parsec.Language
+import Text.Printf
 import System.FilePath
 import System.Environment.XDG.BaseDir
 
 import YaLedger.Types
+import YaLedger.Kernel.Classification
 
 instance Exception e => Failure e Identity where
   failure e = fail $ show e
@@ -31,11 +35,12 @@ language    = P.LanguageDef
                , P.identLetter    = alphaNum <|> oneOf "_'"
                , P.opStart        = P.opLetter language
                , P.opLetter       = oneOf ":!#$%&*+./<=>?@\\^|-~"
-               , P.reservedOpNames= ["account", "group", "template",
+               , P.reservedNames= ["account", "group", "template",
                                    "call", "reconciliate", "rate",
                                    "credit", "debit", "when", "do",
+                                   "close", "with", "hold", "use", "try",
                                    "rule", "cr", "dr", "default"]
-               , P.reservedNames  = []
+               , P.reservedOpNames  = []
                , P.caseSensitive  = True
                }
 
@@ -56,6 +61,13 @@ float       = P.float lexer
 natural     = P.natural lexer
 whiteSpace  = P.whiteSpace lexer
 naturalOrFloat = P.naturalOrFloat lexer
+
+attributeName :: Monad m => ParsecT String st m String
+attributeName = do
+  c <- letter
+  cs <- many $ alphaNum <|> oneOf "-."
+  spaces
+  return (c:cs)
 
 pRegexp :: Monad m => ParsecT String st m String
 pRegexp = do
@@ -95,7 +107,7 @@ pAttributes = M.fromList <$> try pAttribute `sepEndBy` semicolon
 
 pAttribute :: Monad m => ParsecT String st m (String, AttributeValue)
 pAttribute = do
-  name <- identifier
+  name <- attributeName
   reservedOp "="
   value <- pAttributeValue
   return (name, value)
