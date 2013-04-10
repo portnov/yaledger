@@ -96,6 +96,7 @@ sumTurnovers mbDate calcTotals calcSaldo ag list = do
 allTurnovers bqry calcTotals calcSaldo qry account = do
   cr :# c <- creditTurnovers qry account
   dt :# _ <- debitTurnovers  qry account
+  opts <- gets lsConfig
   incomingSaldo <- case qStart qry of
                      Nothing    -> return $ BalanceInfo (Just 0) (Just 0)
                      Just start -> runAtomically $ getBalanceInfoAt (Just start) bqry account
@@ -109,7 +110,9 @@ allTurnovers bqry calcTotals calcSaldo qry account = do
                           then Just $ (cr + dt) :# c
                           else Nothing ,
              trSaldo  = if calcSaldo
-                          then Just $ (cr - dt) :# c
+                          then Just $ if isAssets opts (getAttrs account)
+                                        then (dt - cr) :# c
+                                        else (cr - dt) :# c
                           else Nothing }
 
 noZeroTurns tr =
