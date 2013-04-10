@@ -41,6 +41,9 @@ incomeStatement' qry options mbPath = do
     coa <- case mbPath of
               Nothing   -> gets lsCoA
               Just path -> getCoAItem (gets lsPosition) (gets lsCoA) path
+    
+    debug $ "Use incomes query: " ++ showA (incomeAccounts opts)
+    debug $ "Use expences query: " ++ showA (expenceAccounts opts)
 
     let isIncomesAcc  acc = isIncomes  opts (accountAttributes acc)
         isExpencesAcc acc = isExpences opts (accountAttributes acc)
@@ -76,7 +79,7 @@ incomeStatement' qry options mbPath = do
           | anyAccount (isAssets opts . accountAttributes) coa = id
           | otherwise = mapTree negateAmount negateAmount 
 
-    incomes'  <- prepareIncomes<$> treeSaldo qry incomes
+    incomes'  <- prepareIncomes <$> treeSaldo qry incomes
     expences' <- treeSaldo qry expences
 
     let defcur = getCurrency (amount incomes')
