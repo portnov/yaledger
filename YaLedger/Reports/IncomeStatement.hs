@@ -16,9 +16,7 @@ instance ReportClass IncomeStatement where
   type Options IncomeStatement = IOptions
   type Parameters IncomeStatement = Maybe Path
   reportOptions _ = 
-    [Option "z" ["no-zeros"] (NoArg INoZeros) "Do not show accounts with zero balance",
-     Option "i" ["incomes"]  (ReqArg IIncomesCls "CLASSIFIER") "Use CLASSIFIER to detect incomes accounts",
-     Option "e" ["expences"] (ReqArg IExpencesCls "CLASSIFIER") "Use CLASSIFIER to detect expences accounts" ]
+    [Option "z" ["no-zeros"] (NoArg INoZeros) "Do not show accounts with zero balance" ]
   defaultOptions _ = []
   reportHelp _ = ""
 
@@ -35,44 +33,34 @@ isEmptyTree :: Tree n a -> Bool
 isEmptyTree (Branch {branchChildren = list}) = null list
 isEmptyTree (Leaf {}) = False
 
-matchClassifier :: String -> AnyAccount -> Bool
-matchClassifier cls acc =
-  case M.lookup "classifier" (accountAttributes acc) of
-    Nothing -> False
-    Just value -> matchAV (Exactly cls) value
-
-anyAccountHasClassifier :: String -> ChartOfAccounts -> Bool
-anyAccountHasClassifier cls coa =
-    not $ isEmptyTree $ filterLeafs (matchClassifier cls) coa 
+anyAccount :: (AnyAccount -> Bool) -> ChartOfAccounts -> Bool
+anyAccount fn coa = not $ isEmptyTree $ filterLeafs fn coa 
 
 incomeStatement' qry options mbPath = do
+    opts <- gets lsConfig
     coa <- case mbPath of
               Nothing   -> gets lsCoA
               Just path -> getCoAItem (gets lsPosition) (gets lsCoA) path
 
-    let (incomesClassifier, useIncomesClassifier) =
-          case [cls | IIncomesCls cls <- options] of
-            []  -> ("incomes", anyAccountHasClassifier "incomes" coa)
-            lst -> (last lst, True)
+    let isIncomesAcc  acc = isIncomes  opts (accountAttributes acc)
+        isExpencesAcc acc = isExpences opts (accountAttributes acc)
 
-        (expencesClassifier, useExpencesClassifier) =
-          case [cls | IExpencesCls cls <- options] of
-            []  -> ("expences", anyAccountHasClassifier "expences" coa)
-            lst -> (last lst, True)
+    let useIncomesQry  = anyAccount isIncomesAcc  coa
+        useExpencesQry = anyAccount isExpencesAcc coa
 
     let isCredit (WCredit _) = True
-        isCredit _             = False
+        isCredit _           = False
 
         isDebit (WDebit _) = True
-        isDebit _            = False
+        isDebit _          = False
 
         incomesCheck
-          | useIncomesClassifier = matchClassifier incomesClassifier
-          | otherwise            = isDebit
+          | useIncomesQry = isIncomesAcc
+          | otherwise     = isDebit
 
         expencesCheck
-          | useExpencesClassifier = matchClassifier expencesClassifier
-          | otherwise             = isCredit
+          | useExpencesQry = isExpencesAcc
+          | otherwise      = isCredit
 
         amount (Branch {..}) = branchData
         amount (Leaf   {..}) = leafData
@@ -84,7 +72,11 @@ incomeStatement' qry options mbPath = do
                  then isNotZero x
                  else True
 
-    incomes'  <- mapTree negateAmount negateAmount <$> treeSaldo qry incomes
+    let prepareIncomes
+          | anyAccount (isAssets opts . accountAttributes) coa = id
+          | otherwise = mapTree negateAmount negateAmount 
+
+    incomes'  <- prepareIncomes<$> treeSaldo qry incomes
     expences' <- treeSaldo qry expences
 
     let defcur = getCurrency (amount incomes')
@@ -95,7 +87,7 @@ incomeStatement' qry options mbPath = do
         expencesS = lines (show $ filterLeafs nz expences')
         m = max (length incomesS) (length expencesS)
         padE list = list ++ replicate (m - length list) ""
-        res = twoColumns "INCOMES" "OUTCOMES"
+        res = twoColumns "INCOMES" "EXPENCES"
                  (alignMax ALeft $ padE incomesS)
                  (alignMax ALeft $ padE expencesS)
         footer = "    TOTALS: " ++ show (incomeD - outcomeD) ++ show defcur
