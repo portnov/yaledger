@@ -56,7 +56,7 @@ import YaLedger.Logger
 instance CanDebit (Account Debit) where
   debit acc@(DAccount {..}) e p = do
       balance <- getCurrentBalance AvailableBalance acc
-      checkBalance (balance - postingValue (getContent p)) acc
+      checkBalance balance (negate $ postingValue (getContent p)) acc
       appendIOList debitAccountPostings p
       debugSTM $ "debit " ++ (getName $ postingAccount $ getContent p) ++ ": " ++ show (postingValue $ getContent p)
       let attrs = getAttrs acc
@@ -69,7 +69,7 @@ instance CanDebit (Account Debit) where
 instance CanDebit (Account Free) where
   debit acc@(FAccount {..}) e p = do
       balance <- getCurrentBalance AvailableBalance acc
-      checkBalance (balance - postingValue (getContent p)) acc
+      checkBalance balance (negate $ postingValue (getContent p)) acc
       appendIOList freeAccountDebitPostings p
       debugSTM $ "debit " ++ (getName $ postingAccount $ getContent p) ++ ": " ++ show (postingValue $ getContent p)
       let attrs = getAttrs acc
@@ -82,7 +82,7 @@ instance CanDebit (Account Free) where
 instance CanCredit (Account Credit) where
   credit acc@(CAccount {..}) e p = do
       balance <- getCurrentBalance AvailableBalance acc
-      checkBalance (balance + postingValue (getContent p)) acc
+      checkBalance balance (postingValue (getContent p)) acc
       appendIOList creditAccountPostings p
       let attrs = getAttrs acc
       balancePlusPosting attrs e p creditAccountBalances
@@ -94,7 +94,7 @@ instance CanCredit (Account Credit) where
 instance CanCredit (Account Free) where
   credit acc@(FAccount {..}) e p = do
       balance <- getCurrentBalance AvailableBalance acc
-      checkBalance (balance + postingValue (getContent p)) acc
+      checkBalance balance (postingValue (getContent p)) acc
       appendIOList freeAccountCreditPostings p
       let attrs = getAttrs acc
       balancePlusPosting attrs e p freeAccountBalances
@@ -218,10 +218,15 @@ getBalanceInfoAt mbDate bqry acc =
 checkBalance :: (Throws InternalError l,
                  Throws InsufficientFunds l,
                  IsAccount a)
-             => Decimal        -- ^ Account balance
+             => Decimal        -- ^ Source account balance
+             -> Decimal        -- ^ Balance delta
              -> a              -- ^ Any sort of account
              -> Atomic l ()
-checkBalance targetBalance acc = do
+checkBalance bal delta acc = do
+  opts <- gets lsConfig
+  let targetBalance = if isAssets opts (getAttrs acc)
+                        then bal - delta
+                        else bal + delta
   let bc = accountChecks acc
       op = if sign acc > 0
              then (>=)

@@ -384,9 +384,9 @@ instance HasAttributes (FreeOr t Account) where
 accountAttributes :: AnyAccount -> Attributes
 accountAttributes acc = getAttrs acc
 
-class (Named a, HasBalances a, HasCurrency a, Sign a) => IsAccount a where
+class (Named a, HasBalances a, HasCurrency a, HasAttributes a, Sign a) => IsAccount a where
 
-instance (Named a, HasBalances a, HasCurrency a, Sign a) => IsAccount a 
+instance (Named a, HasBalances a, HasCurrency a, HasAttributes a, Sign a) => IsAccount a 
 
 -- | Chart of accounts is a tree of accounts and account groups
 type ChartOfAccounts = Tree AccountGroupData AnyAccount
