@@ -408,7 +408,13 @@ checkEntry date attrs (UEntry dt cr mbCorr currs) = do
   (dtF, crF) <- if dtSum == crSum
                   then return (dt', cr')
                   else do
-                       let diff = decimalDelta (crSum - dtSum) -- in firstCurrency
+                       let sumAssets =
+                               sum [postingValue p | p <- dt', isAssets opts (getAttrs $ postingAccount p)]
+                             - sum [postingValue p | p <- cr', isAssets opts (getAttrs $ postingAccount p)]
+                           sumLiabilities =
+                               sum [postingValue p | p <- cr', not $ isAssets opts (getAttrs $ postingAccount p)]
+                             - sum [postingValue p | p <- dt', not $ isAssets opts (getAttrs $ postingAccount p)]
+                       let diff = decimalDelta (sumAssets + sumLiabilities) -- in firstCurrency
                        --  So, if diff > 0, we will need to decrease balance on some account.
                        --  Otherwise, we need to increase some balance.
                        let qry = CQuery {
@@ -527,16 +533,20 @@ lookupCorrespondence qry date deltaAmt mbCorr = do
                      accPath <- accountFullPath' "Kernel.lookupCorrespondence" account coa
                      let accountCurrency = getCurrency account
                      deltaInAcctCcy <- convertDelta (Just date) accountCurrency deltaAmt
-                     let amtInAcctCcy :# _ = getAmount deltaInAcctCcy
+                     let deltaInAcctCcy' = if isAssets opts (getAttrs account)
+                                             then negateDelta deltaInAcctCcy
+                                             else deltaInAcctCcy
+                     let amtInAcctCcy :# _ = getAmount deltaInAcctCcy'
                      currentBalance <- runAtomically $ getCurrentBalance AvailableBalance account
                      -- amtInAcctCcy and currentBalance are both in currency of
                      -- found account.
                      debug $ printf "Check if to divert: current balance %s, amount %s"
                                     (show currentBalance) (show amtInAcctCcy)
-                     let resultingBalance = currentBalance `plusDelta` deltaRemoveCcy deltaInAcctCcy
+                     let resultingBalance = currentBalance `plusDelta` deltaRemoveCcy deltaInAcctCcy'
                      if resultingBalance >= 0
                        then do
-                            onePosting <- autoPosting opts deltaInAcctCcy accPath (WFree account) useHold
+                            onePosting <- autoPosting opts deltaInAcctCcy' accPath (WFree account) useHold
+                            debug $ "lookupCorrespondence: autoPosting: " ++ show onePosting
                             return $ Left [onePosting]
                        else do
                             info $ "Account `" ++ getName account ++ "' has current balance only of " ++
@@ -557,7 +567,10 @@ lookupCorrespondence qry date deltaAmt mbCorr = do
                                        }
                             -- first posting will get all available balance of this account.
                             let delta = amountDelta currentBalance accountCurrency
-                            firstPosting <- autoPosting opts delta accPath (WFree account) useHold
+                            let delta' = if isAssets opts (getAttrs account)
+                                          then negateDelta delta
+                                          else delta
+                            firstPosting <- autoPosting opts delta' accPath (WFree account) useHold
                             -- search for other accounts to redirect part of amount.
                             -- NB: this recursive call can return one account
                             -- or list of postings.
@@ -621,6 +634,7 @@ fillEntry qry date dt cr mbCorr deltaAmt = do
                      debug $ printf "fillEntry: delta' %s, account %s"
                                     (show delta') (intercalate "/" path)
                      e <- autoPosting opts (deltaRemoveCcy delta') path account useHold
+                     debug $ "fillEntry: autoPosting (Decrease): " ++ show e
                      return $ appendPostings [e] dt cr
         Increase value -> do
               if nullDelta delta'
@@ -634,7 +648,10 @@ fillEntry qry date dt cr mbCorr deltaAmt = do
                          return (dt, cr)
                 else do
                      path <- accountFullPath' "Kernel.fillEntry" account coa
+                     debug $ printf "fillEntry: delta' %s, account %s"
+                                    (show delta') (intercalate "/" path)
                      e <- autoPosting opts (deltaRemoveCcy delta') path account useHold
+                     debug $ "fillEntry: autoPosting (Increase): " ++ show e
                      return $ appendPostings [e] dt cr
     Left lpostings -> do
       let diffValue = sum [x | x :# _ <- map anyPostingValue lpostings]
