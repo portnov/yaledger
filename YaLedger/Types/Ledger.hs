@@ -57,6 +57,60 @@ data AnyPosting v =
      | DP (Posting v Debit)
   deriving (Eq,Show)
 
+class HasValue a where
+  getValue :: a -> Decimal
+
+data Delta v =
+       Increase v
+     | Decrease v
+  deriving (Eq,Show)
+
+decimalDelta :: Decimal -> Delta Decimal
+decimalDelta x
+  | x < 0     = Decrease (negate x)
+  | otherwise = Increase x
+
+amountDelta :: Decimal -> Currency -> Delta Amount
+amountDelta x c
+  | x < 0     = Decrease (negate x :# c)
+  | otherwise = Increase (x :# c)
+
+negateDelta :: Delta v -> Delta v
+negateDelta (Increase x) = Decrease x
+negateDelta (Decrease x) = Increase x
+
+instance HasValue (Delta Decimal) where
+  getValue (Increase x) = x
+  getValue (Decrease x) = negate x
+
+instance HasValue (Delta Amount) where
+  getValue (Increase (x :# _)) = x
+  getValue (Decrease (x :# _)) = negate x
+
+nullDelta :: Delta Amount -> Bool
+nullDelta (Increase (x :# _)) = x == 0
+nullDelta (Decrease (x :# _)) = x == 0
+
+instance HasAmount (Delta Amount) where
+  getAmount (Increase x) = x
+  getAmount (Decrease x) = x
+
+instance HasCurrency (Delta Amount) where
+  getCurrency (Increase x) = getCurrency x
+  getCurrency (Decrease x) = getCurrency x
+
+deltaAttachCcy :: Delta Decimal -> Currency -> Delta Amount
+deltaAttachCcy (Increase x) c = Increase (x :# c)
+deltaAttachCcy (Decrease x) c = Decrease (x :# c)
+
+deltaRemoveCcy :: Delta Amount -> Delta Decimal
+deltaRemoveCcy (Increase (x :# _)) = Increase x
+deltaRemoveCcy (Decrease (x :# _)) = Decrease x
+
+plusDelta :: Decimal -> Delta Decimal -> Decimal
+plusDelta x (Increase y) = x + y
+plusDelta x (Decrease y) = x - y
+
 instance Hashable HoldUsage where
   hashWithSalt s UseHold     = hashWithSalt s (1 :: Int)
   hashWithSalt s TryUseHold  = hashWithSalt s (2 :: Int)
@@ -69,6 +123,10 @@ instance Hashable v => Hashable (Posting v t) where
 postingValue :: Posting v t -> v
 postingValue (DPosting {..}) = debitPostingAmount
 postingValue (CPosting {..}) = creditPostingAmount
+
+anyPostingValue :: AnyPosting v -> v
+anyPostingValue (DP (DPosting {..})) = debitPostingAmount
+anyPostingValue (CP (CPosting {..})) = creditPostingAmount
 
 postingAccount :: Posting v t -> AnyAccount
 postingAccount (DPosting {..}) = either WFree WDebit  debitPostingAccount
@@ -130,7 +188,7 @@ instance (HasAmount a, HasAmount b) => HasAmount (Either a b) where
 
 data RatesDifference =
     OneCurrency
-  | CreditDifference (Posting Decimal Credit)
+  | CreditDifference [Posting Decimal Credit]
   | DebitDifference [Posting Decimal Debit]
   deriving (Eq)
 
@@ -384,16 +442,21 @@ instance HasAttributes (FreeOr t Account) where
 accountAttributes :: AnyAccount -> Attributes
 accountAttributes acc = getAttrs acc
 
-class (Named a, HasBalances a, HasCurrency a, HasAttributes a, Sign a) => IsAccount a where
+class (Named a, HasID a, HasBalances a, HasCurrency a, HasAttributes a, Sign a) => IsAccount a where
 
-instance (Named a, HasBalances a, HasCurrency a, HasAttributes a, Sign a) => IsAccount a 
+instance (Named a, HasID a, HasBalances a, HasCurrency a, HasAttributes a, Sign a) => IsAccount a 
 
 -- | Chart of accounts is a tree of accounts and account groups
 type ChartOfAccounts = Tree AccountGroupData AnyAccount
 
+data AccountAction =
+    ToIncrease
+  | ToDecrease
+  deriving (Eq,Show)
+
 -- | Query to search for a corresponding account
 data CQuery = CQuery {
-  cqType :: PostingType,
+  cqType :: AccountAction,
   cqCurrencies :: [Currency],
   cqExcept :: [AccountID],
   cqAttributes :: Attributes }

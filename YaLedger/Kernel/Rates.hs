@@ -60,6 +60,15 @@ convert mbDate c' (x :# c)
     let qty = roundTo (fromIntegral $ cPrecision c') (x *. rate)
     return $ qty :# c'
 
+convertDelta ::  (Monad m,
+            Throws NoSuchRate l)
+        => Maybe DateTime    -- ^ Date of which exchange rate should be used
+        -> Currency          -- ^ Target currency
+        -> Delta Amount
+        -> LedgerT l m (Delta Amount)
+convertDelta mbDate c (Increase x) = Increase `liftM` convert mbDate c x
+convertDelta mbDate c (Decrease x) = Decrease `liftM` convert mbDate c x
+
 convertBalanceInfo :: (Monad m,
                        Throws NoSuchRate l)
                    => Maybe DateTime
@@ -100,6 +109,17 @@ convertPosting' mbDate (DPosting acc a b) = do
 convertPosting' mbDate (CPosting acc a b) = do
   x :# _ <- convert mbDate (getCurrency acc) a
   return $ CPosting acc x b
+
+convertAnyPosting :: Throws NoSuchRate l
+               => Maybe DateTime        -- ^ Date of exchange rates
+               -> AnyPosting Amount
+               -> Ledger l (AnyPosting Decimal)
+convertAnyPosting mbDate (DP (DPosting acc a b)) = do
+  x :# _ <- convert mbDate (getCurrency acc) a
+  return $ DP $ DPosting acc x b
+convertAnyPosting mbDate (CP (CPosting acc a b)) = do
+  x :# _ <- convert mbDate (getCurrency acc) a
+  return $ CP $ CPosting acc x b
 
 -- | Convert Posting Decimal. Returns only an amount in target currency.
 convertDecimal :: Throws NoSuchRate l

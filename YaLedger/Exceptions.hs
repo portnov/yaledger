@@ -91,12 +91,13 @@ instance Show InvalidAccountType where
 instance Exception InvalidAccountType
 
 data NoCorrespondingAccountFound =
-    NoCorrespondingAccountFound CQuery SourcePos
+    NoCorrespondingAccountFound (Delta Amount) CQuery SourcePos
   deriving (Typeable)
 
 instance Show NoCorrespondingAccountFound where
-  show (NoCorrespondingAccountFound qry pos) =
-    showPos pos $ "No corresponding account found by query: " ++ show qry
+  show (NoCorrespondingAccountFound delta qry pos) =
+    showPos pos $ "No corresponding account found by query: " ++ show qry ++
+                  "\nwhile need to change some balance: " ++ show delta
 
 instance Exception NoCorrespondingAccountFound
 

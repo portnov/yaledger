@@ -232,13 +232,13 @@ convertRow opts pc currs coa path rowN row = do
 
   amt <- case head amountStr of
                    '+' -> case readSum (pcThousandsSep pc) (pcDecimalSep pc) (tail amountStr) of
-                            Right x -> return $ Left $ x :# currency
+                            Right x -> return $ Increase $ x :# currency
                             Left err -> fail err
                    '-' -> case readSum (pcThousandsSep pc) (pcDecimalSep pc) (tail amountStr) of
-                            Right x -> return $ Right $ x :# currency
+                            Right x -> return $ Decrease $ x :# currency
                             Left err -> fail err
                    _   -> case readSum (pcThousandsSep pc) (pcDecimalSep pc) amountStr of
-                            Right x -> return $ Left $ x :# currency
+                            Right x -> return $ Increase $ x :# currency
                             Left err -> fail err
 
   let accPath = mkPath accountName

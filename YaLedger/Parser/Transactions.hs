@@ -496,13 +496,13 @@ pPosting :: forall v. Show v => Parser v -> Parser (AnyPosting v)
 pPosting p = try (CP <$> explicitCredit) <|> try (DP <$> explicitDebit) <|> implicit
   where
     --  Left for credit amount, Right for debit
-    signed :: Parser v -> Parser (Either v v)
+    signed :: Parser v -> Parser (Delta v)
     signed p = do
       mbMinus <- optionMaybe $ char '-'
       val <- p
       case mbMinus of
-        Nothing -> return (Left val)
-        Just _  -> return (Right val)
+        Nothing -> return (Increase val)
+        Just _  -> return (Decrease val)
 
     implicit :: Parser (AnyPosting v)
     implicit = do

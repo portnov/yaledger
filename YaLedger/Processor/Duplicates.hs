@@ -68,8 +68,8 @@ matchBy :: DateIndex (Ext Record)
 matchBy index checks oldAttrs newRecord oldRecords
     | (CDate dx:_) <- checks = trace ("Matching " ++ show (extID newRecord)) $
                                case go (lookupDatePrev (getDate newRecord) dx index) of
-                                 Nothing -> (Nothing, oldRecords)
-                                 Just r -> (Just r,  filter (r /=) oldRecords)
+                                 Nothing -> trace "No match found" (Nothing, oldRecords)
+                                 Just r -> trace ("Match found: " ++ show r) (Just r,  filter (r /=) oldRecords)
     | otherwise = trace ("Matching " ++ show (extID newRecord)) $
                   case go oldRecords of
                     Nothing -> (Nothing, oldRecords)
@@ -82,26 +82,27 @@ matchBy index checks oldAttrs newRecord oldRecords
         else go rs
 
     matches oldRecord (CDate d) =
-      trace (show (extID newRecord) ++ " DATE: " ++ show (getDate newRecord) ++ ", " ++ show (getDate oldRecord)) $
+      traceS (show (extID newRecord) ++ " DATE: " ++ show (getDate newRecord) ++ ", " ++ show (getDate oldRecord) ++ ": ") $
       datesDifference (getDate newRecord) (getDate oldRecord) <= d
     matches oldRecord (CAmount x) =
       case (getRAmount newRecord, getRAmount oldRecord) of
         (Just (a1 :# c1), Just (a2 :# c2)) -> 
           if c1 /= c2
             then False
-            else traceS (show (extID newRecord) ++ " A: " ++ show a1 ++ ", " ++ show a2) $
+            else traceS (show (extID newRecord) ++ " CAmount: " ++ show a1 ++ ", " ++ show a2) $
                  if x == 0
                    then a1 == a2
                    else (max a1 a2) *. (fromIntegral x / 100.0) > (abs $ a1 - a2)
         _ -> False
     matches oldRecord CCreditAccount =
       case (getCreditAccount newRecord, getCreditAccount oldRecord) of
-        (Just aid1, Just aid2) -> trace (show (extID newRecord) ++ " CACC: " ++ show aid1 ++ ", " ++ show aid2) $ aid1 == aid2
-        (Nothing,_) -> trace (show (extID newRecord) ++ " No credit account specified") False
+        (Just aid1, Just aid2) -> traceS (show (extID newRecord) ++ " CACC: " ++ show aid1 ++ ", " ++ show aid2 ++ ": ") $ aid1 == aid2
+        (Nothing,Just _) -> trace (show (extID newRecord) ++ " No credit account specified") False
+        (Nothing, Nothing)     -> True
         _                      -> False
     matches oldRecord CDebitAccount =
       case (getDebitAccount newRecord, getDebitAccount oldRecord) of
-        (Just aid1, Just aid2) -> trace (show (extID newRecord) ++ " DACC: " ++ show aid1 ++ ", " ++ show aid2) $ aid1 == aid2
+        (Just aid1, Just aid2) -> traceS (show (extID newRecord) ++ " DACC: " ++ show aid1 ++ ", " ++ show aid2 ++ ": ") $ aid1 == aid2
         (Nothing, Just _) -> trace (show (extID newRecord) ++ " No debit account specified") False
         (Nothing, Nothing)     -> True
         _                      -> False

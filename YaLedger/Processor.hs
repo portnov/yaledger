@@ -91,16 +91,14 @@ processEntry date tranID pos attrs uentry = do
       -- What to do with rates difference?
       case rd of
         OneCurrency -> return () -- There is no any difference
-        CreditDifference p -> do
+        CreditDifference ps -> forM_ ps $ \p -> do
             let holdUsage = creditPostingUseHold p
             useHoldIfNeeded holdUsage p
             let account = creditPostingAccount p
             credit (creditPostingAccount p) entry (Ext date 0 pos attrs p)
             -- modifyLastItem (\b -> b {causedBy = Just entry}) (accountBalances account)
             runRules ECredit date tranID attrs p $ \tranID tran -> stm (enqueue tranID tran queue)
-        -- For debit difference, there might be many postings,
-        -- caused by debit redirection
-        DebitDifference  ps -> forM_ ps $ \ p -> do
+        DebitDifference  ps -> forM_ ps $ \p -> do
               let account = debitPostingAccount p
               let holdUsage = debitPostingUseHold p
               useHoldIfNeeded holdUsage p

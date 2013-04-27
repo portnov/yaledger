@@ -244,10 +244,9 @@ checkBalance bal delta acc = do
 negateAmount :: Amount -> Amount
 negateAmount (x :# c) = (-x) :# c
 
-differenceType :: Decimal -> PostingType
-differenceType x
-  | x < 0     = ECredit
-  | otherwise = EDebit
+differenceType :: Delta v -> AccountAction
+differenceType (Increase _) = ToDecrease
+differenceType (Decrease _) = ToIncrease
 
 -- | Get history of account's credit postings
 creditPostings :: Throws InternalError l
@@ -291,7 +290,7 @@ creditTurnovers :: (Throws InternalError l)
 creditTurnovers qry account = do
   let c = getCurrency account
   postings <- filterPostings qry <$> (readIOListL =<< creditPostings account)
-  let turnovers = sumPostings postings
+  let turnovers = sum $ map postingValue postings
   return (turnovers :# c)
 
 -- | Calculate debit turnovers of account
@@ -303,15 +302,17 @@ debitTurnovers :: (Throws InternalError l)
 debitTurnovers qry account = do
   let c = getCurrency account
   postings <- filterPostings qry <$> (readIOListL =<< debitPostings account)
-  let turnovers = sumPostings postings
+  let turnovers = sum $ map postingValue postings
   return (turnovers :# c)
 
 -- | Sum values of postings.
 -- NB: does not use currencies. This should be
 -- used only for postings that are known to be 
 -- in one currency.
-sumPostings :: [Posting Decimal t] -> Decimal
-sumPostings es = sum (map postingValue es)
+sumPostings :: LedgerOptions -> [Posting Decimal t] -> Decimal
+sumPostings opts ps = sum (map val ps)
+  where
+    val p = (if isAssets opts (getAttrs $ postingAccount p) then -1 else 1) * postingValue p
 
 -- | Lookup for account by it's ID
 accountByID :: AccountID -> ChartOfAccounts -> Maybe AnyAccount
@@ -379,6 +380,8 @@ checkEntry :: (Throws NoSuchRate l,
              -> Ledger l (Entry Decimal Checked)
 checkEntry date attrs (UEntry dt cr mbCorr currs) = do
   defcur <- gets lsDefaultCurrency
+  opts <- gets lsConfig
+  coa <- gets lsCoA
   let currencies    = uniq $ map getCurrency cr ++ map getCurrency dt ++ [defcur]
       firstCurrency = head currencies
       accounts      = map (getID . creditPostingAccount) cr
@@ -392,8 +395,8 @@ checkEntry date attrs (UEntry dt cr mbCorr currs) = do
   cr1 <- mapM (convertPosting (Just date) firstCurrency) cr
 
   -- And sum them to check if debit == credit
-  let dtSum = sumPostings dt1 
-      crSum = sumPostings cr1
+  let dtSum = sumPostings opts dt1 
+      crSum = sumPostings opts cr1
 
   -- Convert each posting's sum into currency
   -- of posting's account
@@ -405,7 +408,9 @@ checkEntry date attrs (UEntry dt cr mbCorr currs) = do
   (dtF, crF) <- if dtSum == crSum
                   then return (dt', cr')
                   else do
-                       let diff = crSum - dtSum -- in firstCurrency
+                       let diff = decimalDelta (crSum - dtSum) -- in firstCurrency
+                       --  So, if diff > 0, we will need to decrease balance on some account.
+                       --  Otherwise, we need to increase some balance.
                        let qry = CQuery {
                                    cqType       = differenceType diff,
                                    cqCurrencies = currencies ++ currs,
@@ -413,7 +418,7 @@ checkEntry date attrs (UEntry dt cr mbCorr currs) = do
                                    cqAttributes = M.insert "source" (Optional source) attrs }
                        debug $ "Kernel.checkEntry: Amount: " ++ show diff ++ "; CQuery: " ++ show qry
                        -- Fill credit / debit entry parts
-                       fillEntry qry date dt' cr' mbCorr (diff :# firstCurrency)
+                       fillEntry qry date dt' cr' mbCorr (deltaAttachCcy diff firstCurrency)
   let nCurrencies = length $ nub $ sort $
                           map getCurrency cr ++
                           map getCurrency dt ++
@@ -430,9 +435,9 @@ checkEntry date attrs (UEntry dt cr mbCorr currs) = do
          dtD <- mapM (convertDecimal (Just date) defcur) dtF
          debug $ "crD: " ++ show crD ++ ", dtD: " ++ show dtD
 
-         let diffD :: Decimal -- In default currency
-             diffD = sum crD - sum dtD
-         rd <- if diffD == realFracToDecimal 10 (fromIntegral 0)
+         let diffD :: Delta Decimal -- In default currency
+             diffD = decimalDelta (sum crD - sum dtD)
+         rd <- if getValue diffD == realFracToDecimal 10 (fromIntegral 0)
                  then return OneCurrency
                  else do
                       debug $ "Rates difference: " ++ show diffD
@@ -444,21 +449,29 @@ checkEntry date attrs (UEntry dt cr mbCorr currs) = do
                                   cqCurrencies = [defcur],
                                   cqExcept     = accounts,
                                   cqAttributes = attrs' }
-                      correspondence <- lookupCorrespondence qry date (diffD :# defcur) Nothing
+                      correspondence <- lookupCorrespondence qry date (deltaAttachCcy diffD defcur) Nothing
                       case correspondence of
                         Right oneAccount -> do
-                          if diffD < 0
-                            then do
-                                 account <- accountAsCredit oneAccount (-diffD)
-                                 return $ CreditDifference $ CPosting account (-diffD) DontUseHold
-                            else do
-                                 account <- accountAsDebit oneAccount diffD
-                                 return $ DebitDifference [ DPosting account diffD DontUseHold ]
-                        Left debitPostings -> do
-                          postings <- mapM (convertPosting' $ Just date) debitPostings
-                          return $ DebitDifference postings
+                          path <- accountFullPath' "Kernel.checkEntry" oneAccount coa
+                          onePosting <- autoPosting opts diffD path oneAccount DontUseHold
+                          case onePosting of
+                            CP cp -> return $ CreditDifference [cp]
+                            DP dp -> return $ DebitDifference  [dp]
+                        Left postings -> do
+                          postings <- mapM (convertAnyPosting $ Just date) postings
+                          autoDifference postings
          return $ CEntry dtF crF rd
     else return $ CEntry dtF crF OneCurrency
+
+autoDifference postings = do
+    let debits  = [p | DP p <- postings]
+        credits = [p | CP p <- postings]
+    let ndebit = length debits
+    if ndebit == length postings
+      then return $ DebitDifference debits
+      else if ndebit == 0
+             then return $ CreditDifference credits
+             else fail $ "Impossible: Kernel.autoDifference"
 
 -- | Lookup for correspondent account(s).
 -- If needed amount could be wrote off from one corresponding account,
@@ -475,15 +488,18 @@ lookupCorrespondence :: (Throws NoCorrespondingAccountFound l,
                          Throws InvalidAccountType l)
                      => CQuery              -- ^ Query to search for account
                      -> DateTime            -- ^ Entry date/time
-                     -> Amount              -- ^ Amount of credit \/ debit
+                     -> Delta Amount              -- ^ Amount of credit \/ debit
                      -> Maybe (AnyAccount, HoldUsage) -- ^ (User-specified corresponding account; whether to use hold)
-                     -> Ledger l (Either [Posting Amount Debit] AnyAccount)
-lookupCorrespondence qry date amount@(value :# currency) mbCorr = do
+                     -> Ledger l (Either [AnyPosting Amount] AnyAccount)
+lookupCorrespondence qry date deltaAmt mbCorr = do
+  let amount = getAmount deltaAmt
+      currency = getCurrency deltaAmt
   coa <- gets lsCoA
   amap <- gets lsAccountMap
   groupsMap <- gets lsFullGroupsMap
-  let mbAccount = runCQuery qry coa
-      mbByMap = lookupAMap groupsMap coa amap qry (cqExcept qry)
+  opts <- gets lsConfig
+  let mbAccount = runCQuery opts qry coa
+      mbByMap = lookupAMap opts groupsMap coa amap qry (cqExcept qry)
       mbCorrespondingAccount = fst <$> mbCorr
       useHold = fromMaybe DontUseHold (snd <$> mbCorr)
   -- Search for corresponding account:
@@ -492,15 +508,15 @@ lookupCorrespondence qry date amount@(value :# currency) mbCorr = do
   -- 3. Account which is found by given query.
   case mbCorrespondingAccount `mplus` mbByMap `mplus` mbAccount of
     -- No corresponding account found
-    Nothing -> throwP (NoCorrespondingAccountFound qry)
+    Nothing -> throwP (NoCorrespondingAccountFound deltaAmt qry)
     Just acc ->
-      case cqType qry of
+      {-case cqType qry of
         -- Second entry part will be credit.
         -- Just return found account.
         ECredit -> return (Right acc)
         EDebit ->
           -- Second entry part will be debit.
-          -- Check if we should redirect part of debit
+          -- Check if we should redirect part of debit -}
           case acc of
             -- Debit redirect has sence only for free accounts
             WFree account ->
@@ -508,21 +524,28 @@ lookupCorrespondence qry date amount@(value :# currency) mbCorr = do
                 -- Account redirect is not used for this account
                 then return (Right acc)
                 else do
+                     accPath <- accountFullPath' "Kernel.lookupCorrespondence" account coa
                      let accountCurrency = getCurrency account
-                     toDebit :# _ <- convert (Just date) accountCurrency amount
+                     deltaInAcctCcy <- convertDelta (Just date) accountCurrency deltaAmt
+                     let amtInAcctCcy :# _ = getAmount deltaInAcctCcy
                      currentBalance <- runAtomically $ getCurrentBalance AvailableBalance account
-                     -- toDebit and currentBalance are both in currency of
+                     -- amtInAcctCcy and currentBalance are both in currency of
                      -- found account.
-                     if toDebit <= currentBalance
-                       then return $ Left [DPosting (Left account) (toDebit :# accountCurrency) useHold]
+                     debug $ printf "Check if to divert: current balance %s, amount %s"
+                                    (show currentBalance) (show amtInAcctCcy)
+                     let resultingBalance = currentBalance `plusDelta` deltaRemoveCcy deltaInAcctCcy
+                     if resultingBalance >= 0
+                       then do
+                            onePosting <- autoPosting opts deltaInAcctCcy accPath (WFree account) useHold
+                            return $ Left [onePosting]
                        else do
                             info $ "Account `" ++ getName account ++ "' has current balance only of " ++
                                    show currentBalance ++ ", while needed to be debited by " ++
-                                   show toDebit ++ "; redirecting part of amount."
-                            let toRedirect = toDebit - currentBalance
+                                   show amtInAcctCcy ++ "; redirecting part of amount."
+                            let toRedirect = decimalDelta $ negate $ resultingBalance
                             let qry' = CQuery {
                                          -- Search for debit (or free) account
-                                         cqType = EDebit,
+                                         cqType = ToDecrease,
                                          -- If possible, use account with same currency
                                          cqCurrencies = (accountCurrency: cqCurrencies qry),
                                          -- Do not use same account or one of
@@ -533,20 +556,22 @@ lookupCorrespondence qry date amount@(value :# currency) mbCorr = do
                                                           (cqAttributes qry)
                                        }
                             -- first posting will get all available balance of this account.
-                            let firstPosting = DPosting (Left account) (currentBalance :# accountCurrency) useHold
+                            let delta = amountDelta currentBalance accountCurrency
+                            firstPosting <- autoPosting opts delta accPath (WFree account) useHold
                             -- search for other accounts to redirect part of amount.
                             -- NB: this recursive call can return one account
                             -- or list of postings.
+                            let toRedirectAmt = deltaAttachCcy toRedirect accountCurrency
                             nextHop <- lookupCorrespondence qry' date
-                                           (toRedirect :# accountCurrency)
-                                           Nothing
+                                           toRedirectAmt Nothing
                             case nextHop of
                               Right hop -> do
                                 -- We can debit `hop' acccount by toRedirect
                                 let lastCurrency = getCurrency hop
-                                lastDebit :# _ <- convert (Just date) lastCurrency (toRedirect :# accountCurrency)
-                                hop' <- accountAsDebit hop lastDebit
-                                let last  = DPosting hop' (lastDebit :# lastCurrency) useHold
+                                lastDelta <- convertDelta (Just date) lastCurrency toRedirectAmt
+                                let lastAmt = getValue lastDelta
+                                hopPath <- accountFullPath' "Kernel.lookupCorrespondence" hop coa
+                                last <- autoPosting opts lastDelta hopPath hop useHold
                                 return $ Left [firstPosting, last]
                               Left postings -> 
                                 return $ Left (firstPosting: postings)
@@ -564,19 +589,25 @@ fillEntry :: (Throws NoSuchRate l,
            -> [Posting Decimal Debit]   -- ^ Debit postings
            -> [Posting Decimal Credit]  -- ^ Credit postings
            -> Maybe (AnyAccount, HoldUsage)  -- ^ (User-specified corresponding account; whether to use hold on it)
-           -> Amount                    -- ^ Difference (credit - debit)
+           -> Delta Amount                    -- ^ Difference (credit - debit)
            -> Ledger l ([Posting Decimal Debit], [Posting Decimal Credit])
-fillEntry qry date dt cr mbCorr amount@(value :# _) = do
-  correspondence <- lookupCorrespondence qry date amount mbCorr
+fillEntry qry date dt cr mbCorr deltaAmt = do
+  let amount = getAmount deltaAmt
+  opts <- gets lsConfig
+  coa <- gets lsCoA
+  correspondence <- lookupCorrespondence qry date deltaAmt mbCorr
   let useHold = fromMaybe DontUseHold (snd <$> mbCorr)
   case correspondence of
-    Right oneAccount -> do
-      if value < 0
-         then do
-              account <- accountAsCredit oneAccount value
-              -- Convert value into currency of found account
-              value' :# _ <- convert (Just date) (getCurrency account) amount
-              if value' == 0
+    Right account -> do
+      -- Convert value into currency of found account
+      let acctCcy = getCurrency account
+      deltaInAcctCcy <- convertDelta (Just date) acctCcy deltaAmt
+      let delta' = if isAssets opts (getAttrs account)
+                     then negateDelta deltaInAcctCcy
+                     else deltaInAcctCcy
+      case delta' of
+        Decrease value -> do
+              if nullDelta delta'
                 then if (length dt == 1) && null cr
                        then do
                          info $ "Credit part is zero: " ++ show cr ++ ", setting debit to zero too." 
@@ -586,13 +617,13 @@ fillEntry qry date dt cr mbCorr amount@(value :# _) = do
                                  ++ show (getCurrency account)
                          return (dt, cr)
                 else do
-                     let e = CPosting account (-value') useHold
-                     return (dt, e:cr)
-         else do
-              account <- accountAsDebit oneAccount value
-              -- Convert value into currency of found account
-              value' :# _ <- convert (Just date) (getCurrency account) amount
-              if value' == 0
+                     path <- accountFullPath' "Kernel.fillEntry" account coa
+                     debug $ printf "fillEntry: delta' %s, account %s"
+                                    (show delta') (intercalate "/" path)
+                     e <- autoPosting opts (deltaRemoveCcy delta') path account useHold
+                     return $ appendPostings [e] dt cr
+        Increase value -> do
+              if nullDelta delta'
                 then if (length cr == 1) && null dt
                        then do
                          info $ "Debit part is zero: " ++ show dt ++ ", setting credit to zero too." 
@@ -602,12 +633,13 @@ fillEntry qry date dt cr mbCorr amount@(value :# _) = do
                                  ++ show (getCurrency account)
                          return (dt, cr)
                 else do
-                     let e = DPosting account value' useHold
-                     return (e:dt, cr)
-    Left debitPostings -> do
-      let diffValue = sum [x | x :# _ <- map postingValue debitPostings]
-      postings <- mapM (convertPosting' $ Just date) debitPostings
-      let value = sum (map postingValue postings)
+                     path <- accountFullPath' "Kernel.fillEntry" account coa
+                     e <- autoPosting opts (deltaRemoveCcy delta') path account useHold
+                     return $ appendPostings [e] dt cr
+    Left lpostings -> do
+      let diffValue = sum [x | x :# _ <- map anyPostingValue lpostings]
+      postings <- mapM (convertAnyPosting $ Just date) lpostings
+      let value = sum (map anyPostingValue postings)
       if value == 0
         then do
              if (length cr == 1) && null dt
@@ -619,7 +651,13 @@ fillEntry qry date dt cr mbCorr amount@(value :# _) = do
                  warning $ "Debit difference is " ++ show diffValue ++
                         ", which is 0.0 in currencies of accounts."
                  return (dt, cr)
-        else return (dt ++ postings, cr)
+        else return $ appendPostings postings dt cr
+
+appendPostings :: [AnyPosting v] -> [Posting v Debit] -> [Posting v Credit] -> ([Posting v Debit], [Posting v Credit])
+appendPostings ps dt cr = foldr go (dt,cr) ps
+  where
+    go (DP p) (d,c) = (d ++ [p], c)
+    go (CP p) (d,c) = (d, c ++ [p])
 
 -- | Reconciliate one account; set it's current balance
 -- to given value.
@@ -643,7 +681,7 @@ reconciliate btype date account amount tgt msg = do
 
   -- diff is in accountCurrency
   let diff = actualBalance - calculatedBalance
-  debug $ printf "Kernel.reconciliate: calculated %s, actual %s, diff %s"
+  info $ printf "Reconciliation: calculated %s, actual %s, diff %s"
                  (show calculatedBalance) (show actualBalance) (show diff)
   if diff /= 0
     then do
@@ -652,14 +690,12 @@ reconciliate btype date account amount tgt msg = do
                           (actualBalance :# accountCurrency)
                           (calculatedBalance :# accountCurrency)
                           (diff :# accountCurrency)
-         let amt = if diff > 0
-                     then Left (diff :# accountCurrency)
-                     else Right (negate diff :# accountCurrency)
+         let delta = amountDelta diff accountCurrency
          opts <- gets lsConfig
          let accPath = case accountFullPath (getID account) coa of
                          Nothing -> error $ "Impossible: Kernel.reconciliate: no account: " ++ show account
                          Just p  -> p
-         posting <- autoPosting opts amt accPath account DontUseHold
+         posting <- autoPosting opts delta accPath account DontUseHold
          case posting of
            CP p -> return $ Just $ UEntry [] [p] correspondence [getCurrency amount]
            DP p -> return $ Just $ UEntry [p] [] correspondence [getCurrency amount]

@@ -7,7 +7,6 @@ import Control.Monad.State
 import qualified Data.Map as M
 
 import YaLedger.Types
-import YaLedger.Kernel.Query (match)
 
 checkConfiguredQuery :: LedgerOptions
                      -> (LedgerOptions -> Attributes)
@@ -32,4 +31,19 @@ isIncomes opts = checkConfiguredQuery opts incomeAccounts
 
 isExpences :: LedgerOptions -> Attributes -> Bool
 isExpences opts = checkConfiguredQuery opts expenceAccounts
+
+-- | Match attributes set
+match :: Attributes  -- ^ Set of attributes (of account, for example)
+      -> Attributes  -- ^ Attributes query (attributes of entry, for example)
+      -> Bool
+match attrs qry =
+  let check (name, value) = case M.lookup name attrs of
+                              Nothing -> isOptional value
+                              Just av  -> matchAV value av
+  in  all check $ M.assocs qry
+
+-- | Check if attribute value is optional
+isOptional :: AttributeValue -> Bool
+isOptional (Optional _) = True
+isOptional _            = False
 

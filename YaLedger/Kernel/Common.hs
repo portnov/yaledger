@@ -8,6 +8,7 @@ module YaLedger.Kernel.Common
    getCoAItem, getCoAItemT,
    getAccount, getAccountT,
    accountFullPath,
+   accountFullPath',
    autoPosting
   ) where
 
@@ -114,7 +115,7 @@ getAccountT t getPos fn path = do
 
 autoPosting :: forall v m. (Show v, Monad m)
             => LedgerOptions
-            -> Either v v  -- ^ Left for credit amount, Right for debit amount
+            -> Delta v
             -> Path        -- ^ Path to account
             -> AnyAccount
             -> HoldUsage
@@ -123,26 +124,27 @@ autoPosting opts amt accPath acc use = do
     let attrs = accountAttributes acc
     if isAssets opts attrs
       then case (amt, acc) of
-             (Left am,  WFree a)   -> return $ DP $ DPosting (Left a)  am use
-             (Right am, WFree a)   -> return $ CP $ CPosting (Left a)  am use
-             (Left am,  WDebit a)  -> return $ DP $ DPosting (Right a) am use
-             (Right am, WCredit a) -> return $ CP $ CPosting (Right a) am use
+             (Increase am, WFree a)   -> return $ DP $ DPosting (Left a)  am use
+             (Decrease am, WFree a)   -> return $ CP $ CPosting (Left a)  am use
+             (Increase am, WDebit a)  -> return $ DP $ DPosting (Right a) am use
+             (Decrease am, WCredit a) -> return $ CP $ CPosting (Right a) am use
              (_,_) -> fail $ printfErr accPath amt acc
       else case (amt, acc) of
-             (Left am,  WFree a)   -> return $ CP $ CPosting (Left a)  am use
-             (Right am, WFree a)   -> return $ DP $ DPosting (Left a)  am use
-             (Left am,  WCredit a) -> return $ CP $ CPosting (Right a) am use
-             (Right am, WDebit a)  -> return $ DP $ DPosting (Right a) am use
+             (Increase am, WFree a)   -> return $ CP $ CPosting (Left a)  am use
+             (Decrease am, WFree a)   -> return $ DP $ DPosting (Left a)  am use
+             (Increase am, WCredit a) -> return $ CP $ CPosting (Right a) am use
+             (Decrease am, WDebit a)  -> return $ DP $ DPosting (Right a) am use
              (_,_) -> fail $ printfErr accPath amt acc
   where
-    printfErr :: Path -> Either v v -> AnyAccount -> String
+    printfErr :: Path -> Delta v -> AnyAccount -> String
     printfErr path amt acc = printf "Invalid account type %s: %s instead of %s (amount: %s)"
-                                    (intercalate "/" path) signAmt signAcc (either show show amt)
+                                    (intercalate "/" path) signAmt signAcc (show amt)
       where
+
         signAmt :: String
         signAmt = case amt of
-                    Left _  -> "credit"
-                    Right _ -> "debit"
+                    Decrease _  -> "decrease"
+                    Increase _  -> "increase"
 
         signAcc :: String
         signAcc = case acc of
@@ -167,6 +169,12 @@ accountFullPath i tree = go [] i tree
     go p i (Leaf name acc)
       | getID acc == i = Just (p ++ [name])
       | otherwise      = Nothing
+
+accountFullPath' :: (Monad m, HasID a) => String -> a -> ChartOfAccounts -> m Path
+accountFullPath' msg acc coa =
+  case accountFullPath (getID acc) coa of
+    Nothing -> fail $ "Impossible: " ++ msg ++ ": No such account: " ++ show (getID acc)
+    Just p  -> return p
 
 -- | Get fully qualfiied path of accounts group
 groupFullPath :: GroupID -> ChartOfAccounts -> Maybe Path
