@@ -14,12 +14,8 @@ import YaLedger.Kernel.Classification
 
 -- | Match account type
 matchT :: LedgerOptions -> AccountAction -> AccountGroupType -> Attributes -> Bool
-matchT opts ToIncrease k attrs
-  | isAssets opts attrs = k `elem` [AGDebit,  AGFree]
-  | otherwise           = k `elem` [AGCredit, AGFree]
-matchT opts ToDecrease k attrs
-  | isAssets opts attrs = k `elem` [AGCredit, AGFree]
-  | otherwise           = k `elem` [AGDebit,  AGFree]
+matchT opts ToIncrease k attrs = k `elem` [AGDebit,  AGFree]
+matchT opts ToDecrease k attrs = k `elem` [AGCredit, AGFree]
 
 -- | Match all attributes
 matchAll :: Attributes -- ^ Set of attributes (of account, for example)

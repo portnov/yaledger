@@ -713,6 +713,7 @@ reconciliate btype date account amount tgt msg = do
                          Nothing -> error $ "Impossible: Kernel.reconciliate: no account: " ++ show account
                          Just p  -> p
          posting <- autoPosting opts delta accPath account DontUseHold
+         debug $ "reconciliate: posting: " ++ show posting
          case posting of
            CP p -> return $ Just $ UEntry [] [p] correspondence [getCurrency amount]
            DP p -> return $ Just $ UEntry [p] [] correspondence [getCurrency amount]
