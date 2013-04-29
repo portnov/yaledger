@@ -12,6 +12,7 @@ import Data.Decimal
 import Data.Dates
 
 import YaLedger.Types
+import YaLedger.Types.Monad
 import YaLedger.Output
 import YaLedger.Kernel
 import YaLedger.Exceptions

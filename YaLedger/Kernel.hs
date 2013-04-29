@@ -40,6 +40,8 @@ import qualified Data.Map as M
 import Text.Printf
 
 import YaLedger.Types
+import YaLedger.Types.Monad
+import YaLedger.Types.Monad.STM
 import YaLedger.Exceptions
 import YaLedger.Kernel.Types
 import YaLedger.Kernel.Correspondence
@@ -58,7 +60,7 @@ instance CanDebit (Account Debit) where
       balance <- getCurrentBalance AvailableBalance acc
       checkBalance balance (negate $ postingValue (getContent p)) acc
       appendIOList debitAccountPostings p
-      debugSTM $ "debit " ++ (getName $ postingAccount $ getContent p) ++ ": " ++ show (postingValue $ getContent p)
+      $debugSTM $ "debit " ++ (getName $ postingAccount $ getContent p) ++ ": " ++ show (postingValue $ getContent p)
       let attrs = getAttrs acc
       balancePlusPosting attrs e p debitAccountBalances
 
@@ -71,7 +73,7 @@ instance CanDebit (Account Free) where
       balance <- getCurrentBalance AvailableBalance acc
       checkBalance balance (negate $ postingValue (getContent p)) acc
       appendIOList freeAccountDebitPostings p
-      debugSTM $ "debit " ++ (getName $ postingAccount $ getContent p) ++ ": " ++ show (postingValue $ getContent p)
+      $debugSTM $ "debit " ++ (getName $ postingAccount $ getContent p) ++ ": " ++ show (postingValue $ getContent p)
       let attrs = getAttrs acc
       balancePlusPosting attrs e p freeAccountBalances
 
@@ -142,7 +144,7 @@ balancePlusPosting attrs entry p history = do
                                 balanceValue = balanceValue b + value }
           }
   let zero = Ext (getDate p) (extID p) (getLocation p) (getAttributes p) (Balance (Just entry) value 0 0)
-  debugSTM $ "balancePlusPosting: updating balance by " ++ show value
+  $debugSTM $ "balancePlusPosting: updating balance by " ++ show value
   plusIOList zero (const True) update history
 
 -- | Add hold to balance history
@@ -233,10 +235,10 @@ checkBalance bal delta acc = do
              else (<=)
   whenJust (bcInfo bc) $ \value ->
     when (targetBalance `op` value) $ do
-      infoSTMP $ "Balance of " ++ getName acc ++ " will be " ++ show targetBalance ++ show (getCurrency acc)
+      $infoSTMP $ "Balance of " ++ getName acc ++ " will be " ++ show targetBalance ++ show (getCurrency acc)
   whenJust (bcWarning bc) $ \value ->
     when (targetBalance `op` value) $ 
-      warningSTMP $ "Balance of " ++ getName acc ++ " will be " ++ show targetBalance ++ show (getCurrency acc)
+      $warningSTMP $ "Balance of " ++ getName acc ++ " will be " ++ show targetBalance ++ show (getCurrency acc)
   whenJust (bcError bc) $ \value ->
     when (targetBalance `op` value) $ 
       throwP (InsufficientFunds (getName acc) targetBalance (getCurrency acc))

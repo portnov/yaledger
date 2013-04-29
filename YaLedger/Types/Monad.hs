@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, MultiParamTypeClasses, TypeSynonymInstances, GeneralizedNewtypeDeriving, FlexibleContexts, FlexibleInstances, ScopedTypeVariables #-}
+{-# LANGUAGE CPP, MultiParamTypeClasses, TypeSynonymInstances, GeneralizedNewtypeDeriving, FlexibleContexts, FlexibleInstances, ScopedTypeVariables, TemplateHaskell #-}
 -- | 'Ledger' monad and utility functions.
 --
 -- Ledger monad is basically EMT l (StateT 'LedgerState' IO) a.
@@ -22,63 +22,13 @@ import YaLedger.Types.Ledger
 import YaLedger.Types.Map
 import YaLedger.Types.Transactions
 import YaLedger.Types.Config
+import YaLedger.Types.Monad.Types
+import YaLedger.Types.Monad.STM
 import YaLedger.Tree
 import YaLedger.Exceptions
+import YaLedger.Exceptions.Utils
 import YaLedger.Kernel.Queue
-
--- | Base layer of Ledger monad: StateT transformer.
-newtype LedgerStateT m a = LedgerStateT (StateT LedgerState m a)
-  deriving (Monad, MonadState LedgerState, MonadIO)
-
--- | Generic type of YaLedger monad. This is used in
--- two instances: 'Ledger' and 'Atomic'.
-type LedgerT l m a = EMT l (LedgerStateT m) a
-
--- | This monad is used in most computations,
--- which do not need to lock any accounts.
-type Ledger l a = LedgerT l IO a
-
--- | Computations of this type are peformed
--- atomically, inside STM transaction.
-type Atomic l a = LedgerT l STM a
-
-data Rules = Rules {
-    creditRules :: [(String, Attributes, Rule)]
-  , debitRules  ::  [(String, Attributes, Rule)]
-  }
-  deriving (Eq, Show)
-
--- | Ledger state
-data LedgerState = LedgerState {
-    lsStartDate       :: DateTime                                      -- ^ Date/Time of YaLedger startup.
-  , lsDefaultCurrency :: Currency
-  , lsCoA             :: ChartOfAccounts
-  , lsAccountMap      :: AccountMap
-  , lsFullGroupsMap   :: M.Map AccountID [GroupID]                     -- ^ For each account ID, stores list of IDs of all groups account belongs to.
-  , lsTemplates       :: M.Map String (Attributes, Transaction Param)  -- ^ Templates
-  , lsRules           :: Rules
-  , lsRates           :: Rates                                         -- ^ Exchange rates.
-  , lsLoadedRecords   :: [Ext Record]                                  -- ^ All records loaded from source files.
-  , lsTranQueue       :: Queue (Transaction Amount)                    -- ^ Transactions queue.
-  , lsMessages        :: TChan (Priority, String)                      -- ^ Log messages queue. Is used to output messages from 'Atomic' transactions
-  , lsConfig          :: LedgerOptions                                 -- ^ Configuration options
-  , lsPosition        :: SourcePos                                     -- ^ Source location of current transaction
-  }
-  deriving (Eq)
-
-instance Monad m => MonadState LedgerState (EMT l (LedgerStateT m)) where
-  get = lift get
-  put s = lift (put s)
-
-instance Monad m => MonadReader LedgerOptions (EMT l (LedgerStateT m)) where
-  ask = gets lsConfig
-
-  local fn m = do
-    st <- get
-    put $ st {lsConfig = fn (lsConfig st)}
-    x <- m
-    put st
-    return x
+import YaLedger.Logger
 
 -- | Create default LedgerState.
 emptyLedgerState :: LedgerOptions -> ChartOfAccounts -> AccountMap -> [Ext Record] -> IO LedgerState
@@ -102,73 +52,19 @@ emptyLedgerState opts coa amap records = do
              lsPosition = nowhere
            }
 
--- | Wrap IO action into EMT monad
-wrapIO :: (MonadIO m, Throws InternalError l)
-       => IO a
-       -> EMT l m a
-wrapIO action = wrapE $ liftIO action
-
--- | Lift STM action into 'Atomic' monad.
-stm :: Throws InternalError l => STM a -> Atomic l a
-stm action = EMT $ LedgerStateT $ StateT $ \ls -> do
-               result <- action
-               return (Right result, ls)
-
-throwP e = do
-  pos <- gets lsPosition
-  throw (e pos)
-
 -- | Set current source location
 setPos :: (Monad m) => SourcePos -> LedgerT l m ()
 setPos pos =
   modify $ \st -> st {lsPosition = pos}
 
--- | Write log message from 'Atomic' monad.
--- This puts message to 'lsMessages' queue.
-logSTM :: Throws InternalError l => Priority -> String -> Atomic l ()
-logSTM priority message = do
-  chan <- gets lsMessages
-  stm $ writeTChan chan (priority, message)
-
-debugSTM :: Throws InternalError l => String -> Atomic l ()
-#ifdef DEBUG
-debugSTM message = logSTM INFO $ "DEBUG: " ++ message
-#else
-debugSTM _ = return ()
-#endif
-
--- | Similar to 'info', but in 'Atomic' monad.
-infoSTM :: Throws InternalError l => String -> Atomic l ()
-infoSTM message = do
-  pos <- gets lsPosition
-  logSTM INFO $ "INFO: " ++ message
-
--- | Similar to 'infoP', but in 'Atomic' monad.
-infoSTMP :: Throws InternalError l => String -> Atomic l ()
-infoSTMP message = do
-  pos <- gets lsPosition
-  logSTM INFO $ "INFO: " ++ message ++ "\n    at " ++ show pos
-
--- | Similar to 'warning', but in 'Atomic' monad.
-warningSTM :: Throws InternalError l => String -> Atomic l ()
-warningSTM message = do
-  pos <- gets lsPosition
-  logSTM WARNING $ "WARNING: " ++ message
-
--- | Similar to 'warningP', but in 'Atomic' monad.
-warningSTMP :: Throws InternalError l => String -> Atomic l ()
-warningSTMP message = do
-  pos <- gets lsPosition
-  logSTM WARNING $ "WARNING: " ++ message ++ "\n    at " ++ show pos
-
 -- | Output all messages from 'lsMessages' queue.
-outputMessages :: TChan (Priority, String) -> IO ()
+outputMessages :: TChan (String, Priority, String) -> IO ()
 outputMessages chan = do
   x <- atomically $ tryReadTChan chan
   case x of
     Nothing -> return ()
-    Just (priority, message) -> do
-        logM rootLoggerName priority message
+    Just (name, priority, message) -> do
+        logM name priority message
         outputMessages chan
 
 -- | Run 'Atomic' transaction.
@@ -224,7 +120,7 @@ plusIOList def p fn iolist = do
       [] -> [def]
       (x:xs) -> fn x: x: xs
   res <- stm $ readTVar iolist
-  debugSTM $ "plusIOList: new item: " ++ show (head res)
+  $debugSTM $ "plusIOList: new item: " ++ show (head res)
 
 modifyLastItem ::  (Throws InternalError l)
                => (a -> a)

@@ -18,6 +18,7 @@ import Data.Maybe
 import Data.Decimal
 
 import YaLedger.Types
+import YaLedger.Types.Monad
 import YaLedger.Exceptions
 import YaLedger.Kernel (getCurrentBalance)
 

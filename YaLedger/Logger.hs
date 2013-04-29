@@ -3,9 +3,10 @@
 module YaLedger.Logger
   (Priority (..),
    setupLogger,
-   debug,
-   info, warning, errorMessage,
+   debug, info, warning, errorMessage,
    debugP, infoP, warningP,
+   debugSTM, infoSTM, warningSTM,
+   infoSTMP, warningSTMP,
    debugIO, infoIO,
    handler,
    trace, traceS,
@@ -20,6 +21,7 @@ import Control.Monad.Loc
 import System.Log.Logger
 
 import YaLedger.Types
+import YaLedger.Types.Monad.STM
 import YaLedger.Exceptions
 import YaLedger.Logger.TH
 import qualified YaLedger.Logger.Loggers as L

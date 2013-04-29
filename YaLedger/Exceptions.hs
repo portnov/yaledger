@@ -1,19 +1,33 @@
 {-# LANGUAGE GADTs, RecordWildCards, ScopedTypeVariables, FlexibleContexts, FlexibleInstances, DeriveDataTypeable, MultiParamTypeClasses, UndecidableInstances #-}
 -- | Declaration of exceptions types
-module YaLedger.Exceptions where
+module YaLedger.Exceptions
+  (throwP,
+   InternalError (..), NoSuchRate (..),
+   InsufficientFunds (..), ReconciliationError (..),
+   DuplicatedRecord (..), NoSuchHold (..), InvalidAccountType (..),
+   NoCorrespondingAccountFound (..), NoSuchTemplate (..),
+   InvalidCmdLine (..), InvalidPath (..), NotAnAccount (..)
+  ) where
 
 import Control.Monad.Exception
 import Control.Monad.Loc
+import Control.Monad.State
 import Data.List (intercalate)
 import Data.Decimal
 
 import YaLedger.Tree
 import YaLedger.Types.Ledger
 import YaLedger.Types.Common
+import YaLedger.Types.Config
+import YaLedger.Types.Monad.Types
 
 showPos :: SourcePos -> String -> String
 showPos pos msg =
   msg ++ "\n  at " ++ show pos
+
+throwP e = do
+  pos <- gets lsPosition
+  throw (e pos)
 
 data InternalError = InternalError String SourcePos
   deriving (Typeable)
@@ -144,12 +158,4 @@ instance Show NotAnAccount where
       intercalate "/" p
 
 instance Exception NotAnAccount
-
-wrapE :: (Monad m, Throws InternalError l)
-      => EMT (Caught SomeException (Caught FailException l)) m a
-      -> EMT l m a
-wrapE action = wrapException wrapFail $ wrapException wrapSome action
-  where
-    wrapFail (FailException msg) = InternalError msg nowhere
-    wrapSome (SomeException e)   = InternalError (show e) nowhere
 

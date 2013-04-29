@@ -11,6 +11,8 @@ import Data.Dates
 import qualified Data.Map as M
 
 import YaLedger.Types
+import YaLedger.Types.Monad
+import YaLedger.Types.Monad.STM
 import YaLedger.Exceptions
 import YaLedger.Kernel.Types
 import YaLedger.Kernel.Common
@@ -64,7 +66,7 @@ closeHold :: forall t l.
            -> Posting Decimal t             -- ^ Hold posting
            -> Atomic l ()
 closeHold date mbEntry op qry posting = do
-    infoSTM $ "Closing hold: " ++ prettyPrint posting
+    $infoSTM $ "Closing hold: " ++ prettyPrint posting
     let account = postingAccount' posting
         history = getHolds account
     holds <- readIOList history
@@ -85,20 +87,20 @@ closeHold date mbEntry op qry posting = do
         stm $ writeTVar history acc
         return False
     close acc history (extHold: rest) = do
-      debugSTM $ "Checking hold: " ++ show extHold
+      $debugSTM $ "Checking hold: " ++ show extHold
       if checkHold op date searchAmt qry extHold
         then do
              let oldHold = getContent extHold
                  holdAmt = $traceS "holdAmt" $ postingValue $ holdPosting oldHold
                  closedHold = extHold {getContent = oldHold {holdEndDate = Just date}}
-             debugSTM $ "Creating new hold: holdAmt = " ++ show holdAmt ++ ", searchAmt = " ++ show searchAmt
+             $debugSTM $ "Creating new hold: holdAmt = " ++ show holdAmt ++ ", searchAmt = " ++ show searchAmt
              newHolds <- if holdAmt > searchAmt
                            then do
                                 -- Found hold amount > requested posting amount.
                                 -- We must add new hold for difference.
                                 let account = postingAccount' $ holdPosting oldHold
                                     newPosting = createPosting account (holdAmt - searchAmt)
-                                debugSTM $ "New hold posting: " ++ show newPosting
+                                $debugSTM $ "New hold posting: " ++ show newPosting
                                 return [extHold {getDate = date,
                                                 getContent = Hold newPosting Nothing}]
                            else -- holdAmt <= searchAmt, we'll just close old hold.
@@ -117,7 +119,7 @@ closeHold date mbEntry op qry posting = do
     -- * for debit  posting, increase debitHolds  amount
     updateBalances :: Decimal -> AnyAccount -> Atomic l ()
     updateBalances amt account = do
-      debugSTM $ "updateBalances: " ++ getName account ++ " by " ++ show amt
+      $debugSTM $ "updateBalances: " ++ getName account ++ " by " ++ show amt
       plusIOList zeroExtBalance (const True) (updateExtBalance amt) (accountBalances account)
 
     zeroExtBalance =

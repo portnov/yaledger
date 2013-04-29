@@ -4,6 +4,8 @@ module YaLedger.Logger.TH
   (debug, info, warning, errorMessage,
    debugP, infoP, warningP,
    debugIO, infoIO,
+   debugSTM, infoSTM, warningSTM,
+   infoSTMP, warningSTMP,
    trace, traceS,
    allLoggers
   ) where
@@ -14,6 +16,7 @@ import System.Directory
 import System.FilePath.Glob
 
 import qualified YaLedger.Logger.Loggers as L
+import qualified YaLedger.Logger.STM as STM
 
 listModules :: IO [String]
 listModules = do
@@ -59,6 +62,9 @@ debugIO = liftQ 'L.debugIO
 debugP :: Q Exp
 debugP = liftQ 'L.debugP
 
+debugSTM :: Q Exp
+debugSTM = liftQ 'STM.debugSTM
+
 info :: Q Exp
 info = liftQ 'L.info
 
@@ -68,6 +74,12 @@ infoP = liftQ 'L.infoP
 infoIO :: Q Exp
 infoIO = liftQ 'L.infoIO
 
+infoSTM :: Q Exp
+infoSTM = liftQ 'STM.infoSTM
+
+infoSTMP :: Q Exp
+infoSTMP = liftQ 'STM.infoSTMP
+
 warning :: Q Exp
 warning = liftQ 'L.warning
 
@@ -76,6 +88,12 @@ warningP = liftQ 'L.warningP
 
 warningIO :: Q Exp
 warningIO = liftQ 'L.warningIO
+
+warningSTM :: Q Exp
+warningSTM = liftQ 'STM.warningSTM
+
+warningSTMP :: Q Exp
+warningSTMP = liftQ 'STM.warningSTMP
 
 errorMessage :: Q Exp
 errorMessage = liftQ 'L.errorMessage

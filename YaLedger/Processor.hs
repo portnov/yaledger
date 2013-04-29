@@ -13,10 +13,13 @@ import Data.Dates
 import qualified Data.Map as M
 
 import YaLedger.Types
+import YaLedger.Types.Monad
+import YaLedger.Types.Monad.STM
 import YaLedger.Exceptions
 import YaLedger.Kernel
 import YaLedger.Kernel.Holds
 import YaLedger.Logger
+import qualified YaLedger.Logger.STM as STMLOG
 import qualified YaLedger.Logger.Loggers as L
 import YaLedger.Processor.Duplicates
 import YaLedger.Processor.Rules
@@ -338,6 +341,6 @@ handleNoSuchHold :: (Throws InternalError l,
                  -> CallTrace
                  -> NoSuchHold
                  -> Atomic l ()
-handleNoSuchHold True  s _ e = logSTM s $ (show s ++ ": ") ++ show e
+handleNoSuchHold True  s _ e = STMLOG.logSTM "YaLedger.Processor" s $ show s ++ ": YaLedger.Processor: " ++ show e
 handleNoSuchHold False _ l e = rethrow l e
 
