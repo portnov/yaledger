@@ -1,4 +1,4 @@
-{-# LANGUAGE OverlappingInstances, ScopedTypeVariables #-}
+{-# LANGUAGE OverlappingInstances, ScopedTypeVariables, TemplateHaskell #-}
 module YaLedger.Main
   (module YaLedger.Types,
    module YaLedger.Types.Reports,
@@ -63,6 +63,12 @@ parseDebug str =
     [(x, "")] -> Just x
     _ -> Nothing
 
+parseDebugPair :: String -> Maybe (String, Priority)
+parseDebugPair str =
+  case break (== '=') str of
+    (s,"") -> (\p -> (s, p)) <$> parseDebug s
+    (name, _:s) -> (\p -> (name, p)) <$> parseDebug s
+
 -- | Apply SetOption to LedgerOptions
 apply :: SetOption -> LedgerOptions -> LedgerOptions
 apply (SetConfigPath path) opts = opts {mainConfigPath = Just path}
@@ -81,7 +87,8 @@ apply (SetReportStart date) opts = let qry = reportsQuery opts
 apply (SetReportEnd   date) opts = let qry = reportsQuery opts
                                    in  opts {reportsQuery = qry {qEnd = Just date}}
 apply (SetReportsInterval i) opts = opts {reportsInterval = Just i}
-apply (SetDebugLevel lvl)  opts = opts {logSeverity = lvl}
+apply (SetDebugLevel ("", lvl))  opts = opts {defaultLogSeverity = lvl}
+apply (SetDebugLevel (name, lvl))  opts = opts {logSeveritySetup = logSeveritySetup opts ++ [(name,lvl)] }
 apply (SetParserConfig (n,p)) opts = opts {parserConfigs = (n,p): parserConfigs opts}
 apply SetHelp _ = Help
                          
@@ -100,7 +107,7 @@ parseCmdLine argv = do
             Right int -> int
 
       level str =
-          case parseDebug str of
+          case parseDebugPair str of
             Just value -> value
             Nothing -> error $ "Unknown debug level: " ++ str
 
@@ -152,8 +159,8 @@ parseCmdLine argv = do
                    "Alias for --period \"1 month\"",
        Option ""  ["yearly"] (NoArg (SetReportsInterval $ Years 1))
                    "Alias for --period \"1 year\"",
-       Option "d" ["debug"] (ReqArg (SetDebugLevel . level) "LEVEL")
-                   "Set debug level to LEVEL",
+       Option "d" ["debug"] (ReqArg (SetDebugLevel . level) "[MODULE=]LEVEL")
+                   "Set debug level (for MODULE or for all modules) to LEVEL",
        Option "p" ["parser-config"] (ReqArg (SetParserConfig . pconfig) "PARSER=CONFIGFILE")
                    "Use specified config file for this parser",
        Option "h" ["help"] (NoArg SetHelp)
@@ -188,6 +195,10 @@ parseCmdLine argv = do
 lookupInit :: String -> [(String, a)] -> [a]
 lookupInit key list = [v | (k,v) <- list, key `isPrefixOf` k]
 
+initialize :: [(String, String, InputParser)] -- ^ List of parsers to support: (parser name, files mask, parser)
+            -> [(String, Report)]              -- ^ List of reports to support: (report name, report)
+            -> [String]
+            -> IO (Maybe (Report, LedgerOptions, [String]))
 initialize parsers reports argv = do
   options <- parseCmdLine argv
   case options of
@@ -195,10 +206,10 @@ initialize parsers reports argv = do
          putStrLn $ "Supported reports are: " ++ unwords (map fst reports)
          return Nothing
     _ -> do
-         setupLogger (logSeverity options)
-         infoIO $ "Using chart of accounts: " ++ fromJust (chartOfAccounts options)
-         infoIO $ "Using accounts map: " ++ fromJust (accountMap options)
-         debugIO $ "Using parser configs:\n" ++
+         setupLogger (defaultLogSeverity options) (logSeveritySetup options)
+         $infoIO $ "Using chart of accounts: " ++ fromJust (chartOfAccounts options)
+         $infoIO $ "Using accounts map: " ++ fromJust (accountMap options)
+         $debugIO $ "Using parser configs:\n" ++
              (unlines $ map (\(name,config) -> name ++ ": " ++ config) (parserConfigs options))
          let report = defaultReport options
          params <- if null (reportParams options)
@@ -268,7 +279,7 @@ runYaLedger parsers options report params = do
       inputPaths = files options
       qry = query options
       qryReport = reportsQuery options
-  debugIO $ "Deduplication rules: " ++ show rules
+  $debugIO $ "Deduplication rules: " ++ show rules
   (currsMap, coa, amap) <- loadConfigs cpath coaPath mapPath
                            `E.catch`
                             (\(e :: SomeException) -> do
@@ -277,7 +288,7 @@ runYaLedger parsers options report params = do
 
 
   records <- parseInputFiles options parsers configs currsMap coa inputPaths
-  debugIO $ "Records loaded."
+  $debugIO $ "Records loaded."
   runLedger options coa amap records $ runEMT $ do
     -- Build full map of groups of accounts.
     modify $ \st -> st {
@@ -289,8 +300,8 @@ runYaLedger parsers options report params = do
 processYaLedger qry mbInterval rules records qryReport report params = do
   now <- gets lsStartDate
   let endDate = fromMaybe now (qEnd qry)
-  info $ "Records query: " ++ show qry
-  info $ "Report query: " ++ show qryReport
+  $info $ "Records query: " ++ show qry
+  $info $ "Report query: " ++ show qryReport
   t <- tryE $ processRecords endDate rules records 
   case t of
     Left (l, e :: SomeException) -> wrapIO $ putStrLn $ showExceptionWithTrace l e

@@ -1,4 +1,4 @@
-{-# LANGUAGE GADTs, RecordWildCards, ScopedTypeVariables, FlexibleContexts, FlexibleInstances #-}
+{-# LANGUAGE GADTs, RecordWildCards, ScopedTypeVariables, FlexibleContexts, FlexibleInstances, TemplateHaskell #-}
 -- | Ledger kernel
 module YaLedger.Kernel
   (module YaLedger.Kernel.Common,
@@ -422,7 +422,7 @@ checkEntry date attrs (UEntry dt cr mbCorr currs) = do
                                    cqCurrencies = currencies ++ currs,
                                    cqExcept     = accounts,
                                    cqAttributes = M.insert "source" (Optional source) attrs }
-                       debug $ "Kernel.checkEntry: Amount: " ++ show diff ++ "; CQuery: " ++ show qry
+                       $debug $ "Kernel.checkEntry: Amount: " ++ show diff ++ "; CQuery: " ++ show qry
                        -- Fill credit / debit entry parts
                        fillEntry qry date dt' cr' mbCorr (deltaAttachCcy diff firstCurrency)
   let nCurrencies = length $ nub $ sort $
@@ -434,19 +434,19 @@ checkEntry date attrs (UEntry dt cr mbCorr currs) = do
   -- then we should calculate rates difference.
   if nCurrencies > 1
     then do
-         debug $ "Credit: " ++ show (getAmount $ head crF) ++
+         $debug $ "Credit: " ++ show (getAmount $ head crF) ++
                    ", Debit: " ++ show (getAmount $ head crF)
          -- Convert all postings into default currency
          crD <- mapM (convertDecimal (Just date) defcur) crF
          dtD <- mapM (convertDecimal (Just date) defcur) dtF
-         debug $ "crD: " ++ show crD ++ ", dtD: " ++ show dtD
+         $debug $ "crD: " ++ show crD ++ ", dtD: " ++ show dtD
 
          let diffD :: Delta Decimal -- In default currency
              diffD = decimalDelta (sum crD - sum dtD)
          rd <- if getValue diffD == realFracToDecimal 10 (fromIntegral 0)
                  then return OneCurrency
                  else do
-                      debug $ "Rates difference: " ++ show diffD
+                      $debug $ "Rates difference: " ++ show diffD
                       let attrs' = M.insert "category" (Exactly "rates-difference") $
                                    M.insert "source"   (Optional source) attrs
                           qry = CQuery {
@@ -540,16 +540,16 @@ lookupCorrespondence qry date deltaAmt mbCorr = do
                      currentBalance <- runAtomically $ getCurrentBalance AvailableBalance account
                      -- amtInAcctCcy and currentBalance are both in currency of
                      -- found account.
-                     debug $ printf "Check if to divert: current balance %s, amount %s"
+                     $debug $ printf "Check if to divert: current balance %s, amount %s"
                                     (show currentBalance) (show amtInAcctCcy)
                      let resultingBalance = currentBalance `plusDelta` deltaRemoveCcy deltaInAcctCcy'
                      if resultingBalance >= 0
                        then do
                             onePosting <- autoPosting opts deltaInAcctCcy' accPath (WFree account) useHold
-                            debug $ "lookupCorrespondence: autoPosting: " ++ show onePosting
+                            $debug $ "lookupCorrespondence: autoPosting: " ++ show onePosting
                             return $ Left [onePosting]
                        else do
-                            info $ "Account `" ++ getName account ++ "' has current balance only of " ++
+                            $info $ "Account `" ++ getName account ++ "' has current balance only of " ++
                                    show currentBalance ++ ", while needed to be debited by " ++
                                    show amtInAcctCcy ++ "; redirecting part of amount."
                             let toRedirect = decimalDelta $ negate $ resultingBalance
@@ -623,35 +623,35 @@ fillEntry qry date dt cr mbCorr deltaAmt = do
               if nullDelta delta'
                 then if (length dt == 1) && null cr
                        then do
-                         info $ "Credit part is zero: " ++ show cr ++ ", setting debit to zero too." 
+                         $info $ "Credit part is zero: " ++ show cr ++ ", setting debit to zero too." 
                          return (map setZero dt, cr)
                        else do
-                         warning $ "Credit-Debit = " ++ show amount ++ ", which is 0.0"
+                         $warning $ "Credit-Debit = " ++ show amount ++ ", which is 0.0"
                                  ++ show (getCurrency account)
                          return (dt, cr)
                 else do
                      path <- accountFullPath' "Kernel.fillEntry" account coa
-                     debug $ printf "fillEntry: delta' %s, account %s"
+                     $debug $ printf "fillEntry: delta' %s, account %s"
                                     (show delta') (intercalate "/" path)
                      e <- autoPosting opts (deltaRemoveCcy delta') path account useHold
-                     debug $ "fillEntry: autoPosting (Decrease): " ++ show e
+                     $debug $ "fillEntry: autoPosting (Decrease): " ++ show e
                      return $ appendPostings [e] dt cr
         Increase value -> do
               if nullDelta delta'
                 then if (length cr == 1) && null dt
                        then do
-                         info $ "Debit part is zero: " ++ show dt ++ ", setting credit to zero too." 
+                         $info $ "Debit part is zero: " ++ show dt ++ ", setting credit to zero too." 
                          return (dt, map setZero cr)
                        else do
-                         warning $ "Credit-Debit = " ++ show amount ++ ", which is 0.0"
+                         $warning $ "Credit-Debit = " ++ show amount ++ ", which is 0.0"
                                  ++ show (getCurrency account)
                          return (dt, cr)
                 else do
                      path <- accountFullPath' "Kernel.fillEntry" account coa
-                     debug $ printf "fillEntry: delta' %s, account %s"
+                     $debug $ printf "fillEntry: delta' %s, account %s"
                                     (show delta') (intercalate "/" path)
                      e <- autoPosting opts (deltaRemoveCcy delta') path account useHold
-                     debug $ "fillEntry: autoPosting (Increase): " ++ show e
+                     $debug $ "fillEntry: autoPosting (Increase): " ++ show e
                      return $ appendPostings [e] dt cr
     Left lpostings -> do
       let diffValue = sum [x | x :# _ <- map anyPostingValue lpostings]
@@ -661,11 +661,11 @@ fillEntry qry date dt cr mbCorr deltaAmt = do
         then do
              if (length cr == 1) && null dt
                then do
-                 info $ "Debit is " ++ show diffValue ++
+                 $info $ "Debit is " ++ show diffValue ++
                         ", which is 0.0 in currencies of accounts. Setting credit to zero too."
                  return (dt, map setZero cr)
                else do
-                 warning $ "Debit difference is " ++ show diffValue ++
+                 $warning $ "Debit difference is " ++ show diffValue ++
                         ", which is 0.0 in currencies of accounts."
                  return (dt, cr)
         else return $ appendPostings postings dt cr
@@ -698,7 +698,7 @@ reconciliate btype date account amount tgt msg = do
 
   -- diff is in accountCurrency
   let diff = actualBalance - calculatedBalance
-  info $ printf "Reconciliation: calculated %s, actual %s, diff %s"
+  $info $ printf "Reconciliation: calculated %s, actual %s, diff %s"
                  (show calculatedBalance) (show actualBalance) (show diff)
   if diff /= 0
     then do
@@ -713,7 +713,7 @@ reconciliate btype date account amount tgt msg = do
                          Nothing -> error $ "Impossible: Kernel.reconciliate: no account: " ++ show account
                          Just p  -> p
          posting <- autoPosting opts delta accPath account DontUseHold
-         debug $ "reconciliate: posting: " ++ show posting
+         $debug $ "reconciliate: posting: " ++ show posting
          case posting of
            CP p -> return $ Just $ UEntry [] [p] correspondence [getCurrency amount]
            DP p -> return $ Just $ UEntry [p] [] correspondence [getCurrency amount]
@@ -731,7 +731,7 @@ fireReconMessage :: (Throws InternalError l,
                  -> Ledger l ()
 fireReconMessage _ Nothing _ _ _ _ = return ()
 fireReconMessage coa (Just (RWarning str)) account actual calculated diff =
-  warning (formatReconMessage str coa account actual calculated diff)
+  $warning (formatReconMessage str coa account actual calculated diff)
 fireReconMessage coa (Just (RError   str)) account actual calculated diff =
   throwP $ ReconciliationError (formatReconMessage str coa account actual calculated diff)
 

@@ -1,4 +1,4 @@
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards, TemplateHaskell #-}
 -- | Functions for searching corresponding accounts
 module YaLedger.Kernel.Correspondence
   (matchT, match, matchAll,
@@ -61,7 +61,7 @@ runCQuery opts qry coa =
   case filterCoA opts qry coa of
     []  -> Nothing
     [x] -> Just x
-    list -> trace ("runCQuery: multiple choice: " ++ show list) $
+    list -> $trace ("runCQuery: multiple choice: " ++ show list) $
             Just $ head $ filterByAddAttributes (cqAttributes qry) list
 
 -- | List of groups IDs of all account's parent groups

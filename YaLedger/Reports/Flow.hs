@@ -1,4 +1,4 @@
-{-# LANGUAGE ScopedTypeVariables, FlexibleContexts, OverlappingInstances, TypeFamilies, RecordWildCards, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE ScopedTypeVariables, FlexibleContexts, OverlappingInstances, TypeFamilies, RecordWildCards, TypeSynonymInstances, FlexibleInstances, TemplateHaskell #-}
 
 module YaLedger.Reports.Flow
   (Flow (..),
@@ -104,7 +104,7 @@ flowCoA fullCoA qry opts coaDebit coaCredit = do
     balsDebit  <- getCoABalances qry coaDebit
     let entriesDebit  = mapMaybe (causedBy . getContent) balsDebit
         entries = filter (checkCreditAcc coaCredit) entriesDebit
-    debug $ "Selected entries count: " ++ show (length entries)
+    $debug $ "Selected entries count: " ++ show (length entries)
     let groupped = flatMap $ groupEntries coaDebit entries
     flowStats fullCoA qry flags (FStats `elem` opts) (FDot `elem` opts) groupped
 

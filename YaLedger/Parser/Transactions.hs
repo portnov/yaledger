@@ -1,4 +1,4 @@
-{-# LANGUAGE RecordWildCards, OverloadedStrings, BangPatterns, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses, ScopedTypeVariables #-}
+{-# LANGUAGE RecordWildCards, OverloadedStrings, BangPatterns, TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses, ScopedTypeVariables, TemplateHaskell #-}
 -- | Parser for `native' transactions journal file
 module YaLedger.Parser.Transactions
   (loadTransactions,
@@ -607,7 +607,7 @@ loadTransactions opts configPath currs coa path = do
   ex <- doesFileExist configPath
   config <- if ex
               then do
-                   infoIO $ "Using config for native format: " ++ configPath
+                   $infoIO $ "Using config for native format: " ++ configPath
                    loadParserConfig configPath
               else return defaultNativeParserConfig
   content <- readFile path

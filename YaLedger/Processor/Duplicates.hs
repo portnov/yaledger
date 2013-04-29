@@ -1,4 +1,4 @@
-{-# LANGUAGE GADTs, FlexibleContexts, PatternGuards #-}
+{-# LANGUAGE GADTs, FlexibleContexts, PatternGuards, TemplateHaskell #-}
 module YaLedger.Processor.Duplicates
   (deduplicate) where
 
@@ -66,11 +66,11 @@ matchBy :: DateIndex (Ext Record)
         -> [Ext Record]                     -- ^ All other records
         -> (Maybe (Ext Record), [Ext Record])
 matchBy index checks oldAttrs newRecord oldRecords
-    | (CDate dx:_) <- checks = trace ("Matching " ++ show (extID newRecord)) $
+    | (CDate dx:_) <- checks = $trace ("Matching " ++ show (extID newRecord)) $
                                case go (lookupDatePrev (getDate newRecord) dx index) of
-                                 Nothing -> trace "No match found" (Nothing, oldRecords)
-                                 Just r -> trace ("Match found: " ++ show r) (Just r,  filter (r /=) oldRecords)
-    | otherwise = trace ("Matching " ++ show (extID newRecord)) $
+                                 Nothing -> $trace "No match found" (Nothing, oldRecords)
+                                 Just r -> $trace ("Match found: " ++ show r) (Just r,  filter (r /=) oldRecords)
+    | otherwise = $trace ("Matching " ++ show (extID newRecord)) $
                   case go oldRecords of
                     Nothing -> (Nothing, oldRecords)
                     Just r -> (Just r,  filter (r /=) oldRecords)
@@ -82,28 +82,28 @@ matchBy index checks oldAttrs newRecord oldRecords
         else go rs
 
     matches oldRecord (CDate d) =
-      traceS (show (extID newRecord) ++ " DATE: " ++ show (getDate newRecord) ++ ", " ++ show (getDate oldRecord) ++ ": ") $
+      $traceS (show (extID newRecord) ++ " DATE: " ++ show (getDate newRecord) ++ ", " ++ show (getDate oldRecord) ++ ": ") $
       datesDifference (getDate newRecord) (getDate oldRecord) <= d
     matches oldRecord (CAmount x) =
       case (getRAmount newRecord, getRAmount oldRecord) of
         (Just (a1 :# c1), Just (a2 :# c2)) -> 
           if c1 /= c2
             then False
-            else traceS (show (extID newRecord) ++ " CAmount: " ++ show a1 ++ ", " ++ show a2) $
+            else $traceS (show (extID newRecord) ++ " CAmount: " ++ show a1 ++ ", " ++ show a2) $
                  if x == 0
                    then a1 == a2
                    else (max a1 a2) *. (fromIntegral x / 100.0) > (abs $ a1 - a2)
         _ -> False
     matches oldRecord CCreditAccount =
       case (getCreditAccount newRecord, getCreditAccount oldRecord) of
-        (Just aid1, Just aid2) -> traceS (show (extID newRecord) ++ " CACC: " ++ show aid1 ++ ", " ++ show aid2 ++ ": ") $ aid1 == aid2
-        (Nothing,Just _) -> trace (show (extID newRecord) ++ " No credit account specified") False
+        (Just aid1, Just aid2) -> $traceS (show (extID newRecord) ++ " CACC: " ++ show aid1 ++ ", " ++ show aid2 ++ ": ") $ aid1 == aid2
+        (Nothing,Just _) -> $trace (show (extID newRecord) ++ " No credit account specified") False
         (Nothing, Nothing)     -> True
         _                      -> False
     matches oldRecord CDebitAccount =
       case (getDebitAccount newRecord, getDebitAccount oldRecord) of
-        (Just aid1, Just aid2) -> traceS (show (extID newRecord) ++ " DACC: " ++ show aid1 ++ ", " ++ show aid2 ++ ": ") $ aid1 == aid2
-        (Nothing, Just _) -> trace (show (extID newRecord) ++ " No debit account specified") False
+        (Just aid1, Just aid2) -> $traceS (show (extID newRecord) ++ " DACC: " ++ show aid1 ++ ", " ++ show aid2 ++ ": ") $ aid1 == aid2
+        (Nothing, Just _) -> $trace (show (extID newRecord) ++ " No debit account specified") False
         (Nothing, Nothing)     -> True
         _                      -> False
     matches oldRecord (CAttribute name) =
@@ -166,7 +166,7 @@ deduplicate rules records = go $ reverse records
     go [] = return []
     go (r:rs) =
       case findDRule r rules of
-        Nothing -> trace ("No rule for " ++ show (extID r)) $ (r:) <$> go rs
+        Nothing -> $trace ("No rule for " ++ show (extID r)) $ (r:) <$> go rs
         Just (checks, oldAttrs, action) -> 
           case matchBy index checks oldAttrs r rs of
             (Nothing, _) -> (r:) <$> go rs
@@ -176,7 +176,7 @@ deduplicate rules records = go $ reverse records
                                       (prettyPrint r ++ "\nOld was:\n" ++ prettyPrint old)
                                       (getLocation r)
                 DWarning -> do
-                    warning $ "Duplicated records:\n" ++ prettyPrint r ++
+                    $warning $ "Duplicated records:\n" ++ prettyPrint r ++
                               "\nOld was:\n" ++ prettyPrint old
                     (r:) <$> go rs
                 DDuplicate -> (r:) <$> go rs

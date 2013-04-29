@@ -1,4 +1,4 @@
-{-# LANGUAGE ScopedTypeVariables, FlexibleContexts, OverlappingInstances, GADTs, RecordWildCards, TypeFamilies #-}
+{-# LANGUAGE ScopedTypeVariables, FlexibleContexts, OverlappingInstances, GADTs, RecordWildCards, TypeFamilies, TemplateHaskell #-}
 
 module YaLedger.Reports.IncomeStatement where
 
@@ -38,8 +38,8 @@ incomeStatement' qry options mbPath = do
               Nothing   -> gets lsCoA
               Just path -> getCoAItem (gets lsPosition) (gets lsCoA) path
     
-    debug $ "Use incomes query: " ++ showA (incomeAccounts opts)
-    debug $ "Use expences query: " ++ showA (expenceAccounts opts)
+    $debug $ "Use incomes query: " ++ showA (incomeAccounts opts)
+    $debug $ "Use expences query: " ++ showA (expenceAccounts opts)
 
     let isIncomesAcc  acc = isIncomes  opts (accountAttributes acc)
         isExpencesAcc acc = isExpences opts (accountAttributes acc)

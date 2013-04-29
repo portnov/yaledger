@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, TemplateHaskell #-}
 module YaLedger.Config where
 
 import Control.Applicative
@@ -41,7 +41,8 @@ instance Monoid LedgerOptions where
       incomeAccounts = if M.null (incomeAccounts o2) then incomeAccounts o1 else incomeAccounts o2,
       expenceAccounts = if M.null (expenceAccounts o2) then expenceAccounts o1 else expenceAccounts o2,
       reportsInterval = reportsInterval o2 `mplus` reportsInterval o1,
-      logSeverity = min (logSeverity o1) (logSeverity o2),
+      defaultLogSeverity = min (defaultLogSeverity o1) (defaultLogSeverity o2),
+      logSeveritySetup = if null (logSeveritySetup o2) then logSeveritySetup o1 else logSeveritySetup o2,
       parserConfigs = parserConfigs o1 ++ parserConfigs o2,
       deduplicationRules = if null (deduplicationRules o2)
                              then deduplicationRules o1
@@ -85,6 +86,7 @@ instance FromJSON LedgerOptions where
       <*> (parseAttrs [] =<< (v .:? "incomes"))
       <*> (parseAttrs [] =<< (v .:? "expences"))
       <*> v .:? "debug" .!= WARNING
+      <*> (parseLogSetup =<< (v .:? "trace"))
       <*> (parseConfigs =<< (v .:? "parsers"))
       <*> v .:? "deduplicate" .!= []
       <*> v .:? "default-report" .!= "balance"
@@ -206,6 +208,14 @@ parseConfigs :: Maybe Object -> Parser [(String, FilePath)]
 parseConfigs Nothing = return []
 parseConfigs (Just obj) = parsePairs obj
 
+parseLogSetup :: Maybe Object -> Parser [(String, Priority)]
+parseLogSetup Nothing = return []
+parseLogSetup (Just obj) = do
+    let doPair (name, value) = do
+          priority <- parseJSON value
+          return (T.unpack name, priority)
+    mapM doPair $ H.toList obj
+
 parseReportParams :: Maybe Object -> Parser (M.Map String String)
 parseReportParams Nothing = return M.empty
 parseReportParams (Just obj) = M.fromList <$> parsePairs obj
@@ -234,7 +244,8 @@ getDefaultLedgerOptions = do
         liabilityAccounts = M.fromList [("classifier", Exactly "liablities")],
         incomeAccounts = M.fromList [("classifier", Exactly "incomes")],
         expenceAccounts = M.fromList [("classifier", Exactly "expences")],
-        logSeverity = WARNING,
+        defaultLogSeverity = WARNING,
+        logSeveritySetup = [],
         parserConfigs = [],
         deduplicationRules = [],
         defaultReport = "balance",
@@ -247,7 +258,7 @@ loadConfig configFile = do
   exist <- doesFileExist configFile
   if not exist
     then do
-         infoIO $ "Config file does not exist: " ++ configFile ++ "; using default settings."
+         $infoIO $ "Config file does not exist: " ++ configFile ++ "; using default settings."
          return zero
     else do
         str <- B.readFile configFile

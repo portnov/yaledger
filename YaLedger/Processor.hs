@@ -1,4 +1,4 @@
-{-# LANGUAGE GADTs, RecordWildCards, ScopedTypeVariables, FlexibleContexts, FlexibleInstances #-}
+{-# LANGUAGE GADTs, RecordWildCards, ScopedTypeVariables, FlexibleContexts, FlexibleInstances, TemplateHaskell, NoMonomorphismRestriction #-}
 
 module YaLedger.Processor
   (processRecords) where
@@ -17,6 +17,7 @@ import YaLedger.Exceptions
 import YaLedger.Kernel
 import YaLedger.Kernel.Holds
 import YaLedger.Logger
+import qualified YaLedger.Logger.Loggers as L
 import YaLedger.Processor.Duplicates
 import YaLedger.Processor.Rules
 import YaLedger.Processor.Templates
@@ -55,7 +56,7 @@ processEntry :: forall l.
 processEntry date tranID pos attrs uentry = do
   -- First, check the entry
   entry@(CEntry dt cr rd) <- checkEntry date attrs uentry
-  debug $ "Processing entry (" ++ show date ++ "):\n" ++ prettyPrint uentry
+  $debug $ "Processing entry (" ++ show date ++ "):\n" ++ prettyPrint uentry
   queue <- gets lsTranQueue
 
   let useHoldIfNeeded :: HoldOperations t => HoldUsage -> Posting Decimal t -> Atomic l ()
@@ -133,7 +134,7 @@ getNextP p doDelete = do
         return (Just x)
 
 debugPos pos r =
-  lift $ debug $ "Record " ++ show (extID r) ++ ":\n" ++ prettyPrint r ++ "  at " ++ show pos
+  lift $ L.debug "YaLedger.Processor" $ "Record " ++ show (extID r) ++ ":\n" ++ prettyPrint r ++ "  at " ++ show pos
 
 insertRule new [] = [new]
 insertRule new@(name, _, _) list = go list list
@@ -189,14 +190,14 @@ processRecord = do
     Just rec@(Ext date _ pos attrs (SetRate rates)) -> do
       debugPos pos rec
       lift $ setPos pos
-      lift $ debug $ "Setting exchange rates:\n" ++ unlines (map show rates)
+      lift $ $debug $ "Setting exchange rates:\n" ++ unlines (map show rates)
       let rates' = map (Ext date 0 pos attrs) rates
       lift $ modify $ \st -> st {lsRates = rates' ++ lsRates st}
       return []
 
     Just rec@(Ext _ _ pos _ _) -> do
       lift $ setPos pos
-      lift $ warning $ "Unknown record:\n" ++ prettyPrint rec ++ "\n  at " ++ show pos
+      lift $ $warning $ "Unknown record:\n" ++ prettyPrint rec ++ "\n  at " ++ show pos
       return []
 
 periodic name (Periodic x _ _) = name == x

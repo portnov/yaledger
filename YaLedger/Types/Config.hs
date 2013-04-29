@@ -28,7 +28,8 @@ data LedgerOptions =
       liabilityAccounts :: Attributes,
       incomeAccounts :: Attributes,
       expenceAccounts :: Attributes,
-      logSeverity :: Priority,
+      defaultLogSeverity :: Priority,
+      logSeveritySetup :: [(String, Priority)],
       parserConfigs :: [(String, FilePath)],
       deduplicationRules :: [DeduplicationRule],
       defaultReport :: String,
@@ -50,7 +51,7 @@ data SetOption =
   | SetReportStart DateTime
   | SetReportEnd DateTime
   | SetReportsInterval DateInterval
-  | SetDebugLevel Priority
+  | SetDebugLevel (String, Priority)
   | SetParserConfig (String, FilePath)
   | SetHelp
   deriving (Eq,Show)

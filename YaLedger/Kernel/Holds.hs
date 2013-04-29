@@ -1,4 +1,4 @@
-{-# LANGUAGE GADTs, RecordWildCards, ScopedTypeVariables, FlexibleContexts, FlexibleInstances #-}
+{-# LANGUAGE GADTs, RecordWildCards, ScopedTypeVariables, FlexibleContexts, FlexibleInstances, TemplateHaskell #-}
 
 module YaLedger.Kernel.Holds where
 
@@ -73,7 +73,7 @@ closeHold date mbEntry op qry posting = do
       then return ()
       else throwP =<< noSuchHold posting
   where
-    searchAmt = traceS "searchAmt" $ postingValue posting
+    searchAmt = $traceS "searchAmt" $ postingValue posting
 
     -- Close any appropriate hold
 
@@ -89,7 +89,7 @@ closeHold date mbEntry op qry posting = do
       if checkHold op date searchAmt qry extHold
         then do
              let oldHold = getContent extHold
-                 holdAmt = traceS "holdAmt" $ postingValue $ holdPosting oldHold
+                 holdAmt = $traceS "holdAmt" $ postingValue $ holdPosting oldHold
                  closedHold = extHold {getContent = oldHold {holdEndDate = Just date}}
              debugSTM $ "Creating new hold: holdAmt = " ++ show holdAmt ++ ", searchAmt = " ++ show searchAmt
              newHolds <- if holdAmt > searchAmt

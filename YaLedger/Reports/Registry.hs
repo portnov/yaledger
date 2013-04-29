@@ -1,4 +1,4 @@
-{-# LANGUAGE ScopedTypeVariables, FlexibleContexts, OverlappingInstances, GADTs, RecordWildCards, TypeFamilies #-}
+{-# LANGUAGE ScopedTypeVariables, FlexibleContexts, OverlappingInstances, GADTs, RecordWildCards, TypeFamilies, TemplateHaskell #-}
 
 module YaLedger.Reports.Registry
   (Registry (..)) where
@@ -68,7 +68,7 @@ registry qry options mbPath = do
                        (Nothing:_) -> return $ Just coa
                        (Just grp:_) -> Just <$> getCoAItem (gets lsPosition) (gets lsCoA) (mkPath grp)
     whenJust groupInternal $ \grp ->
-        debug $ "Restricting to internal entries of group:\n" ++ show grp
+        $debug $ "Restricting to internal entries of group:\n" ++ show grp
     case coa of
       Leaf {leafData = account} -> do
           balances <- readIOListL (accountBalances account)

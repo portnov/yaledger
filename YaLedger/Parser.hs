@@ -1,3 +1,4 @@
+{-# LANGUAGE TemplateHaskell #-}
 -- | This module contains high-level functions for parsing input files
 module YaLedger.Parser
   (InputParser,
@@ -52,9 +53,9 @@ parseInputFiles :: LedgerOptions
                 -> [FilePath]                      -- ^ List of files or masks (*.yaledger)
                 -> IO [Ext Record]
 parseInputFiles options parsers configs currs coa masks = do
-    debugIO $ "Start parsing input files by masks: " ++ show masks
+    $debugIO $ "Start parsing input files by masks: " ++ show masks
     inputFiles <- concat <$> mapM glob masks
-    debugIO $ "Input files:\n" ++ unlines inputFiles
+    $debugIO $ "Input files:\n" ++ unlines inputFiles
     records <- parallel (map loadFile inputFiles)
     traceEventIO "All files loaded."
     return $ sort $ concat records
@@ -62,14 +63,14 @@ parseInputFiles options parsers configs currs coa masks = do
     loadFile file = do
        case lookupMask (takeFileName file) parsers of
          Nothing -> do
-                    infoIO $ "Unknown file type: " ++ file
+                    $infoIO $ "Unknown file type: " ++ file
                     return []
          Just (parserName, parser) ->
            let configFile = fromMaybe (parserName ++ ".yaml") $
                                 lookup parserName configs
            in  do
                rec <- parser options configFile currs coa file
-               infoIO $ "Read " ++ show (length rec) ++ " records from " ++ file
+               $infoIO $ "Read " ++ show (length rec) ++ " records from " ++ file
                traceEventIO $ "File loaded: " ++ file
                return rec
 
