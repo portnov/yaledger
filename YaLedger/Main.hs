@@ -66,7 +66,7 @@ parseDebug str =
 parseDebugPair :: String -> Maybe (String, Priority)
 parseDebugPair str =
   case break (== '=') str of
-    (s,"") -> (\p -> (s, p)) <$> parseDebug s
+    (s,"") -> (\p -> ("", p)) <$> parseDebug s
     (name, _:s) -> (\p -> (name, p)) <$> parseDebug s
 
 -- | Apply SetOption to LedgerOptions
