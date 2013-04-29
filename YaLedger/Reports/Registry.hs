@@ -11,6 +11,7 @@ data Registry = Registry
 data ROptions =
        RInternal (Maybe String)
      | RDot
+     | RDescriptions Int
      | Common CommonFlags
   deriving (Eq, Show)
 
@@ -26,6 +27,7 @@ instance ReportClass Registry where
      Option "a" ["absolute"] (NoArg $ Common CAbsoluteValues) "Show absolute values of all balances",
      Option "i" ["internal"] (OptArg RInternal "GROUP") "Show only entries where all accounts belong to GROUP",
      Option ""  ["no-currencies"] (NoArg $ Common CNoCurrencies) "Do not show currencies in amounts",
+     Option "d" ["descriptions"] (OptArg rDescriptions "MAXLENGTH") "Show entries descriptions (but do not show rates differences)",
      Option "D" ["dot"] (NoArg RDot) "Output data (only credit amount sums) in DOT format (GraphViz)",
      Option "C" ["csv"] (OptArg (Common . CCSV) "SEPARATOR") "Output data in CSV format using given fields delimiter (semicolon by default)"]
 
@@ -37,6 +39,12 @@ instance ReportClass Registry where
       (\l (e :: InvalidPath) -> handler l e)
     `catchWithSrcLoc`
       (\l (e :: NoSuchRate) -> handler l e)
+
+rDescriptions :: Maybe String -> ROptions
+rDescriptions Nothing = RDescriptions 15
+rDescriptions (Just s) = case reads s of
+                          [(n,[])] -> RDescriptions n
+                          _ -> error $ "Error while parsing descriptions length: must be integer, but got " ++ s
 
 absBalance extBalance@(Ext {getContent = balance}) =
   extBalance {
@@ -73,9 +81,12 @@ registry qry options mbPath = do
                         else if CLedgerBalances `elem` flags
                               then Only LedgerBalance
                               else Only AvailableBalance
+          let infoCols = case [k | RDescriptions k <- options] of
+                           (l:_) -> [IDescription l]
+                           _ -> []
           let format = case [s | CCSV s <- flags] of
-                         []    -> showEntriesBalances' bqry showCurrs fullCoA ASCII totals
-                         (x:_) -> showEntriesBalances' bqry showCurrs fullCoA (CSV x) totals
+                         []    -> showEntriesBalances' bqry showCurrs infoCols fullCoA ASCII totals
+                         (x:_) -> showEntriesBalances' bqry showCurrs infoCols fullCoA (CSV x) totals
           if RDot `elem` options
             then wrapIO $ putStr $ unlines $ formatDot fullCoA $ mapMaybe (causedBy . getContent) $ nub $ balances'
             else wrapIO $ putStr $ format (nub $ balances')
@@ -83,9 +94,12 @@ registry qry options mbPath = do
           let accounts = map snd $ leafs coa
           allEntries <- forM accounts getEntries
           let entries = reverse $ concat $ map (filter $ checkExtEntry coa groupInternal qry) allEntries
+          let infoCols = case [k | RDescriptions k <- options] of
+                           (l:_) -> [IDescription l]
+                           _ -> [IRatesDifference]
           let format = case [s | CCSV s <- flags] of
-                         []    -> showEntries' fullCoA ASCII totals showCurrs
-                         (x:_) -> showEntries' fullCoA (CSV x) totals showCurrs
+                         []    -> showEntries' fullCoA ASCII   totals showCurrs infoCols 
+                         (x:_) -> showEntries' fullCoA (CSV x) totals showCurrs infoCols
           if RDot `elem` options
             then wrapIO $ putStr $ unlines $ formatDot fullCoA $ map getContent $ nub $ sort $ entries
             else wrapIO $ putStr $ format (nub $ sort $ entries)

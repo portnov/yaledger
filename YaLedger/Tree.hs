@@ -72,6 +72,10 @@ split c str =
 mkPath :: String -> Path
 mkPath str = split '/' str
 
+isEmptyTree :: Tree n a -> Bool
+isEmptyTree (Branch {branchChildren = list}) = null list
+isEmptyTree (Leaf {}) = False
+
 getChildren :: Tree n a -> Forest n a
 getChildren (Branch {branchChildren = children}) = children
 getChildren (Leaf {}) = []

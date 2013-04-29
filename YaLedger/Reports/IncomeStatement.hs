@@ -29,10 +29,6 @@ instance ReportClass IncomeStatement where
     `catchWithSrcLoc`
       (\l (e :: NoSuchRate) -> handler l e)
 
-isEmptyTree :: Tree n a -> Bool
-isEmptyTree (Branch {branchChildren = list}) = null list
-isEmptyTree (Leaf {}) = False
-
 anyAccount :: (AnyAccount -> Bool) -> ChartOfAccounts -> Bool
 anyAccount fn coa = not $ isEmptyTree $ filterLeafs fn coa 
 

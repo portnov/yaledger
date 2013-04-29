@@ -7,6 +7,7 @@ import Control.Monad.Exception
 import Control.Monad.Loc
 import Data.Maybe
 import Data.List
+import qualified Data.Map as M
 import Data.Decimal
 import Data.Dates
 
@@ -15,6 +16,11 @@ import YaLedger.Output
 import YaLedger.Kernel
 import YaLedger.Exceptions
 import YaLedger.Reports.Common
+
+data InfoColumn =
+       IRatesDifference
+     | IDescription Int
+  deriving (Eq,Show)
 
 -- | Show amount: show currency only if there is no CNoCurrencies flag in options.
 showAmt :: [CommonFlags] -> Amount -> String
@@ -55,17 +61,25 @@ showE (Ext {getDate = date, getContent = (CEntry dt cr rd)}) =
       | rd == OneCurrency = []
       | otherwise = [show rd]
 
-showE' :: Maybe Int -> Bool -> ChartOfAccounts -> Ext (Entry Decimal Checked) -> Row
-showE' t showCurrs coa (Ext {getDate = date, getContent = (CEntry dt cr rd)}) =
+showE' :: Maybe Int -> Bool -> [InfoColumn] -> ChartOfAccounts -> Ext (Entry Decimal Checked) -> Row
+showE' t showCurrs infos coa (Ext {getDate = date, getContent = (CEntry dt cr rd), getAttributes = attrs}) =
     [prettyPrint date: replicate (m-1) "",
      map (showPostingAccount t coa) dt, map (showPostingValueD showCurrs) dt,
-     map (showPostingAccount t coa) cr, map (showPostingValueD showCurrs) cr,
-     rdS]
+     map (showPostingAccount t coa) cr, map (showPostingValueD showCurrs) cr] ++
+    if IRatesDifference `elem` infos
+      then [rdS]
+      else [] ++
+    case [k | IDescription k <- infos] of
+      (l:_) -> [[takeS l description]]
+      _ -> []
   where
     m = max (length cr) (length dt)
+
     rdS
       | rd == OneCurrency = []
       | otherwise = [show rd]
+
+    description = maybe "" getString $ M.lookup "description" attrs
 
 showB :: Currency -> Ext (Balance Checked) -> Row
 showB currency (Ext {getDate = date, getContent = balance}) =
@@ -81,8 +95,13 @@ showB currency (Ext {getDate = date, getContent = balance}) =
        map posting dt, map posting cr,
        padding ++ [show bd ++ show currency]]
 
-showB' :: Maybe Int -> Bool -> BalanceQuery -> ChartOfAccounts -> Currency -> Ext (Balance Checked) -> Row
-showB' t showCurrs bqry coa currency (Ext {getDate = date, getContent = balance}) =
+takeS :: Int -> String -> String
+takeS n str = if length str <= n
+                then str
+                else take n str ++ "…"
+
+showB' :: Maybe Int -> Bool -> [InfoColumn] -> BalanceQuery -> ChartOfAccounts -> Currency -> Ext (Balance Checked) -> Row
+showB' t showCurrs infos bqry coa currency (Ext {getDate = date, getContent = balance, getAttributes = attrs}) =
   let bi = getBalanceInfo bqry balance
       dt :: [Posting Decimal Debit]
       cr :: [Posting Decimal Credit]
@@ -92,10 +111,14 @@ showB' t showCurrs bqry coa currency (Ext {getDate = date, getContent = balance}
       m = max (length cr) (length dt)
       padding = replicate (m-1) ""
       mbShow c = if showCurrs then show c else ""
+      description = maybe "" getString $ M.lookup "description" attrs
   in  [prettyPrint date: padding,
        map (showPostingAccount t coa) dt, map (showPostingValueD showCurrs) dt,
        map (showPostingAccount t coa) cr, map (showPostingValueD showCurrs) cr,
-       padding ++ [show bi ++ mbShow currency]]
+       padding ++ [show bi ++ mbShow currency]] ++
+       case [k | IDescription k <- infos] of
+         (l:_) -> [takeS l description: padding]
+         _ -> []
 
 posting :: Posting Decimal t -> String
 posting (DPosting acc x _) = getName acc ++ ": " ++ show (x :# getCurrency acc)
@@ -111,17 +134,22 @@ showEntries fmt totals list =
                      (ARight, ["CREDIT"]),
                      (ARight, ["RATES DIFF."])] l ++ footer
 
-showEntries' :: (TableFormat a) => ChartOfAccounts -> a -> Amount -> Bool -> [Ext (Entry Decimal Checked)] -> String
-showEntries' coa fmt totals showCurrs list =
-  let l = map (showE' (maxFieldWidth fmt) showCurrs coa) list
+showEntries' :: (TableFormat a) => ChartOfAccounts -> a -> Amount -> Bool -> [InfoColumn] -> [Ext (Entry Decimal Checked)] -> String
+showEntries' coa fmt totals showCurrs infos list =
+  let l = map (showE' (maxFieldWidth fmt) showCurrs infos coa) list
       footer = showFooter fmt $ "    TOTALS: " ++ show totals
   in  unlines $
-      tableGrid fmt [(ALeft,  ["DATE"]),
+      tableGrid fmt ([(ALeft,  ["DATE"]),
                      (ALeft,  ["DEBIT ACCOUNT"]),
                      (ARight, ["AMOUNT"]),
                      (ALeft,  ["CREDIT ACCOUNT"]),
-                     (ARight, ["AMOUNT"]),
-                     (ARight, ["RATES DIFF."])] l ++ footer
+                     (ARight, ["AMOUNT"])] ++
+                     if IRatesDifference `elem` infos
+                       then [ (ARight, ["RATES DIFF."]) ]
+                       else [] ++
+                     case [k | IDescription k <- infos] of
+                       [] -> []
+                       _ -> [(ALeft, ["DESCRIPTION"])] ) l ++ footer
 
 showEntriesBalances :: (TableFormat a) => a -> Amount -> [Ext (Balance Checked)] -> String
 showEntriesBalances fmt totals list =
@@ -133,17 +161,20 @@ showEntriesBalances fmt totals list =
                      (ARight, ["CREDIT"]),
                      (ARight, ["BALANCE B/D"])] l ++ footer
 
-showEntriesBalances' :: (TableFormat a) => BalanceQuery -> Bool -> ChartOfAccounts -> a -> Amount -> [Ext (Balance Checked)] -> String
-showEntriesBalances' bqry showCurrs coa fmt totals list =
-  let l = map (showB' (maxFieldWidth fmt) showCurrs bqry coa (getCurrency totals)) list
+showEntriesBalances' :: (TableFormat a) => BalanceQuery -> Bool -> [InfoColumn] -> ChartOfAccounts -> a -> Amount -> [Ext (Balance Checked)] -> String
+showEntriesBalances' bqry showCurrs infos coa fmt totals list =
+  let l = map (showB' (maxFieldWidth fmt) showCurrs infos bqry coa (getCurrency totals)) list
       footer = showFooter fmt $ "    TOTALS: " ++ show totals
   in  unlines $
-      tableGrid fmt [(ALeft,  ["DATE"]),
+      tableGrid fmt ([(ALeft,  ["DATE"]),
                      (ALeft,  ["DEBIT ACCOUNT"]),
                      (ARight, ["AMOUNT"]),
                      (ALeft,  ["CREDIT ACCOUNT"]),
                      (ARight, ["AMOUNT"]),
-                     (ARight, ["BALANCE B/D"])] l ++ footer
+                     (ARight, ["BALANCE B/D"])] ++
+                     case [k | IDescription k <- infos] of
+                       [] -> []
+                       _ -> [(ALeft, ["DESCRIPTION"])] ) l ++ footer
 
 causedByExt :: Ext (Balance Checked) -> Maybe (Ext (Entry Decimal Checked))
 causedByExt (Ext date i pos attrs p) =

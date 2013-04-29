@@ -114,29 +114,32 @@ twosideReport qry options coa = do
           | otherwise = rs
     let assets      = filterLeafs (isAssets opts      . accountAttributes) coa
         liabilities = filterLeafs (not . isAssets opts . accountAttributes) coa
-    assetsResults      <- treeBalances btype [qry] assets
-    liabilitiesResults <- treeBalances btype [qry] liabilities
-    let balColumn rs = map (\l -> showBI flags (head l)) (allNodes rs)
-    let format as ls =
-          let structAs = showTreeStructure as
-              structLs = showTreeStructure ls
-              deltaLen = length structAs - length structLs
-              empties = replicate (abs deltaLen) ""
-              emptyAs = if deltaLen > 0 then [] else empties
-              emptyLs = if deltaLen < 0 then [] else empties
-          in case needCSV flags of
-               Nothing  ->  tableColumns ASCII $
-                                           [(["ACCOUNT"], ALeft,  structAs ++ emptyAs),
-                                            (["ASSETS"],  ARight, balColumn as ++ emptyAs),
-                                            (["ACCOUNT"], ALeft, structLs ++ emptyLs),
-                                            (["LIABILITIES"], ARight, balColumn ls ++ emptyLs)]
-               Just sep -> tableColumns (CSV sep) $
-                                           [(["ACCOUNT"], ALeft,  structAs ++ emptyAs),
-                                            (["ASSETS"],  ARight, balColumn as ++ emptyAs),
-                                            (["ACCOUNT"], ALeft, structLs ++ emptyLs),
-                                            (["LIABILITIES"], ARight, balColumn ls ++ emptyLs)]
+    if isEmptyTree assets || isEmptyTree liabilities
+      then byGroup [qry] flags coa
+      else do
+            assetsResults      <- treeBalances btype [qry] assets
+            liabilitiesResults <- treeBalances btype [qry] liabilities
+            let balColumn rs = map (\l -> showBI flags (head l)) (allNodes rs)
+            let format as ls =
+                  let structAs = showTreeStructure as
+                      structLs = showTreeStructure ls
+                      deltaLen = length structAs - length structLs
+                      empties = replicate (abs deltaLen) ""
+                      emptyAs = if deltaLen > 0 then [] else empties
+                      emptyLs = if deltaLen < 0 then [] else empties
+                  in case needCSV flags of
+                       Nothing  ->  tableColumns ASCII $
+                                                   [(["ACCOUNT"], ALeft,  structAs ++ emptyAs),
+                                                    (["ASSETS"],  ARight, balColumn as ++ emptyAs),
+                                                    (["ACCOUNT"], ALeft, structLs ++ emptyLs),
+                                                    (["LIABILITIES"], ARight, balColumn ls ++ emptyLs)]
+                       Just sep -> tableColumns (CSV sep) $
+                                                   [(["ACCOUNT"], ALeft,  structAs ++ emptyAs),
+                                                    (["ASSETS"],  ARight, balColumn as ++ emptyAs),
+                                                    (["ACCOUNT"], ALeft, structLs ++ emptyLs),
+                                                    (["LIABILITIES"], ARight, balColumn ls ++ emptyLs)]
 
-    wrapIO $ putStr $ unlines $ format
-                                  (prepare $ filtered assetsResults)
-                                  (prepare $ filtered liabilitiesResults)
+            wrapIO $ putStr $ unlines $ format
+                                          (prepare $ filtered assetsResults)
+                                          (prepare $ filtered liabilitiesResults)
 
