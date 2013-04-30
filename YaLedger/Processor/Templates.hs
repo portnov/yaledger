@@ -18,9 +18,9 @@ import Data.Maybe
 import Data.Decimal
 
 import YaLedger.Types
-import YaLedger.Types.Monad
 import YaLedger.Exceptions
 import YaLedger.Kernel (getCurrentBalance)
+import YaLedger.Kernel.Monad
 
 class Monad m => TemplateMonad m where
   liftTemplate :: Throws InternalError l => LedgerT l STM a -> LedgerT l m a

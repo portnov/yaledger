@@ -18,10 +18,10 @@ import YaLedger.Tree
 import YaLedger.Exceptions
 import YaLedger.Types.Ledger
 import YaLedger.Types.Transactions
-import YaLedger.Types.Monad.Types
-import YaLedger.Types.Monad.STM
+import YaLedger.Types.Monad
 import YaLedger.Output.Pretty
 import YaLedger.Kernel.Common
+import YaLedger.Kernel.STM
 
 -- | Simple command line parser monad
 newtype Parser l a = Parser {

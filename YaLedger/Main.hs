@@ -31,8 +31,6 @@ import System.Environment.XDG.BaseDir
 import System.Log.Logger
 
 import YaLedger.Types
-import YaLedger.Types.Monad
-import YaLedger.Types.Monad.STM
 import YaLedger.Exceptions
 import YaLedger.Types.Reports
 import YaLedger.Parser

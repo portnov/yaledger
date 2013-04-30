@@ -10,14 +10,14 @@ import Data.Dates
 import qualified Data.Map as M
 
 import YaLedger.Types
-import YaLedger.Types.Monad
-import YaLedger.Types.Monad.STM
 import YaLedger.Exceptions
 import YaLedger.Kernel.Types
 import YaLedger.Kernel.Common
 import YaLedger.Kernel.Balances
 import YaLedger.Kernel.Correspondence
 import YaLedger.Kernel.Query
+import YaLedger.Kernel.Monad
+import YaLedger.Kernel.STM
 import YaLedger.Logger
 import YaLedger.Output.Pretty
 

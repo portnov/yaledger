@@ -3,7 +3,7 @@
 module YaLedger.Types
   (module YaLedger.Tree,
    module YaLedger.Types.Common,
-   module YaLedger.Types.Monad.Types,
+   module YaLedger.Types.Monad,
    module YaLedger.Types.Ledger,
    module YaLedger.Types.Map,
    module YaLedger.Types.Transactions,
@@ -14,7 +14,7 @@ module YaLedger.Types
 
 import YaLedger.Tree
 import YaLedger.Types.Common
-import YaLedger.Types.Monad.Types
+import YaLedger.Types.Monad
 import YaLedger.Types.Ledger
 import YaLedger.Types.Map
 import YaLedger.Types.Transactions

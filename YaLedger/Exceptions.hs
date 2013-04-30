@@ -17,7 +17,7 @@ import Data.Decimal
 import YaLedger.Types (Path)
 import YaLedger.Types.Ledger
 import YaLedger.Types.Common
-import YaLedger.Types.Monad.Types
+import YaLedger.Types.Monad
 
 showPos :: SourcePos -> String -> String
 showPos pos msg =

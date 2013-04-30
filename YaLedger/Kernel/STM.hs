@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP, MultiParamTypeClasses, TypeSynonymInstances, GeneralizedNewtypeDeriving, FlexibleContexts, FlexibleInstances, ScopedTypeVariables #-}
 
-module YaLedger.Types.Monad.STM where
+module YaLedger.Kernel.STM where
 
 import Control.Monad.Exception
 import Control.Monad.State
@@ -8,7 +8,7 @@ import Control.Concurrent.STM
 
 import YaLedger.Exceptions
 import YaLedger.Exceptions.Utils
-import YaLedger.Types.Monad.Types
+import YaLedger.Types.Monad
 
 -- | Lift STM action into 'Atomic' monad.
 stm :: Throws InternalError l => STM a -> Atomic l a

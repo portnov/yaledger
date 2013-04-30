@@ -2,6 +2,8 @@
 -- | Ledger kernel
 module YaLedger.Kernel
   (module YaLedger.Kernel.Common,
+   module YaLedger.Kernel.Monad,
+   module YaLedger.Kernel.STM,
    module YaLedger.Kernel.Balances,
    module YaLedger.Kernel.Holds,
    module YaLedger.Kernel.Query,
@@ -39,8 +41,6 @@ import qualified Data.Map as M
 import Text.Printf
 
 import YaLedger.Types
-import YaLedger.Types.Monad
-import YaLedger.Types.Monad.STM
 import YaLedger.Exceptions
 import YaLedger.Kernel.Types
 import YaLedger.Kernel.Correspondence
@@ -50,6 +50,8 @@ import YaLedger.Kernel.Rates
 import YaLedger.Kernel.Balances
 import YaLedger.Kernel.Holds
 import YaLedger.Kernel.Classification
+import YaLedger.Kernel.Monad
+import YaLedger.Kernel.STM
 import YaLedger.Output.Pretty
 import YaLedger.Output.Messages
 import YaLedger.Logger

@@ -7,8 +7,8 @@ import Control.Monad.Exception
 import Control.Concurrent.STM
 import System.Log.Logger (Priority (..))
 
-import YaLedger.Types.Monad.Types
-import YaLedger.Types.Monad.STM (stm)
+import YaLedger.Types.Monad
+import YaLedger.Kernel.STM (stm)
 import YaLedger.Exceptions
 
 -- | Write log message from 'Atomic' monad.

@@ -12,8 +12,6 @@ import Data.Dates
 import qualified Data.Map as M
 
 import YaLedger.Types
-import YaLedger.Types.Monad
-import YaLedger.Types.Monad.STM
 import YaLedger.Exceptions
 import YaLedger.Kernel
 import YaLedger.Logger
@@ -22,8 +20,8 @@ import qualified YaLedger.Logger.Loggers as L
 import YaLedger.Processor.Duplicates
 import YaLedger.Processor.Rules
 import YaLedger.Processor.Templates
+import YaLedger.Processor.Queue
 import YaLedger.Output.Pretty
-import YaLedger.Kernel.Queue
 
 -- | Merge two sorted lists into one sorted.
 merge :: Ord a => [a] -> [a] -> [a]

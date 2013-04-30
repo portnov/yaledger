@@ -16,10 +16,10 @@ module YaLedger.Reports.API
    -- * Re-export YaLedger kernel modules
    module YaLedger.Types,
    module YaLedger.Types.Monad,
-   module YaLedger.Types.Monad.STM,
    module YaLedger.Exceptions,
    module YaLedger.Types.Reports,
    module YaLedger.Kernel,
+   module YaLedger.Kernel.STM,
    module YaLedger.Logger,
    module YaLedger.Reports.Common,
    module YaLedger.Reports.Ledger,
@@ -39,9 +39,9 @@ import Data.Decimal
 
 import YaLedger.Types
 import YaLedger.Types.Monad
-import YaLedger.Types.Monad.STM
 import YaLedger.Types.Reports
 import YaLedger.Kernel
+import YaLedger.Kernel.STM
 import YaLedger.Exceptions
 import YaLedger.Logger
 import YaLedger.Reports.Common

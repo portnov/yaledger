@@ -17,7 +17,7 @@ import Control.Monad
 import Control.Monad.Exception
 import System.Log.Logger
 
-import YaLedger.Types.Monad.STM
+import YaLedger.Kernel.STM
 import YaLedger.Logger.TH
 import qualified YaLedger.Logger.Loggers as L
 

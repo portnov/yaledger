@@ -1,5 +1,5 @@
 
-module YaLedger.Kernel.Queue
+module YaLedger.Processor.Queue
   (newQueue,
    enqueue,
    getFromQueue

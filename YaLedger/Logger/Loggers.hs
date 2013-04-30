@@ -20,7 +20,7 @@ import qualified Debug.Trace as Trace
 
 import YaLedger.Types
 import YaLedger.Exceptions
-import YaLedger.Types.Monad.STM
+import YaLedger.Kernel.STM
 
 debugP :: Throws InternalError l => String -> String -> Ledger l ()
 debugP name str = do
