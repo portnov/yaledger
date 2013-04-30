@@ -6,8 +6,6 @@ import Control.Applicative ((<$>))
 import Control.Failure
 import Control.Exception hiding (try)
 import Data.Functor.Identity
-import Data.Either (either)
-import Data.List (intercalate)
 import Data.Decimal
 import qualified Data.ByteString as B
 import qualified Data.Map as M
@@ -15,12 +13,10 @@ import Data.Yaml
 import Text.Parsec
 import qualified Text.Parsec.Token as P
 import Text.Parsec.Language
-import Text.Printf
 import System.FilePath
 import System.Environment.XDG.BaseDir
 
 import YaLedger.Types
-import YaLedger.Kernel.Classification
 
 instance Exception e => Failure e Identity where
   failure e = fail $ show e

@@ -13,16 +13,11 @@ module YaLedger.Logger
    L.traceEventIO, L.traceEventM
   ) where
 
-import Language.Haskell.TH
 import Control.Monad
-import Control.Monad.State
 import Control.Monad.Exception
-import Control.Monad.Loc
 import System.Log.Logger
 
-import YaLedger.Types
 import YaLedger.Types.Monad.STM
-import YaLedger.Exceptions
 import YaLedger.Logger.TH
 import qualified YaLedger.Logger.Loggers as L
 

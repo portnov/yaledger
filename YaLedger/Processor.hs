@@ -6,7 +6,6 @@ module YaLedger.Processor
 import Control.Applicative ((<$>))
 import Control.Monad.State
 import Control.Monad.Exception
-import Control.Monad.Loc
 import Data.List
 import Data.Decimal
 import Data.Dates
@@ -17,7 +16,6 @@ import YaLedger.Types.Monad
 import YaLedger.Types.Monad.STM
 import YaLedger.Exceptions
 import YaLedger.Kernel
-import YaLedger.Kernel.Holds
 import YaLedger.Logger
 import qualified YaLedger.Logger.STM as STMLOG
 import qualified YaLedger.Logger.Loggers as L

@@ -4,7 +4,6 @@ module YaLedger.Processor.Rules
 
 import Control.Monad.State
 import Control.Monad.Exception
-import Control.Monad.Loc
 import Data.Maybe
 import Data.Decimal
 import Data.Hashable
@@ -14,7 +13,6 @@ import Data.Dates
 import YaLedger.Types
 import YaLedger.Exceptions
 import YaLedger.Kernel
-import YaLedger.Kernel.Correspondence
 import YaLedger.Processor.Templates
 import YaLedger.Logger
 

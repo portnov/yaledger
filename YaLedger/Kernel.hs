@@ -31,7 +31,6 @@ import Control.Applicative ((<$>))
 import Control.Monad
 import Control.Monad.State
 import Control.Monad.Exception
-import Control.Monad.Loc
 import Data.Maybe
 import Data.List
 import Data.Dates

@@ -44,6 +44,7 @@ library
                    YaLedger.Kernel.Types
                    YaLedger.Kernel.Common
                    YaLedger.Kernel.Correspondence
+                   YaLedger.Kernel.Classification
                    YaLedger.Kernel.Queue
                    YaLedger.Kernel.Holds
                    YaLedger.Kernel.Balances
@@ -52,6 +53,9 @@ library
                    YaLedger.Config
                    YaLedger.Main
                    YaLedger.Logger
+                   YaLedger.Logger.Loggers
+                   YaLedger.Logger.STM
+                   YaLedger.Logger.TH
                    YaLedger.Parser
                    YaLedger.Parser.Common
                    YaLedger.Parser.Currencies
@@ -74,6 +78,7 @@ library
                    YaLedger.Processor.DateIndex
                    YaLedger.Reports.API
                    YaLedger.Reports.Common
+                   YaLedger.Reports.Ledger
                    YaLedger.Reports.CoA
                    YaLedger.Reports.Cat
                    YaLedger.Reports.Balance
@@ -84,10 +89,14 @@ library
                    YaLedger.Reports.Postings
                    YaLedger.Reports.Turnovers
                    YaLedger.Reports.Holds
+                   YaLedger.Reports.Stats
+                   YaLedger.Reports.Flow
                    YaLedger.Tree
                    YaLedger.Types
                    YaLedger.Types.Common
                    YaLedger.Types.Monad
+                   YaLedger.Types.Monad.Types
+                   YaLedger.Types.Monad.STM
                    YaLedger.Types.Ledger
                    YaLedger.Types.Map
                    YaLedger.Types.Reports
@@ -97,11 +106,14 @@ library
                    YaLedger.Installer
 
   build-depends:       base >= 4 && < 5, mtl >=2.1,
+                       template-haskell >= 2.5,
                        transformers >= 0.3,
+                       vector >= 0.10.0,
                        failure >= 0.2.0.1,
                        control-monad-exception ==0.10.*,
                        monadloc ==0.7.*,
                        parallel-io >= 0.3.2.1,
+                       statistics >= 0.10.2,
                        stm >= 2.4,
                        dates >= 0.2.1.2, containers >=0.4,
                        hashable >= 1.2,
@@ -136,11 +148,14 @@ executable yaledger
   main-is:             yaledger.hs
   -- other-modules:       
   build-depends:       base >= 4 && < 5, mtl >=2.1,
+                       template-haskell >= 2.5,
                        transformers >= 0.3,
+                       vector >= 0.10.0,
                        failure >= 0.2.0.1,
                        control-monad-exception ==0.10.*,
                        monadloc ==0.7.*,
                        parallel-io >= 0.3.2.1,
+                       statistics >= 0.10.2,
                        stm >= 2.4,
                        dates >= 0.2.1.2, containers >=0.4,
                        hashable >= 1.2,

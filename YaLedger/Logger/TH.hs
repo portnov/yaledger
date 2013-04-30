@@ -10,7 +10,6 @@ module YaLedger.Logger.TH
    allLoggers
   ) where
 
-import Data.List
 import Language.Haskell.TH
 import System.Directory
 import System.FilePath.Glob

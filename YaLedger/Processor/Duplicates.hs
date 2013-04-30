@@ -4,7 +4,6 @@ module YaLedger.Processor.Duplicates
 
 import Control.Applicative ((<$>))
 import Control.Monad.Exception
-import Control.Monad.Loc
 import qualified Data.Map as M
 import Data.Dates
 import Data.Decimal

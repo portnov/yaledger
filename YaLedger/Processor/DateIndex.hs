@@ -11,11 +11,9 @@ import Data.Function (on)
 import Data.Maybe
 import qualified Data.Map as M
 import Data.Dates
-import Text.Printf
 
 import YaLedger.Types.Common
 import YaLedger.Types.Transactions
-import YaLedger.Output.Pretty
 
 lookupDate :: DateTime -> DateIndex a -> Maybe (DateZipper a)
 lookupDate (DateTime y m d _ _ _) ix = do

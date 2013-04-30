@@ -11,7 +11,6 @@ module YaLedger.Logger.Loggers
 
 import Control.Monad.State
 import Control.Monad.Exception
-import Control.Monad.Loc
 import System.Log.Logger
 
 #ifdef DEBUG

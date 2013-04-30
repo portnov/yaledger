@@ -4,21 +4,12 @@ module YaLedger.Logger.STM where
 
 import Control.Monad.State
 import Control.Monad.Exception
-import Control.Monad.Exception.Throws
 import Control.Concurrent.STM
-import System.Log.Logger (Priority (..), rootLoggerName, logM)
+import System.Log.Logger (Priority (..))
 
 import YaLedger.Types.Monad.Types
 import YaLedger.Types.Monad.STM (stm)
-import YaLedger.Types.Attributes
-import YaLedger.Types.Common
-import YaLedger.Types.Ledger
-import YaLedger.Types.Map
-import YaLedger.Types.Transactions
-import YaLedger.Types.Config
-import YaLedger.Tree
 import YaLedger.Exceptions
-import YaLedger.Kernel.Queue
 
 -- | Write log message from 'Atomic' monad.
 -- This puts message to 'lsMessages' queue.

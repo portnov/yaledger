@@ -21,7 +21,6 @@ import System.Directory
 import YaLedger.Types
 import YaLedger.Processor.Templates
 import YaLedger.Kernel.Common
-import YaLedger.Kernel.Classification
 import YaLedger.Parser.Common
 import YaLedger.Logger
 

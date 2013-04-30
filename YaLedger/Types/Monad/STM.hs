@@ -3,7 +3,6 @@
 module YaLedger.Types.Monad.STM where
 
 import Control.Monad.Exception
-import Control.Monad.Exception.Throws
 import Control.Monad.State
 import Control.Concurrent.STM
 

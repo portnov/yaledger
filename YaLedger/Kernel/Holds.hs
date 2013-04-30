@@ -2,7 +2,6 @@
 
 module YaLedger.Kernel.Holds where
 
-import Control.Monad
 import Control.Monad.State
 import Control.Monad.Exception
 import Control.Concurrent.STM

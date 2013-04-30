@@ -5,18 +5,16 @@
 --
 module YaLedger.Types.Monad where
 
-import Control.Monad.Reader.Class
 import Control.Monad.State
 import Control.Monad.Exception
 import Control.Monad.Exception.Throws
-import Control.Monad.Loc
 import Control.Concurrent.STM
 import Data.Dates
 import qualified Data.Map as M
 import Text.Parsec.Pos
-import System.Log.Logger (Priority (..), rootLoggerName, logM)
+import System.Log.Logger (logM)
 
-import YaLedger.Types.Attributes
+import YaLedger.Tree
 import YaLedger.Types.Common
 import YaLedger.Types.Ledger
 import YaLedger.Types.Map
@@ -24,7 +22,6 @@ import YaLedger.Types.Transactions
 import YaLedger.Types.Config
 import YaLedger.Types.Monad.Types
 import YaLedger.Types.Monad.STM
-import YaLedger.Tree
 import YaLedger.Exceptions
 import YaLedger.Exceptions.Utils
 import YaLedger.Kernel.Queue

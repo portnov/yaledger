@@ -3,7 +3,6 @@
 module YaLedger.Reports.IncomeStatement where
 
 import YaLedger.Reports.API
-import qualified Data.Map as M
 
 data IncomeStatement = IncomeStatement
 

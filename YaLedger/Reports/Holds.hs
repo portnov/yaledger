@@ -3,9 +3,6 @@
 module YaLedger.Reports.Holds
   (Holds (..)) where
 
-import Control.Concurrent.STM
-import Data.Either (either)
-
 import YaLedger.Reports.API
 
 data Holds = Holds

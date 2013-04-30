@@ -3,7 +3,6 @@ module YaLedger.Parser.Tables where
 
 import Control.Applicative
 import Control.Monad
-import qualified Control.Exception as EX
 import qualified Data.Text as T
 import qualified Data.HashMap.Strict as H
 import qualified Data.Map as M
@@ -23,7 +22,6 @@ import Foreign.C.Error (Errno (..))
 import Text.Printf
 
 import YaLedger.Types
-import YaLedger.Logger
 import YaLedger.Kernel.Common (autoPosting)
 
 data RowsFilter =

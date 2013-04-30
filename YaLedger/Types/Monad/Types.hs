@@ -5,13 +5,11 @@ module YaLedger.Types.Monad.Types where
 import Control.Monad.Reader.Class
 import Control.Monad.State
 import Control.Monad.Exception
-import Control.Monad.Exception.Throws
-import Control.Monad.Loc
 import Control.Concurrent.STM
 import Data.Dates
 import qualified Data.Map as M
 import Text.Parsec.Pos
-import System.Log.Logger (Priority (..), rootLoggerName, logM)
+import System.Log.Logger (Priority (..))
 
 import YaLedger.Types.Attributes
 import YaLedger.Types.Common
@@ -19,8 +17,6 @@ import YaLedger.Types.Ledger
 import YaLedger.Types.Map
 import YaLedger.Types.Transactions
 import YaLedger.Types.Config
-import YaLedger.Tree
-import YaLedger.Kernel.Queue
 
 -- | Base layer of Ledger monad: StateT transformer.
 newtype LedgerStateT m a = LedgerStateT (StateT LedgerState m a)

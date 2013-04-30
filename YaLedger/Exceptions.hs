@@ -10,15 +10,13 @@ module YaLedger.Exceptions
   ) where
 
 import Control.Monad.Exception
-import Control.Monad.Loc
 import Control.Monad.State
 import Data.List (intercalate)
 import Data.Decimal
 
-import YaLedger.Tree
+import YaLedger.Types (Path)
 import YaLedger.Types.Ledger
 import YaLedger.Types.Common
-import YaLedger.Types.Config
 import YaLedger.Types.Monad.Types
 
 showPos :: SourcePos -> String -> String

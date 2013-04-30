@@ -16,7 +16,6 @@ import Control.Applicative ((<$>))
 import qualified Control.Exception as E
 import Control.Monad.State
 import Control.Monad.Exception
-import Control.Monad.Loc
 import Control.Concurrent.ParallelIO
 import Data.Char
 import Data.Maybe

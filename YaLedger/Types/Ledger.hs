@@ -2,8 +2,6 @@
 
 module YaLedger.Types.Ledger where
 
-import Control.Applicative
-import qualified Data.Map as M
 import Data.Decimal
 import Data.List
 import Data.Hashable

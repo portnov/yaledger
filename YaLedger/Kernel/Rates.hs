@@ -5,7 +5,6 @@ module YaLedger.Kernel.Rates where
 import Control.Applicative ((<$>))
 import Control.Monad.State
 import Control.Monad.Exception
-import qualified Data.Map as M
 import Data.Maybe
 import Data.Decimal
 import Data.Dates

@@ -2,8 +2,6 @@
 -- | Accounts classification
 module YaLedger.Kernel.Classification where
 
-import Control.Applicative ((<$>))
-import Control.Monad.State
 import qualified Data.Map as M
 
 import YaLedger.Types

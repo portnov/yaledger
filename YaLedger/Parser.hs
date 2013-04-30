@@ -9,7 +9,6 @@ module YaLedger.Parser
   ) where
 
 import Control.Applicative ((<$>))
-import Control.Monad
 import Control.Concurrent.ParallelIO
 import Data.Maybe
 import Data.List

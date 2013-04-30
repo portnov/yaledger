@@ -11,7 +11,6 @@ module YaLedger.Types.Reports
 import Control.Applicative ((<$>))
 import Control.Monad.State
 import Control.Monad.Exception
-import Control.Monad.Loc
 import Data.Dates
 import System.Console.GetOpt
 
@@ -19,7 +18,6 @@ import YaLedger.Tree
 import YaLedger.Exceptions
 import YaLedger.Types.Ledger
 import YaLedger.Types.Transactions
-import YaLedger.Types.Monad
 import YaLedger.Types.Monad.Types
 import YaLedger.Types.Monad.STM
 import YaLedger.Output.Pretty

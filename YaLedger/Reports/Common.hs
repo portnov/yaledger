@@ -2,9 +2,6 @@
 
 module YaLedger.Reports.Common where
 
-import Control.Applicative ((<$>))
-import Control.Monad.Exception
-import Control.Monad.Loc
 import Data.Maybe
 import Data.List
 import Data.Decimal
@@ -14,7 +11,6 @@ import Text.Printf
 import YaLedger.Types
 import YaLedger.Output
 import YaLedger.Kernel
-import YaLedger.Exceptions
 
 data CommonFlags =
     CNoZeros
