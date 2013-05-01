@@ -93,9 +93,12 @@ getPostings coa internalGroup qry account = do
     let toDP ep = mapExt DP ep
     return $ map toCP crp ++ map toDP drp
 
-postingToDouble :: AnyPosting Decimal -> Double
-postingToDouble (CP p) = toDouble $ postingValue p
-postingToDouble (DP p) = negate $ toDouble $ postingValue p
+postingToDouble :: LedgerOptions -> AnyPosting Decimal -> Double
+postingToDouble opts (CP p) = (if isAssetPosting opts p then negate else id) $ toDouble $ postingValue p
+postingToDouble opts (DP p) = (if isAssetPosting opts p then id else negate) $ toDouble $ postingValue p
+
+isAssetPosting :: LedgerOptions -> Posting v t -> Bool
+isAssetPosting opts p = isAssets opts $ accountAttributes $ postingAccount p
 
 getEntryPosting :: AnyAccount -> Ext (Entry Decimal Checked) -> Maybe (Entry Decimal Checked, Ext (AnyPosting Decimal))
 getEntryPosting acc ee@(Ext {getContent = e}) =
@@ -113,13 +116,14 @@ getExtEntry extBal@(Ext {..}) =
     Just e -> Just $ mapExt (const e) extBal
 
 loadData :: Throws InternalError l
-         => [SOptions]
+         => LedgerOptions
+         -> [SOptions]
          -> ChartOfAccounts
          -> Maybe ChartOfAccounts
          -> Query
          -> AnyAccount
          -> Ledger l [Ext Double]
-loadData opts coa internalGroup qry account
+loadData lopts opts coa internalGroup qry account
   | Amounts `elem` opts && isJust internalGroup = do
       let Just grp = internalGroup
       balances <- readIOListL (accountBalances account)
@@ -127,12 +131,12 @@ loadData opts coa internalGroup qry account
           entries   = mapMaybe getExtEntry balances'
           eps       = mapMaybe (getEntryPosting account) entries
           postings  = [p | (e,p) <- eps, checkEntryAccs [grp,coa] e]
-      let doublePosting ep = mapExt postingToDouble ep
+      let doublePosting ep = mapExt (postingToDouble lopts) ep
       return $ map doublePosting (sort postings)
 
   | Amounts `elem` opts = do
       postings <- getPostings coa internalGroup qry account
-      let doublePosting ep = mapExt postingToDouble ep
+      let doublePosting ep = mapExt (postingToDouble lopts) ep
       return $ map doublePosting (sort postings)
 
   | otherwise = do
@@ -151,7 +155,8 @@ loadGroupData :: Throws InternalError l
               -> ChartOfAccounts
               -> Ledger l [Ext Double]
 loadGroupData opts internalGroup qry coa = do
-    tree <- mapLeafsM (loadData opts coa internalGroup qry) coa
+    lopts <- gets lsConfig
+    tree <- mapLeafsM (loadData lopts opts coa internalGroup qry) coa
     return $ concat $ allLeafs tree
 
 calculate :: Maybe DateTime -> Maybe DateTime -> V.Vector Double -> StatRecord
@@ -205,7 +210,8 @@ byOneAccount coa queries options account = do
                      [] -> return Nothing
                      (Nothing:_) -> return $ Just coa
                      (Just grp:_) -> Just <$> getCoAItem (mkPath grp)
-  lists <- forM queries $ \qry -> loadData options coa internalGroup qry account
+  lopts <- gets lsConfig
+  lists <- forM queries $ \qry -> loadData lopts options coa internalGroup qry account
   let starts = map qStart queries
       ends   = map qEnd   queries
       ccy = getCurrency account
@@ -245,8 +251,9 @@ byGroup queries options coa = do
   where
     go internalGroup colorize qry = do
       let flags = commonFlags options
+      lopts <- gets lsConfig
       srcData <- mapTreeBranchesM (loadGroupData options internalGroup qry)
-                                  (loadData options coa internalGroup qry) coa
+                                  (loadData lopts options coa internalGroup qry) coa
       let calc = toList . calculate (qStart qry) (qEnd qry) . V.fromList . map getContent . sort
       let results = mapTree calc calc srcData
       let prepare
