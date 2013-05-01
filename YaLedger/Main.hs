@@ -21,6 +21,7 @@ import Data.Char
 import Data.Maybe
 import qualified Data.Map as M
 import Data.List
+import qualified Data.Text as T
 import Data.Monoid
 import Data.Dates
 import System.Environment
@@ -46,7 +47,7 @@ import YaLedger.Installer
 
 -- | Parrse NAME=VALUE attribute syntax
 parsePair :: String -> Either ParseError (String, AttributeValue)
-parsePair str = runParser pAttribute () str str
+parsePair str = runParser pAttribute () str (T.pack str)
 
 -- | Parse PARSER=CONFIG syntax
 parseParserConfig :: String -> Maybe (String, FilePath)

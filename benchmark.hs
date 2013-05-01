@@ -31,7 +31,7 @@ reports = [("balances",  Report Balances),
 main :: IO ()
 main = do
   dataDir <- getUserDataDir "yaledger"
-  let argv = words "-d error -r ./examples/currencies.yaml -C examples/default.accounts -M examples/test.map -f -fexamples/benchmark.yaledger -e 2030/01/01 turnovers -t"
+  let argv = words "-d error -r ./examples/currencies.yaml -C examples/default.accounts -M examples/test.map -f -fexamples/benchmark.yaledger -S 2012/09/01 -e 2030/01/01 turnovers -ts"
   init <- initialize allParsers reports argv
   case init of
     Nothing -> return ()

@@ -67,9 +67,7 @@ toList (StatRecord {..}) =
   [srOpen, srMin, srQ1, srMedian, srQ3, srMax, srAvg, srSd, srClose]
 
 stats queries options mbPath = (do
-    coa <- case mbPath of
-              Nothing   -> gets lsCoA
-              Just path -> getCoAItem (gets lsPosition) (gets lsCoA) path
+    coa <- getCoAItemL mbPath
     case coa of
       Leaf {..} -> byOneAccount coa queries options leafData
       _         -> byGroup queries options coa )
@@ -205,7 +203,7 @@ byOneAccount coa queries options account = do
   internalGroup <- case [val | SInternal val <- options] of
                      [] -> return Nothing
                      (Nothing:_) -> return $ Just coa
-                     (Just grp:_) -> Just <$> getCoAItem (gets lsPosition) (gets lsCoA) (mkPath grp)
+                     (Just grp:_) -> Just <$> getCoAItem (mkPath grp)
   lists <- forM queries $ \qry -> loadData options coa internalGroup qry account
   let starts = map qStart queries
       ends   = map qEnd   queries
@@ -238,7 +236,7 @@ byGroup queries options coa = do
     internalGroup <- case [val | SInternal val <- options] of
                        [] -> return Nothing
                        (Nothing:_) -> return $ Just coa
-                       (Just grp:_) -> Just <$> getCoAItem (gets lsPosition) (gets lsCoA) (mkPath grp)
+                       (Just grp:_) -> Just <$> getCoAItem (mkPath grp)
     forM_ queries $ \qry -> do
         wrapIO $ putStrLn $ showInterval qry
         go internalGroup qry

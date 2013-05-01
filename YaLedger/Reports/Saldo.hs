@@ -41,9 +41,7 @@ showI qry = [showD "beginning" (qStart qry), "...", showD "now" (qEnd qry)]
 
 getSaldo queries options mbPath = (do
     let flags = commonFlags options
-    coa <- case mbPath of
-              Nothing   -> gets lsCoA
-              Just path -> getCoAItem (gets lsPosition) (gets lsCoA) path
+    coa <- getCoAItemL mbPath
     case coa of
       Leaf {..} -> byOneAccount queries flags leafData
       _         -> if Twoside `elem` options

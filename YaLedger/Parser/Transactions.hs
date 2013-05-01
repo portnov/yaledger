@@ -12,9 +12,12 @@ import Data.Either
 import Data.List
 import Data.Dates
 import Data.Dates.Formats (formatParser, pFormat)
+import qualified Data.Text.IO as TIO
+import Data.Text (Text)
 import qualified Data.Map as M
 import Data.Yaml hiding (Parser)
 import Text.Parsec hiding (space, spaces)
+import Text.Parsec.Text hiding (Parser)
 import Text.Printf
 import System.Directory
 
@@ -37,7 +40,11 @@ data PState = PState {
   templates :: M.Map String Int -- ^ Number of parameters
   }
 
-type Parser a = Parsec String PState a
+type Parser a = Parsec Text PState a
+
+instance CMonad (Parsec Text PState) where
+  cGetPosition = getPosition
+  cGetCoA = getCoA <$> getState
 
 data NativeParserConfig = NativeParserConfig {
     thousandsSeparator :: Char,
@@ -61,7 +68,9 @@ instance FromJSON NativeParserConfig where
   parseJSON Null = return defaultNativeParserConfig
   parseJSON x = fail $ "NativeParserConfig: invalid object: " ++ show x
 
+space :: Parser Char
 space = oneOf " \t"
+
 spaces = many space
 
 emptyPState :: DateTime -> LedgerOptions -> ChartOfAccounts -> Currencies -> Maybe String -> PState
@@ -157,7 +166,7 @@ pSpecial = try setAttributes <|> setRoot
       reserved "root"
       spaces
       path <- pPath
-      x <- getCoAItem getPosition (getCoA <$> getState) path
+      x <- getCoAItem  path
       case x of
         Branch {} -> do
                      st <- getState
@@ -283,7 +292,7 @@ pCondition = do
 pRuleObject :: Parser (Either AccountID GroupID)
 pRuleObject = do
   path <- pPathRelative
-  item <- getCoAItem getPosition (getCoA <$> getState) path
+  item <- getCoAItem path
   case item of
     Leaf {..}   -> return $ Left  (getID leafData)
     Branch {..} -> return $ Right (getID branchData)
@@ -394,7 +403,7 @@ pReconciliate p = do
     reserved "reconciliate"
     spaces
     path <- pPathRelative
-    account <- getAccount getPosition (getCoA <$> getState) path 
+    account <- getAccount path 
     spaces
     btype <- option AvailableBalance $ do
                try (bt "available" AvailableBalance) <|>
@@ -405,7 +414,7 @@ pReconciliate p = do
                        reserved "with"
                        spaces
                        path <- pPathRelative
-                       getAccount getPosition (getCoA <$> getState) path
+                       getAccount path
     msg <- optionMaybe pReconMessage
     return $ TReconciliate btype account x targetAccount msg
   where
@@ -478,7 +487,7 @@ pPostingHold p = try (Right <$> posting) <|> (Left <$> account)
       spaces
       use <- holdUsage
       accPath <- pPathRelative
-      acc <- getAccountT AGCredit getPosition (getCoA <$> getState) accPath
+      acc <- getAccount accPath
       many newline
       return (use, acc)
 
@@ -507,10 +516,10 @@ pPosting p = try (CP <$> explicitCredit) <|> try (DP <$> explicitDebit) <|> impl
     implicit = do
       spaces
       accPath <- pPathRelative
-      acc <- getAccountT AGCredit getPosition (getCoA <$> getState) accPath
       spaces
       amt <- signed p
       opts <- getOptions <$> getState
+      acc <- getAccountS opts amt accPath
       p <- autoPosting opts amt accPath acc DontUseHold
       whiteSpace
       many newline
@@ -521,7 +530,7 @@ pPosting p = try (CP <$> explicitCredit) <|> try (DP <$> explicitDebit) <|> impl
       spaces
       reserved "cr"
       accPath <- pPathRelative
-      acc <- getAccountT AGCredit getPosition (getCoA <$> getState) accPath
+      acc <- getAccountT AGCredit accPath
       account <- case acc of
                    WFree   acc -> return $ Left acc
                    WCredit acc -> return $ Right acc
@@ -537,7 +546,7 @@ pPosting p = try (CP <$> explicitCredit) <|> try (DP <$> explicitDebit) <|> impl
       spaces
       reserved "dr"
       accPath <- pPathRelative
-      acc <- getAccountT AGDebit getPosition (getCoA <$> getState) accPath
+      acc <- getAccountT AGDebit accPath
       account <- case acc of
                    WFree   acc -> return $ Left acc
                    WDebit acc -> return $ Right acc
@@ -609,7 +618,7 @@ loadTransactions opts configPath currs coa path = do
                    $infoIO $ "Using config for native format: " ++ configPath
                    loadParserConfig configPath
               else return defaultNativeParserConfig
-  content <- readFile path
+  content <- TIO.readFile path
   now <- getCurrentDateTime
   let !st = emptyPState now opts coa currs (nativeDateFormat config)
   case runParser pRecords st path content of

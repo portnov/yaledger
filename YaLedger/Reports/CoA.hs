@@ -25,8 +25,6 @@ showCoA' :: (Throws InvalidPath l,
           => Maybe Path
           -> Ledger l ()
 showCoA' mbPath = do
-  coa <- case mbPath of
-            Nothing   -> gets lsCoA
-            Just path -> getCoAItem (gets lsPosition) (gets lsCoA) path
+  coa <- getCoAItemL mbPath
   wrapIO $ putStrLn $ show coa
 

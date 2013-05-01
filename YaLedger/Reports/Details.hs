@@ -29,9 +29,7 @@ instance ReportClass Details where
       (\l (e :: NoSuchRate) -> handler l e)
 
 details qry options mbPath = do
-    coa <- case mbPath of
-              Nothing   -> gets lsCoA
-              Just path -> getCoAItem (gets lsPosition) (gets lsCoA) path
+    coa <- getCoAItemL mbPath
     let format = case [s | DCSV s <- options] of
                    []    -> showEntries ASCII
                    (x:_) -> showEntries (CSV x)

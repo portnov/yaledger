@@ -194,7 +194,7 @@ instance FromJSON AttributeValue where
 parseValue :: Value -> Parser AttributeValue
 parseValue (String text) = do
   let str = T.unpack text
-  case runParser pAttributeValue () str str of
+  case runParser pAttributeValue () str text of
     Left _ -> return (Exactly str)
     Right val -> return val
 parseValue _ = fail "Invalid object type in attribute value"

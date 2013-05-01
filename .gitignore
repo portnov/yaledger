@@ -4,6 +4,7 @@
 *~
 *.prof
 *.tix
+*.p_o
 CSV
 Test
 tbank.yaledger

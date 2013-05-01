@@ -2,17 +2,21 @@
 -- | This module contains kernel functions, which do not
 -- require Ledger monad.
 module YaLedger.Kernel.Common
-  (inRange, first, whenJust,
+  (CMonad (..),
+   inRange, first, whenJust,
    filterByAccountType,
    isInCoA,
    getCoAItem, getCoAItemT,
    getAccount, getAccountT,
+   getAccountS,
    accountFullPath,
    accountFullPath',
    autoPosting
   ) where
 
 import Control.Monad
+import Control.Monad.State
+import Control.Monad.Exception
 import Control.Failure
 import Data.List (intercalate)
 import Text.Printf
@@ -20,6 +24,14 @@ import Text.Printf
 import YaLedger.Types
 import YaLedger.Exceptions
 import YaLedger.Kernel.Classification
+
+class Monad m => CMonad m where
+  cGetPosition :: m SourcePos
+  cGetCoA :: m ChartOfAccounts
+
+instance Monad m => CMonad (EMT l (LedgerStateT m)) where
+  cGetPosition = gets lsPosition
+  cGetCoA = gets lsCoA
 
 inRange :: Integer -> (Integer, Integer) -> Bool
 inRange i (m, n) = (m < i) && (i <= n)
@@ -52,30 +64,34 @@ isInCoA :: AnyAccount -> ChartOfAccounts -> Bool
 isInCoA acc l@(Leaf {}) = getID acc == getID (leafData l)
 isInCoA acc b@(Branch {}) = getID acc `inRange` agRange (branchData b)
 
-getCoAItem :: (Monad m,
+getCoAItems :: (CMonad m,
                Failure InvalidPath m)
-           => (m SourcePos)
-           -> (m ChartOfAccounts)
-           -> Path
+           => Path
+           -> m [ChartOfAccounts]
+getCoAItems path = do
+  coa <- cGetCoA
+  return $ search' coa path
+
+getCoAItem :: (CMonad m,
+               Failure InvalidPath m)
+           => Path
            -> m ChartOfAccounts
-getCoAItem getPos fn path = do
-  coa <- fn
-  pos <- getPos
+getCoAItem path = do
+  coa <- cGetCoA
+  pos <- cGetPosition
   case search' coa path of
     [] -> failure (InvalidPath path [] pos)
     [a] -> return a
     as -> failure (InvalidPath path as pos)
 
-getCoAItemT :: (Monad m,
+getCoAItemT :: (CMonad m,
                 Failure InvalidPath m)
             => AccountGroupType
-            -> (m SourcePos)
-            -> (m ChartOfAccounts)
             -> Path
             -> m ChartOfAccounts
-getCoAItemT t getPos fn path = do
-  coa <- fn
-  pos <- getPos
+getCoAItemT t path = do
+  coa <- cGetCoA
+  pos <- cGetPosition
   case search' coa path of
     [] -> failure (InvalidPath path [] pos)
     [a] -> return a
@@ -84,34 +100,68 @@ getCoAItemT t getPos fn path = do
             [a] -> return a
             as  -> failure (InvalidPath path as pos)
 
-getAccount :: (Monad m,
+getAccount :: (CMonad m,
                Failure InvalidPath m,
                Failure NotAnAccount m)
-           => (m SourcePos)
-           -> (m ChartOfAccounts)
-           -> Path
+           => Path
            -> m AnyAccount
-getAccount getPos fn path = do
-  x <- getCoAItem getPos fn path
-  pos <- getPos
+getAccount path = do
+  x <- getCoAItem path
+  pos <- cGetPosition
   case x of
     Leaf {} -> return (leafData x)
     _ -> failure (NotAnAccount path pos)
 
-getAccountT :: (Monad m,
+getAccountT :: (CMonad m,
                Failure InvalidPath m,
                Failure NotAnAccount m)
            => AccountGroupType
-           -> (m SourcePos)
-           -> (m ChartOfAccounts)
            -> Path
            -> m AnyAccount
-getAccountT t getPos fn path = do
-  x <- getCoAItemT t getPos fn path
-  pos <- getPos
+getAccountT t path = do
+  x <- getCoAItemT t path
+  pos <- cGetPosition
   case x of
     Leaf {} -> return (leafData x)
     _ -> failure (NotAnAccount path pos)
+
+getAccountS :: (CMonad m,
+               Failure InvalidPath m,
+               Failure NotAnAccount m)
+            => LedgerOptions
+            -> Delta v
+            -> Path
+            -> m AnyAccount
+getAccountS opts delta path = do
+    items <- getCoAItems path
+    pos <- cGetPosition
+    case items of
+      [] -> failure (InvalidPath path [] pos)
+      [Leaf {leafData=a}] -> return a
+      as -> let accs = [a | Leaf {leafData=a} <- as]
+            in case filter checkDelta accs of
+                [] -> failure (InvalidPath path [] pos)
+                [a] -> return a
+                as -> failure (InvalidPath path (map mkcoa as) pos)
+  where
+    checkDelta acc
+      | isAssets opts (accountAttributes acc) =
+          case (delta, acc) of
+             (Increase am, WFree a)   -> True
+             (Decrease am, WFree a)   -> True
+             (Increase am, WDebit a)  -> True
+             (Decrease am, WCredit a) -> True
+             (_,_) -> False
+      | otherwise =
+          case (delta, acc) of
+             (Increase am, WFree a)   -> True
+             (Decrease am, WFree a)   -> True
+             (Increase am, WCredit a) -> True
+             (Decrease am, WDebit a)  -> True
+             (_,_) -> False
+
+    mkcoa a = Leaf (getName a) a
+
 
 autoPosting :: forall v m. (Show v, Monad m)
             => LedgerOptions

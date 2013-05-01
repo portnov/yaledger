@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
 
 module YaLedger.Parser.CoA where
 
@@ -6,8 +7,10 @@ import Control.Monad.Trans
 import Control.Concurrent.STM
 import Data.Maybe
 import Data.Decimal
+import Data.Text (Text)
 import qualified Data.Map as M
 import Text.Parsec
+import Text.Parsec.Text hiding (Parser)
 
 import YaLedger.Types
 import YaLedger.Parser.Common
@@ -35,7 +38,7 @@ emptyPState currs = PState {
   groupCurrency = emptyCurrency,
   groupType = AGFree }
 
-type Parser a = ParsecT String PState IO a
+type Parser a = ParsecT Text PState IO a
 
 account :: AccountGroupType -> String -> Integer -> Currency -> Bool -> BalanceChecks -> Attributes -> Parser AnyAccount
 account AGDebit  name aid c _ checks attrs = do

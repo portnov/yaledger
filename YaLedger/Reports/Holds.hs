@@ -25,9 +25,7 @@ instance ReportClass Holds where
   reportHelp _ = "Show account holds. One optional parameter: account or accounts group."
 
 showHolds qry options mbPath = do
-      coa <- case mbPath of
-                Nothing   -> gets lsCoA
-                Just path -> getCoAItem (gets lsPosition) (gets lsCoA) path
+      coa <- getCoAItemL mbPath
       let accounts = map snd $ leafs coa
       forM_ accounts $ \account ->
           showHolds' qry options account

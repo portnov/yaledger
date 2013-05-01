@@ -12,6 +12,7 @@ import Control.Applicative ((<$>))
 import Control.Concurrent.ParallelIO
 import Data.Maybe
 import Data.List
+import qualified Data.Text.IO as TIO
 import Text.Parsec
 import System.Directory
 import System.FilePath
@@ -76,7 +77,7 @@ parseInputFiles options parsers configs currs coa masks = do
 -- | Read chart of accounts from file
 readCoA :: Currencies -> FilePath -> IO ChartOfAccounts
 readCoA currs path = do
-  content <- readFile path
+  content <- TIO.readFile path
   res <- runParserT CoA.pAccountGroup (CoA.emptyPState currs) path content
   case res of
     Right res -> return res
@@ -88,7 +89,7 @@ readAMap coa path = do
   b <- doesFileExist path
   if b
     then do
-         content <- readFile path
+         content <- TIO.readFile path
          case runParser Map.pAccountMap (Map.PState coa) path content of
            Right res -> return res
            Left err -> fail $ show err

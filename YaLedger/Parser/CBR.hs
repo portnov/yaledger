@@ -7,6 +7,7 @@ import Control.Applicative hiding ((<|>), many)
 import Control.Monad
 import Data.List
 import qualified Data.Map as M
+import qualified Data.Text.IO as TIO
 import Data.Tree.NTree.TypeDefs
 import Text.XML.HXT.Core
 import Data.Yaml
@@ -138,7 +139,7 @@ loadCache :: LedgerOptions -> Currencies -> ChartOfAccounts -> FilePath -> IO [E
 loadCache opts currs coa cachePath = do
   now <- getCurrentDateTime
   let !st = T.emptyPState now opts coa currs (Just "YYYY/MM/DD")
-  content <- readFile cachePath
+  content <- TIO.readFile cachePath
   case runParser pRates st cachePath content of
     Left err -> fail $ show err
     Right recs -> return recs

@@ -10,7 +10,9 @@ import Data.Decimal
 import qualified Data.ByteString as B
 import qualified Data.Map as M
 import Data.Yaml
+import Data.Text (Text)
 import Text.Parsec
+import Text.Parsec.Text
 import qualified Text.Parsec.Token as P
 import Text.Parsec.Language
 import System.FilePath
@@ -58,14 +60,14 @@ natural     = P.natural lexer
 whiteSpace  = P.whiteSpace lexer
 naturalOrFloat = P.naturalOrFloat lexer
 
-attributeName :: Monad m => ParsecT String st m String
+attributeName :: Monad m => ParsecT Text st m String
 attributeName = do
   c <- letter
   cs <- many $ alphaNum <|> oneOf "-."
   spaces
   return (c:cs)
 
-pRegexp :: Monad m => ParsecT String st m String
+pRegexp :: Monad m => ParsecT Text st m String
 pRegexp = do
     char '/'
     go ""
@@ -79,7 +81,7 @@ pRegexp = do
         then return acc
         else go (acc ++ [v])
 
-pAttributeValue :: Monad m => ParsecT String st m AttributeValue
+pAttributeValue :: Monad m => ParsecT Text st m AttributeValue
 pAttributeValue =
         try (Exactly <$> stringLit)
     <|> try (Optional <$> pOptional)
@@ -98,17 +100,17 @@ pAttributeValue =
 
     list = stringLit `sepBy1` comma
 
-pAttributes :: Monad m => ParsecT String st m Attributes
+pAttributes :: Monad m => ParsecT Text st m Attributes
 pAttributes = M.fromList <$> try pAttribute `sepEndBy` semicolon
 
-pAttribute :: Monad m => ParsecT String st m (String, AttributeValue)
+pAttribute :: Monad m => ParsecT Text st m (String, AttributeValue)
 pAttribute = do
   name <- attributeName
   reservedOp "="
   value <- pAttributeValue
   return (name, value)
 
-pMessageFormat :: Monad m => ParsecT String st m MessageFormat
+pMessageFormat :: Monad m => ParsecT Text st m MessageFormat
 pMessageFormat = many1 $ try var <|> fixed
   where
     var = do
@@ -118,10 +120,10 @@ pMessageFormat = many1 $ try var <|> fixed
 
     fixed = MFixed <$> (many1 $ noneOf "\n\r#")
 
-pPath :: Monad m => ParsecT String st m Path
+pPath :: Monad m => ParsecT Text st m Path
 pPath = try identifier `sepBy1` reservedOp "/"
 
-number :: Monad m => (st -> Char) -> (st -> Char) -> ParsecT String st m Decimal
+number :: Monad m => (st -> Char) -> (st -> Char) -> ParsecT Text st m Decimal
 number getThousandsSep getDecimalSep = do
     st <- getState
     let thousandsSep = getThousandsSep st
@@ -137,7 +139,7 @@ number getThousandsSep getDecimalSep = do
       | sep == c  = '.'
       | otherwise = c
 
-currencySymbol :: Monad m => ParsecT String st m String
+currencySymbol :: Monad m => ParsecT Text st m String
 currencySymbol =
   (many $ noneOf " \r\n\t\")}->@0123456789.") <?> "Currency symbol"
 

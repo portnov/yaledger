@@ -13,16 +13,17 @@ group Root {
   };
   account difference {
     category = "rates-difference";
+    rule = *;
   };
   group X (credit) {
     currency = "€";
     account X1;
     account X2;
   };
-  group Y (debit) {
+  group Y  {
     category = "Y";
     account Y1;
-    account Y2 {
+    account Y2 (debit) {
       currency = "€";
       description = /test/;
     };
@@ -61,7 +62,6 @@ group Root {
   };
   group активы {
     currency = "р";
-    classifier = "assets";
     account карточка;
     account карман {
       category = /транспорт/;

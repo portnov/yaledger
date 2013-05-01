@@ -2,6 +2,7 @@
 rate 1.0000€ -> 1.1800$
 rate 1.0000$ -> 0.8100€
 rate 41.5000р -> 1.0000€
+rate 1.0$ -> 29.95р
 
 @ 2012/09/01 
 rate 32.1000р -> 1.0000$
@@ -42,7 +43,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2012/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2012/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -142,7 +143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2012/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2012/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -242,7 +243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2013/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2013/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -342,7 +343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2013/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2013/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -442,7 +443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2013/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2013/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -542,7 +543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2013/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2013/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -642,7 +643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2014/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2014/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -742,7 +743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2014/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2014/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -842,7 +843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2014/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2014/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -942,7 +943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2014/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2014/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -1042,7 +1043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2015/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2015/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -1142,7 +1143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2015/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2015/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -1242,7 +1243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2015/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2015/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -1342,7 +1343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2015/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2015/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -1442,7 +1443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2016/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2016/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -1542,7 +1543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2016/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2016/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -1642,7 +1643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2016/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2016/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -1742,7 +1743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2016/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2016/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -1842,7 +1843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2017/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2017/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -1942,7 +1943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2017/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2017/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -2042,7 +2043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2017/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2017/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -2142,7 +2143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2017/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2017/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -2242,7 +2243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2018/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2018/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -2342,7 +2343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2018/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2018/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -2442,7 +2443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2018/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2018/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -2542,7 +2543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2018/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2018/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -2642,7 +2643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2019/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2019/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -2742,7 +2743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2019/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2019/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -2842,7 +2843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2019/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2019/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -2942,7 +2943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2019/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2019/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -3042,7 +3043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2020/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2020/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -3142,7 +3143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2020/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2020/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -3242,7 +3243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2020/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2020/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -3342,7 +3343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2020/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2020/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -3442,7 +3443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2021/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2021/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -3542,7 +3543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2021/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2021/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -3642,7 +3643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2021/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2021/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -3742,7 +3743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2021/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2021/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -3842,7 +3843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2022/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2022/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -3942,7 +3943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2022/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2022/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -4042,7 +4043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2022/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2022/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -4142,7 +4143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2022/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2022/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -4242,7 +4243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2023/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2023/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -4342,7 +4343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2023/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2023/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -4442,7 +4443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2023/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2023/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -4542,7 +4543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2023/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2023/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -4642,7 +4643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2024/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2024/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -4742,7 +4743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2024/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2024/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -4842,7 +4843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2024/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2024/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -4942,7 +4943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2024/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2024/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -5042,7 +5043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2025/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2025/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -5142,7 +5143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2027/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2027/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -5242,7 +5243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2027/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2027/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -5342,7 +5343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2028/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2028/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -5442,7 +5443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2028/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2028/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -5542,7 +5543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2028/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2028/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -5642,7 +5643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2028/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2028/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -5742,7 +5743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2029/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2029/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -5842,7 +5843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2029/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2029/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -5942,7 +5943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2029/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2029/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -6042,7 +6043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2029/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2029/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -6142,7 +6143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2030/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2030/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -6242,7 +6243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2030/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2030/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -6342,7 +6343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2030/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2030/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -6442,7 +6443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2030/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2030/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -6542,7 +6543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2031/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2031/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -6642,7 +6643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2031/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2031/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -6742,7 +6743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2031/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2031/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -6842,7 +6843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2031/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2031/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -6942,7 +6943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2032/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2032/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -7042,7 +7043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2032/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2032/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -7142,7 +7143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2032/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2032/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -7242,7 +7243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2032/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2032/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -7342,7 +7343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2033/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2033/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -7442,7 +7443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2033/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2033/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -7542,7 +7543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2033/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2033/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -7642,7 +7643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2033/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2033/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -7742,7 +7743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2034/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2034/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -7842,7 +7843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2034/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2034/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -7942,7 +7943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2034/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2034/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -8042,7 +8043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2034/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2034/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -8142,7 +8143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2035/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2035/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -8242,7 +8243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2035/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2035/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -8342,7 +8343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2035/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2035/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -8442,7 +8443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2035/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2035/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -8542,7 +8543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2036/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2036/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -8642,7 +8643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2036/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2036/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -8742,7 +8743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2036/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2036/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -8842,7 +8843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2036/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2036/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -8942,7 +8943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2037/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2037/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -9042,7 +9043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2037/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2037/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -9142,7 +9143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2037/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2037/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -9242,7 +9243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2037/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2037/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -9342,7 +9343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2038/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2038/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -9442,7 +9443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2038/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2038/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -9542,7 +9543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2038/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2038/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -9642,7 +9643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2038/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2038/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -9742,7 +9743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2039/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2039/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -9842,7 +9843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2039/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2039/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -9942,7 +9943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2039/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2039/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -10042,7 +10043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2039/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2039/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -10142,7 +10143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2040/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2040/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -10242,7 +10243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2042/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2042/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -10342,7 +10343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2042/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2042/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -10442,7 +10443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2043/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2043/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -10542,7 +10543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2043/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2043/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -10642,7 +10643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2043/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2043/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -10742,7 +10743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2043/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2043/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -10842,7 +10843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2044/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2044/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -10942,7 +10943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2044/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2044/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -11042,7 +11043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2044/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2044/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -11142,7 +11143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2044/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2044/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -11242,7 +11243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2045/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2045/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -11342,7 +11343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2045/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2045/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -11442,7 +11443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2045/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2045/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -11542,7 +11543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2045/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2045/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -11642,7 +11643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2046/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2046/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -11742,7 +11743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2046/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2046/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -11842,7 +11843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2046/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2046/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -11942,7 +11943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2046/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2046/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -12042,7 +12043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2047/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2047/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -12142,7 +12143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2047/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2047/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -12242,7 +12243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2047/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2047/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -12342,7 +12343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2047/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2047/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -12442,7 +12443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2048/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2048/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -12542,7 +12543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2048/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2048/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -12642,7 +12643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2048/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2048/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -12742,7 +12743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2048/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2048/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -12842,7 +12843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2049/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2049/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -12942,7 +12943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2049/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2049/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -13042,7 +13043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2049/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2049/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -13142,7 +13143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2049/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2049/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -13242,7 +13243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2050/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2050/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -13342,7 +13343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2050/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2050/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -13442,7 +13443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2050/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2050/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -13542,7 +13543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2050/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2050/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -13642,7 +13643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2051/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2051/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -13742,7 +13743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2051/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2051/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -13842,7 +13843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2051/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2051/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -13942,7 +13943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2051/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2051/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -14042,7 +14043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2052/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2052/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -14142,7 +14143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2052/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2052/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -14242,7 +14243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2052/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2052/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -14342,7 +14343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2052/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2052/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -14442,7 +14443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2053/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2053/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -14542,7 +14543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2053/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2053/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -14642,7 +14643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2053/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2053/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -14742,7 +14743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2053/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2053/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -14842,7 +14843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2054/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2054/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -14942,7 +14943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2054/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2054/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -15042,7 +15043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2054/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2054/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -15142,7 +15143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2054/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2054/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -15242,7 +15243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2055/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2055/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -15342,7 +15343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2057/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2057/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -15442,7 +15443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2057/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2057/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -15542,7 +15543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2058/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2058/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -15642,7 +15643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2058/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2058/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -15742,7 +15743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2058/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2058/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -15842,7 +15843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2058/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2058/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -15942,7 +15943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2059/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2059/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -16042,7 +16043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2059/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2059/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -16142,7 +16143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2059/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2059/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -16242,7 +16243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2059/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2059/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -16342,7 +16343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2060/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2060/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -16442,7 +16443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2060/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2060/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -16542,7 +16543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2060/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2060/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -16642,7 +16643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2060/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2060/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -16742,7 +16743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2061/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2061/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -16842,7 +16843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2061/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2061/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -16942,7 +16943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2061/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2061/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -17042,7 +17043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2061/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2061/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -17142,7 +17143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2062/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2062/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -17242,7 +17243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2062/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2062/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -17342,7 +17343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2062/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2062/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -17442,7 +17443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2062/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2062/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -17542,7 +17543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2063/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2063/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -17642,7 +17643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2063/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2063/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -17742,7 +17743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2063/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2063/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -17842,7 +17843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2063/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2063/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -17942,7 +17943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2064/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2064/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -18042,7 +18043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2064/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2064/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -18142,7 +18143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2064/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2064/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -18242,7 +18243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2064/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2064/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -18342,7 +18343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2065/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2065/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -18442,7 +18443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2065/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2065/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -18542,7 +18543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2065/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2065/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -18642,7 +18643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2065/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2065/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -18742,7 +18743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2066/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2066/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -18842,7 +18843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2066/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2066/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -18942,7 +18943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2066/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2066/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -19042,7 +19043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2066/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2066/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -19142,7 +19143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2067/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2067/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -19242,7 +19243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2067/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2067/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -19342,7 +19343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2067/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2067/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -19442,7 +19443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2067/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2067/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -19542,7 +19543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2068/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2068/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -19642,7 +19643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2068/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2068/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -19742,7 +19743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2068/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2068/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -19842,7 +19843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2068/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2068/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -19942,7 +19943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2069/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2069/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -20042,7 +20043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2069/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2069/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -20142,7 +20143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2069/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2069/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -20242,7 +20243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2069/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2069/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -20342,7 +20343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2070/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2070/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -20442,7 +20443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2072/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2072/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -20542,7 +20543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2072/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2072/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -20642,7 +20643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2073/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2073/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -20742,7 +20743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2073/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2073/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -20842,7 +20843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2073/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2073/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -20942,7 +20943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2073/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2073/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -21042,7 +21043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2074/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2074/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -21142,7 +21143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2074/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2074/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -21242,7 +21243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2074/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2074/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -21342,7 +21343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2074/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2074/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -21442,7 +21443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2075/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2075/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -21542,7 +21543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2075/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2075/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -21642,7 +21643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2075/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2075/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -21742,7 +21743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2075/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2075/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -21842,7 +21843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2076/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2076/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -21942,7 +21943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2076/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2076/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -22042,7 +22043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2076/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2076/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -22142,7 +22143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2076/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2076/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -22242,7 +22243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2077/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2077/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -22342,7 +22343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2077/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2077/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -22442,7 +22443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2077/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2077/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -22542,7 +22543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2077/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2077/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -22642,7 +22643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2078/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2078/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -22742,7 +22743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2078/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2078/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -22842,7 +22843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2078/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2078/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -22942,7 +22943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2078/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2078/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -23042,7 +23043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2079/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2079/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -23142,7 +23143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2079/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2079/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -23242,7 +23243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2079/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2079/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -23342,7 +23343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2079/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2079/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -23442,7 +23443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2080/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2080/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -23542,7 +23543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2080/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2080/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -23642,7 +23643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2080/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2080/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -23742,7 +23743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2080/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2080/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -23842,7 +23843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2081/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2081/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -23942,7 +23943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2081/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2081/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -24042,7 +24043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2081/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2081/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -24142,7 +24143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2081/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2081/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -24242,7 +24243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2082/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2082/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -24342,7 +24343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2082/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2082/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -24442,7 +24443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2082/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2082/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -24542,7 +24543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2082/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2082/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -24642,7 +24643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2083/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2083/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -24742,7 +24743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2083/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2083/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -24842,7 +24843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2083/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2083/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -24942,7 +24943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2083/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2083/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -25042,7 +25043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2084/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2084/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -25142,7 +25143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2084/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2084/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -25242,7 +25243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2084/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2084/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -25342,7 +25343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2084/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2084/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -25442,7 +25443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2085/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2085/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -25542,7 +25543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2087/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2087/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -25642,7 +25643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2087/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2087/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -25742,7 +25743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2088/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2088/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -25842,7 +25843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2088/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2088/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -25942,7 +25943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2088/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2088/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -26042,7 +26043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2088/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2088/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -26142,7 +26143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2089/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2089/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -26242,7 +26243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2089/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2089/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -26342,7 +26343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2089/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2089/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -26442,7 +26443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2089/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2089/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -26542,7 +26543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2090/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2090/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -26642,7 +26643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2090/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2090/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -26742,7 +26743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2090/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2090/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -26842,7 +26843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2090/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2090/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -26942,7 +26943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2091/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2091/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -27042,7 +27043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2091/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2091/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -27142,7 +27143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2091/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2091/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -27242,7 +27243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2091/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2091/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -27342,7 +27343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2092/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2092/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -27442,7 +27443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2092/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2092/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -27542,7 +27543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2092/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2092/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -27642,7 +27643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2092/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2092/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -27742,7 +27743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2093/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2093/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -27842,7 +27843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2093/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2093/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -27942,7 +27943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2093/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2093/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -28042,7 +28043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2093/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2093/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -28142,7 +28143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2094/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2094/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -28242,7 +28243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2094/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2094/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -28342,7 +28343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2094/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2094/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -28442,7 +28443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2094/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2094/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -28542,7 +28543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2095/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2095/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -28642,7 +28643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2095/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2095/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -28742,7 +28743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2095/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2095/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -28842,7 +28843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2095/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2095/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -28942,7 +28943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2096/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2096/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -29042,7 +29043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2096/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2096/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -29142,7 +29143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2096/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2096/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -29242,7 +29243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2096/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2096/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -29342,7 +29343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2097/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2097/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -29442,7 +29443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2097/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2097/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -29542,7 +29543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2097/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2097/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -29642,7 +29643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2097/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2097/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -29742,7 +29743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2098/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2098/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -29842,7 +29843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2098/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2098/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -29942,7 +29943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2098/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2098/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -30042,7 +30043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2098/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2098/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -30142,7 +30143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2099/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2099/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -30242,7 +30243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2099/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2099/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -30342,7 +30343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2099/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2099/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -30442,7 +30443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2099/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2099/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -30542,7 +30543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2100/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2100/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -30642,7 +30643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2102/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2102/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -30742,7 +30743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2102/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2102/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -30842,7 +30843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2103/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2103/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -30942,7 +30943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2103/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2103/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -31042,7 +31043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2103/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2103/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -31142,7 +31143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2103/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2103/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -31242,7 +31243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2104/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2104/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -31342,7 +31343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2104/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2104/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -31442,7 +31443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2104/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2104/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -31542,7 +31543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2104/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2104/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -31642,7 +31643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2105/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2105/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -31742,7 +31743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2105/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2105/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -31842,7 +31843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2105/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2105/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -31942,7 +31943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2105/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2105/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -32042,7 +32043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2106/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2106/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -32142,7 +32143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2106/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2106/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -32242,7 +32243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2106/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2106/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -32342,7 +32343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2106/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2106/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -32442,7 +32443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2107/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2107/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -32542,7 +32543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2107/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2107/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -32642,7 +32643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2107/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2107/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -32742,7 +32743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2107/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2107/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -32842,7 +32843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2108/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2108/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -32942,7 +32943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2108/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2108/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -33042,7 +33043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2108/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2108/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -33142,7 +33143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2108/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2108/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -33242,7 +33243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2109/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2109/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -33342,7 +33343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2109/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2109/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -33442,7 +33443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2109/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2109/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -33542,7 +33543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2109/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2109/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -33642,7 +33643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2110/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2110/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -33742,7 +33743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2110/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2110/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -33842,7 +33843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2110/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2110/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -33942,7 +33943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2110/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2110/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -34042,7 +34043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2111/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2111/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -34142,7 +34143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2111/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2111/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -34242,7 +34243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2111/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2111/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -34342,7 +34343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2111/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2111/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -34442,7 +34443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2112/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2112/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -34542,7 +34543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2112/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2112/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -34642,7 +34643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2112/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2112/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -34742,7 +34743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2112/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2112/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -34842,7 +34843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2113/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2113/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -34942,7 +34943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2113/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2113/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -35042,7 +35043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2113/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2113/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -35142,7 +35143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2113/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2113/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -35242,7 +35243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2114/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2114/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -35342,7 +35343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2114/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2114/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -35442,7 +35443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2114/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2114/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -35542,7 +35543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2114/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2114/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -35642,7 +35643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2115/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2115/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -35742,7 +35743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2117/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2117/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -35842,7 +35843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2117/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2117/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -35942,7 +35943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2118/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2118/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -36042,7 +36043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2118/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2118/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -36142,7 +36143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2118/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2118/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -36242,7 +36243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2118/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2118/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -36342,7 +36343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2119/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2119/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -36442,7 +36443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2119/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2119/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -36542,7 +36543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2119/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2119/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -36642,7 +36643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2119/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2119/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -36742,7 +36743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2120/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2120/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -36842,7 +36843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2120/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2120/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -36942,7 +36943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2120/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2120/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -37042,7 +37043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2120/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2120/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -37142,7 +37143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2121/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2121/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -37242,7 +37243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2121/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2121/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -37342,7 +37343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2121/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2121/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -37442,7 +37443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2121/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2121/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -37542,7 +37543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2122/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2122/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -37642,7 +37643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2122/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2122/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -37742,7 +37743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2122/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2122/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -37842,7 +37843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2122/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2122/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -37942,7 +37943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2123/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2123/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -38042,7 +38043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2123/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2123/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -38142,7 +38143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2123/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2123/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -38242,7 +38243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2123/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2123/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -38342,7 +38343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2124/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2124/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -38442,7 +38443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2124/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2124/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -38542,7 +38543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2124/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2124/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -38642,7 +38643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2124/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2124/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -38742,7 +38743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2125/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2125/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -38842,7 +38843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2125/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2125/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -38942,7 +38943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2125/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2125/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -39042,7 +39043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2125/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2125/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -39142,7 +39143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2126/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2126/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -39242,7 +39243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2126/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2126/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -39342,7 +39343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2126/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2126/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -39442,7 +39443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2126/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2126/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -39542,7 +39543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2127/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2127/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -39642,7 +39643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2127/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2127/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -39742,7 +39743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2127/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2127/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -39842,7 +39843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2127/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2127/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -39942,7 +39943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2128/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2128/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -40042,7 +40043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2128/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2128/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -40142,7 +40143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2128/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2128/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -40242,7 +40243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2128/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2128/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -40342,7 +40343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2129/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2129/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -40442,7 +40443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2129/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2129/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -40542,7 +40543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2129/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2129/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -40642,7 +40643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2129/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2129/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -40742,7 +40743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2130/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2130/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -40842,7 +40843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2132/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2132/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -40942,7 +40943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2132/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2132/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -41042,7 +41043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2133/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2133/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -41142,7 +41143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2133/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2133/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -41242,7 +41243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2133/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2133/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -41342,7 +41343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2133/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2133/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -41442,7 +41443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2134/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2134/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -41542,7 +41543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2134/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2134/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -41642,7 +41643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2134/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2134/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -41742,7 +41743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2134/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2134/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -41842,7 +41843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2135/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2135/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -41942,7 +41943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2135/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2135/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -42042,7 +42043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2135/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2135/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -42142,7 +42143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2135/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2135/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -42242,7 +42243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2136/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2136/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -42342,7 +42343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2136/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2136/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -42442,7 +42443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2136/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2136/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -42542,7 +42543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2136/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2136/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -42642,7 +42643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2137/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2137/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -42742,7 +42743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2137/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2137/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -42842,7 +42843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2137/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2137/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -42942,7 +42943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2137/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2137/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -43042,7 +43043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2138/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2138/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -43142,7 +43143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2138/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2138/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -43242,7 +43243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2138/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2138/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -43342,7 +43343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2138/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2138/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -43442,7 +43443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2139/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2139/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -43542,7 +43543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2139/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2139/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -43642,7 +43643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2139/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2139/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -43742,7 +43743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2139/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2139/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -43842,7 +43843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2140/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2140/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -43942,7 +43943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2140/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2140/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -44042,7 +44043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2140/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2140/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -44142,7 +44143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2140/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2140/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -44242,7 +44243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2141/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2141/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -44342,7 +44343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2141/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2141/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -44442,7 +44443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2141/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2141/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -44542,7 +44543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2141/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2141/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -44642,7 +44643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2142/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2142/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -44742,7 +44743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2142/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2142/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -44842,7 +44843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2142/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2142/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -44942,7 +44943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2142/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2142/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -45042,7 +45043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2143/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2143/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -45142,7 +45143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2143/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2143/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -45242,7 +45243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2143/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2143/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -45342,7 +45343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2143/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2143/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -45442,7 +45443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2144/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2144/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -45542,7 +45543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2144/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2144/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -45642,7 +45643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2144/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2144/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -45742,7 +45743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2144/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2144/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -45842,7 +45843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2145/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2145/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -45942,7 +45943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2147/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2147/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -46042,7 +46043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2147/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2147/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -46142,7 +46143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2148/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2148/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -46242,7 +46243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2148/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2148/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -46342,7 +46343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2148/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2148/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -46442,7 +46443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2148/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2148/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -46542,7 +46543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2149/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2149/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -46642,7 +46643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2149/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2149/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -46742,7 +46743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2149/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2149/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -46842,7 +46843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2149/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2149/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -46942,7 +46943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2150/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2150/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -47042,7 +47043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2150/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2150/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -47142,7 +47143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2150/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2150/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -47242,7 +47243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2150/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2150/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -47342,7 +47343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2151/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2151/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -47442,7 +47443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2151/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2151/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -47542,7 +47543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2151/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2151/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -47642,7 +47643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2151/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2151/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -47742,7 +47743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2152/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2152/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -47842,7 +47843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2152/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2152/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -47942,7 +47943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2152/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2152/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -48042,7 +48043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2152/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2152/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -48142,7 +48143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2153/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2153/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -48242,7 +48243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2153/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2153/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -48342,7 +48343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2153/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2153/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -48442,7 +48443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2153/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2153/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -48542,7 +48543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2154/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2154/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -48642,7 +48643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2154/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2154/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -48742,7 +48743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2154/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2154/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -48842,7 +48843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2154/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2154/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -48942,7 +48943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2155/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2155/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -49042,7 +49043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2155/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2155/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -49142,7 +49143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2155/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2155/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -49242,7 +49243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2155/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2155/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -49342,7 +49343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2156/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2156/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -49442,7 +49443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2156/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2156/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -49542,7 +49543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2156/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2156/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -49642,7 +49643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2156/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2156/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -49742,7 +49743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2157/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2157/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -49842,7 +49843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2157/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2157/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -49942,7 +49943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2157/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2157/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -50042,7 +50043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2157/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2157/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -50142,7 +50143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2158/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2158/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -50242,7 +50243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2158/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2158/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -50342,7 +50343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2158/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2158/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -50442,7 +50443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2158/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2158/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -50542,7 +50543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2159/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2159/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -50642,7 +50643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2159/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2159/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -50742,7 +50743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2159/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2159/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -50842,7 +50843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2159/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2159/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -50942,7 +50943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2160/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2160/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -51042,7 +51043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2162/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2162/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -51142,7 +51143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2162/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2162/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -51242,7 +51243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2163/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2163/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -51342,7 +51343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2163/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2163/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -51442,7 +51443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2163/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2163/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -51542,7 +51543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2163/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2163/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -51642,7 +51643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2164/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2164/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -51742,7 +51743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2164/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2164/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -51842,7 +51843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2164/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2164/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -51942,7 +51943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2164/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2164/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -52042,7 +52043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2165/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2165/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -52142,7 +52143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2165/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2165/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -52242,7 +52243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2165/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2165/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -52342,7 +52343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2165/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2165/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -52442,7 +52443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2166/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2166/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -52542,7 +52543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2166/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2166/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -52642,7 +52643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2166/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2166/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -52742,7 +52743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2166/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2166/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -52842,7 +52843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2167/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2167/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -52942,7 +52943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2167/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2167/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -53042,7 +53043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2167/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2167/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -53142,7 +53143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2167/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2167/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -53242,7 +53243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2168/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2168/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -53342,7 +53343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2168/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2168/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -53442,7 +53443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2168/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2168/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -53542,7 +53543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2168/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2168/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -53642,7 +53643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2169/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2169/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -53742,7 +53743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2169/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2169/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -53842,7 +53843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2169/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2169/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -53942,7 +53943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2169/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2169/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -54042,7 +54043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2170/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2170/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -54142,7 +54143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2170/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2170/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -54242,7 +54243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2170/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2170/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -54342,7 +54343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2170/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2170/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -54442,7 +54443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2171/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2171/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -54542,7 +54543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2171/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2171/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -54642,7 +54643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2171/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2171/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -54742,7 +54743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2171/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2171/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -54842,7 +54843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2172/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2172/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -54942,7 +54943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2172/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2172/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -55042,7 +55043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2172/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2172/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -55142,7 +55143,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2172/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2172/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -55242,7 +55243,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2173/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2173/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -55342,7 +55343,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2173/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2173/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -55442,7 +55443,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2173/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2173/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -55542,7 +55543,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2173/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2173/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -55642,7 +55643,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2174/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2174/03/11 (TEST regexps) ---
   cr X1  3.00р
@@ -55742,7 +55743,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2174/06/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2174/06/11 (TEST regexps) ---
   cr X1  3.00р
@@ -55842,7 +55843,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2174/09/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2174/09/11 (TEST regexps) ---
   cr X1  3.00р
@@ -55942,7 +55943,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2174/12/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2174/12/11 (TEST regexps) ---
   cr X1  3.00р
@@ -56042,7 +56043,7 @@ periodic testPeriodic = every 3 days do
   dr Y1  1.50$
 
 @ 2175/03/10 reconciliation test.
-reconciliate Z4 120.00$
+reconciliate Z1 120.00$
 
 @ 2175/03/11 (TEST regexps) ---
   cr X1  3.00р

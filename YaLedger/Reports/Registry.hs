@@ -66,7 +66,7 @@ registry qry options mbPath = do
     groupInternal <- case [val | RInternal val <- options] of
                        [] -> return Nothing
                        (Nothing:_) -> return $ Just coa
-                       (Just grp:_) -> Just <$> getCoAItem (gets lsPosition) (gets lsCoA) (mkPath grp)
+                       (Just grp:_) -> Just <$> getCoAItem (mkPath grp)
     whenJust groupInternal $ \grp ->
         $debug $ "Restricting to internal entries of group:\n" ++ show grp
     case coa of

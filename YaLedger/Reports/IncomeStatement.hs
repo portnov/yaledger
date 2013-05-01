@@ -33,9 +33,7 @@ anyAccount fn coa = not $ isEmptyTree $ filterLeafs fn coa
 
 incomeStatement' qry options mbPath = do
     opts <- gets lsConfig
-    coa <- case mbPath of
-              Nothing   -> gets lsCoA
-              Just path -> getCoAItem (gets lsPosition) (gets lsCoA) path
+    coa <- getCoAItemL mbPath
     
     $debug $ "Use incomes query: " ++ showA (incomeAccounts opts)
     $debug $ "Use expences query: " ++ showA (expenceAccounts opts)

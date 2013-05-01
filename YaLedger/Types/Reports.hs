@@ -135,7 +135,7 @@ instance ReportParameter AnyAccount where
   parseParameter = do
     s <- word
     liftL $ 
-      getAccount (gets lsPosition) (gets lsCoA) (mkPath s)
+      getAccount (mkPath s)
         `catchWithSrcLoc`
           (\l (e :: NotAnAccount) ->
                rethrow l (InvalidCmdLine $ show e))

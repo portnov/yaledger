@@ -52,5 +52,5 @@ getCoAItemL :: Throws InvalidPath l
             => Maybe Path
             -> Ledger l ChartOfAccounts
 getCoAItemL Nothing = gets lsCoA
-getCoAItemL (Just path) = getCoAItem (gets lsPosition) (gets lsCoA) path
+getCoAItemL (Just path) = getCoAItem path
 
