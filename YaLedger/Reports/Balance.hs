@@ -35,11 +35,11 @@ instance ReportClass Balances where
 commonFlags :: [BOptions] -> [CommonFlags]
 commonFlags opts = [flag | Common flag <- opts]
 
-showI :: Query -> [String]
+showI :: Query -> [TextOutput]
 showI qry = [showD "now" (qEnd qry)]
   where
-    showD s Nothing = s
-    showD _ (Just date) = showDate date
+    showD s Nothing = output s
+    showD _ (Just date) = output $ showDate date
 
 selectBalance options bi
   | (CLedgerBalances `elem` options) || (CBothBalances `elem` options) = maybe 0 amountValue (biLedger bi)
@@ -56,7 +56,7 @@ balance queries options mbPath = (do
       Leaf {..} -> byOneAccount queries (commonFlags options) leafData
       _         -> if Twoside `elem` options
                      then forM_ queries $ \qry -> do
-                              wrapIO $ putStrLn $ showInterval qry
+                              wrapIO $ putTextLn $ showInterval qry
                               twosideReport qry options coa
                      else byGroup queries (commonFlags options) coa )
   `catchWithSrcLoc`
@@ -70,9 +70,9 @@ byOneAccount queries options acc = do
     let format = case needCSV options of
                    Nothing  -> tableColumns ASCII
                    Just sep -> tableColumns (CSV sep)
-    wrapIO $ putStr $ unlines $
-             format [(["DATE"],    ALeft, map showMaybeDate ends),
-                     (["BALANCE"], ARight, map show results)]
+    wrapIO $ putTextLn $ unlinesText $
+             format [([output "DATE"],    ALeft, map showMaybeDate ends),
+                     ([output "BALANCE"], ARight, map prettyPrint results)]
 
 byGroup queries options coa = do
     let btype = if CBothBalances `elem` options
@@ -91,10 +91,10 @@ byGroup queries options coa = do
           | otherwise = filteredResults
     let showQry = showMaybeDate . qEnd
     let format = case needCSV options of
-                   Nothing  -> showTreeList ["ACCOUNT"] showI showBI options
-                   Just sep -> \n qs rs -> unlines $ tableColumns (CSV sep) (treeTable showQry showBI options n qs rs)
+                   Nothing  -> \n qs rs -> unlinesText $ showTreeList [output "ACCOUNT"] showI showBI options n qs rs
+                   Just sep -> \n qs rs -> unlinesText $ tableColumns (CSV sep) (treeTable showQry showBI options n qs rs)
 
-    wrapIO $ putStr $ format (length queries) queries results'
+    wrapIO $ putTextLn $ format (length queries) queries results'
 
 twosideReport qry options coa = do
     opts <- gets lsConfig
@@ -124,22 +124,22 @@ twosideReport qry options coa = do
                   let structAs = showTreeStructure as
                       structLs = showTreeStructure ls
                       deltaLen = length structAs - length structLs
-                      empties = replicate (abs deltaLen) ""
+                      empties = replicate (abs deltaLen) emptyText
                       emptyAs = if deltaLen > 0 then [] else empties
                       emptyLs = if deltaLen < 0 then [] else empties
                   in case needCSV flags of
                        Nothing  ->  tableColumns ASCII $
-                                                   [(["ACCOUNT"], ALeft,  structAs ++ emptyAs),
-                                                    (["ASSETS"],  ARight, balColumn as ++ emptyAs),
-                                                    (["ACCOUNT"], ALeft, structLs ++ emptyLs),
-                                                    (["LIABILITIES"], ARight, balColumn ls ++ emptyLs)]
+                                                   [([output "ACCOUNT"], ALeft,  structAs ++ emptyAs),
+                                                    ([output "ASSETS"],  ARight, balColumn as ++ emptyAs),
+                                                    ([output "ACCOUNT"], ALeft, structLs ++ emptyLs),
+                                                    ([output "LIABILITIES"], ARight, balColumn ls ++ emptyLs)]
                        Just sep -> tableColumns (CSV sep) $
-                                                   [(["ACCOUNT"], ALeft,  structAs ++ emptyAs),
-                                                    (["ASSETS"],  ARight, balColumn as ++ emptyAs),
-                                                    (["ACCOUNT"], ALeft, structLs ++ emptyLs),
-                                                    (["LIABILITIES"], ARight, balColumn ls ++ emptyLs)]
+                                                   [([output "ACCOUNT"], ALeft,  structAs ++ emptyAs),
+                                                    ([output "ASSETS"],  ARight, balColumn as ++ emptyAs),
+                                                    ([output "ACCOUNT"], ALeft, structLs ++ emptyLs),
+                                                    ([output "LIABILITIES"], ARight, balColumn ls ++ emptyLs)]
 
-            wrapIO $ putStr $ unlines $ format
+            wrapIO $ putTextLn $ unlinesText $ format
                                           (prepare $ filtered assetsResults)
                                           (prepare $ filtered liabilitiesResults)
 

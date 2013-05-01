@@ -1,21 +1,23 @@
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE MultiParamTypeClasses, OverloadedStrings #-}
 module YaLedger.Output.Tables where
+
+import YaLedger.Output.ANSI
 
 data Align = ALeft | ACenter | ARight
   deriving (Eq, Show)
 
-type Column = [String]
+type Column = [TextOutput]
 type Row = [Column]
 
 class TableFormat a where
-  tableColumns :: a -> [([String], Align, Column)] -> Column
+  tableColumns :: a -> [([TextOutput], Align, Column)] -> Column
 
-  tableGrid :: a -> [(Align, [String])] -> [Row] -> Column
+  tableGrid :: a -> [(Align, [TextOutput])] -> [Row] -> Column
 
   maxFieldWidth :: a -> Maybe Int
   maxFieldWidth _ = Nothing
 
-  showFooter :: a -> String -> Column
+  showFooter :: a -> TextOutput -> Column
   showFooter _ s = [s]
 
 data TableColumn a = TableColumn {
@@ -31,6 +33,6 @@ padColumns columns =
   let m = maximum (map length columns)
       padE n x
         | length x >= n = x
-        | otherwise = x ++ replicate (n - length x) ""
+        | otherwise = x ++ replicate (n - length x) emptyText
   in  map (padE m) columns
 

@@ -1,4 +1,4 @@
-{-# LANGUAGE GADTs, FlexibleContexts, MultiParamTypeClasses #-}
+{-# LANGUAGE GADTs, FlexibleContexts, MultiParamTypeClasses, OverloadedStrings #-}
 
 module YaLedger.Reports.Common where
 
@@ -6,10 +6,12 @@ import Data.Maybe
 import Data.List
 import Data.Decimal
 import Data.Dates
+import Data.String
 import Text.Printf
 
 import YaLedger.Types
 import YaLedger.Output
+import YaLedger.Output.ANSI
 import YaLedger.Kernel
 
 data CommonFlags =
@@ -94,17 +96,20 @@ trimPath (Just n) ps =
         [] -> last ps
         xs -> intercalate "/" (reverse $ map fst xs)
 
-showDouble :: Bool -> Currency -> Double -> String
+showDouble :: Bool -> Currency -> Double -> TextOutput
 showDouble showCurrencies c x =
   let fmt = "%0." ++ show (cPrecision c) ++ "f"
-  in printf fmt x ++
-      if showCurrencies
-        then show c
-        else ""
+      str = printf fmt x ++
+              if showCurrencies
+                then show c
+                else ""
+  in  if x < 0
+        then [Fragment (color Red) str]
+        else output str
 
-treeTable :: (q -> String) -> ([CommonFlags] -> a -> String) -> [CommonFlags] -> Int -> [q] -> Tree [a] [a] -> [(Column, Align, Column)]
+treeTable :: (q -> TextOutput) -> ([CommonFlags] -> a -> TextOutput) -> [CommonFlags] -> Int -> [q] -> Tree [a] [a] -> [(Column, Align, Column)]
 treeTable showQry showX options n qrys tree =
-  let paths = map (intercalate "/") $ getPaths tree
+  let paths = map fromString $ map (intercalate "/") $ getPaths tree
       hideGroups = CHideGroups `elem` options
       cols = [map (\l -> showX options (l !! i)) (getNodes tree) | i <- [0..n-1]]
       getPaths = if hideGroups then allLeafPaths else allPaths
@@ -112,11 +117,11 @@ treeTable showQry showX options n qrys tree =
   in  (["ACCOUNT"], ALeft, paths):
       [([showQry qry], ALeft, col) | (col, qry) <- zip cols qrys]
    
-showTreeList :: Show a => Column -> (q -> [String]) -> ([CommonFlags] -> a -> String) -> [CommonFlags] -> Int -> [q] -> Tree [a] [a] -> String
+showTreeList :: Show a => Column -> (q -> [TextOutput]) -> ([CommonFlags] -> a -> TextOutput) -> [CommonFlags] -> Int -> [q] -> Tree [a] [a] -> Column
 showTreeList title showQry showX options n qrys tree =
   let struct = showTreeStructure tree
       cols = [map (\l -> showX options (l !! i)) (allNodes tree) | i <- [0..n-1]]
-  in  unlines $ tableColumns ASCII $
+  in  tableColumns ASCII $
               (title, ALeft, struct):
               [(showQry qry, ARight, col) | (col,qry) <- zip cols qrys]
 

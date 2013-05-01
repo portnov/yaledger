@@ -20,6 +20,7 @@ import YaLedger.Types.Ledger
 import YaLedger.Types.Transactions
 import YaLedger.Types.Monad
 import YaLedger.Output.Pretty
+import YaLedger.Output.ANSI
 import YaLedger.Kernel.Common
 import YaLedger.Kernel.STM
 
@@ -96,7 +97,7 @@ class (ReportParameter (Parameters a)) => ReportClass a where
             -> Ledger l ()
   runReportL report queries opts params =
       forM_ queries $ \qry -> do
-          wrapIO $ putStrLn $ showInterval qry
+          wrapIO $ putTextLn $ showInterval qry
           runReport report qry opts params
 
   -- | Description of report and it's parameters/options.
@@ -171,14 +172,14 @@ runAReport queries cmdline (Report r) = do
                    throw (InvalidCmdLine $ concat errs ++ message)
       runReportL r queries options (fst params)
 
-showMaybeDate :: Maybe DateTime -> String
-showMaybeDate Nothing = "NA"
+showMaybeDate :: Maybe DateTime -> TextOutput
+showMaybeDate Nothing = output "NA"
 showMaybeDate (Just date) = prettyPrint date
 
-showInterval :: Query -> String
+showInterval :: Query -> TextOutput
 showInterval qry =
-    "From " ++ showMD "the begining" (qStart qry) ++ " till " ++ showMD "now" (qEnd qry)
+    "From " <> showMD "the begining" (qStart qry) <> " till " <> showMD "now" (qEnd qry)
   where
-    showMD s Nothing = s
+    showMD s Nothing = output s
     showMD _ (Just date) = prettyPrint date
 

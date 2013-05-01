@@ -7,8 +7,10 @@ import Control.Monad
 import Data.Maybe
 import Data.Either
 import Data.List
+import Data.String
 
 import YaLedger.Output.Tables
+import YaLedger.Output.ANSI
 import YaLedger.Output.ASCII
 
 type Path = [String]
@@ -31,34 +33,36 @@ instance (Eq n, Eq a) => Eq (Tree n a) where
 
   _ == _ = False
 
-showTree :: (Show n, Show a) => Tree n a -> [String]
+showTree :: (Show n, Show a) => Tree n a -> [TextOutput]
 showTree tree =
-    zipS "" (alignMax ALeft $ showTreeStructure tree)
+    zipS emptyText (alignMax ALeft $ showTreeStructure tree)
             (alignMax ARight $ values tree)
   where
-    values (Branch {..}) = show branchData: concatMap values branchChildren
-    values (Leaf {..})   = [show leafData]
+    values (Branch {..}) = fromString (show branchData): concatMap values branchChildren
+    values (Leaf {..})   = [fromString $ show leafData]
 
-showTreeStructure :: (Show n, Show a) => Tree n a -> [String]
+showTreeStructure :: (Show n, Show a) => Tree n a -> [TextOutput]
 showTreeStructure tree = struct [True] tree
   where
     struct (b:bs) (Branch {nodeName = name, branchData = n, branchChildren = []}) =
-        [concatMap bar (reverse bs) ++ glyph b ++ name ++ ": ∅"]
+        [concatMap bar (reverse bs) <> glyph b <> name <> ": ∅"]
     struct (b:bs) (Branch {nodeName = name, branchData = n, branchChildren = children}) =
-        (concatMap bar (reverse bs) ++ glyph b ++ name ++ ": "):
+        (concatMap bar (reverse bs) <> glyph b <> name <> ": "):
          (concatMap (struct (False:b:bs)) $ init children) ++
          (struct (True:b:bs) $ last children)
     struct (b:bs) (Leaf {nodeName = name, leafData = a}) =
-        [concatMap bar (reverse bs) ++ glyph b ++ name ++ ": "]
+        [concatMap bar (reverse bs) <> glyph b <> name <> ": "]
 
-    bar True  = "  "
-    bar False = "│ "
+    bar :: Bool -> TextOutput
+    bar True  = fromString "  "
+    bar False = fromString "│ "
 
-    glyph True  = "╰—□ "
-    glyph False = "├—□ "
+    glyph :: Bool -> TextOutput
+    glyph True  = fromString "╰—□ "
+    glyph False = fromString "├—□ "
 
 instance (Show n, Show a) => Show (Tree n a) where
-  show tree = unlines $ showTree tree
+  show tree = unlines $ map toString $ showTree tree
 
 type Forest n a = [Tree n a]
 

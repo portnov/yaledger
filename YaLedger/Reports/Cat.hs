@@ -28,7 +28,7 @@ instance ReportClass Cat where
 cat qry = do
   records <- gets lsLoadedRecords
   forM_ (filter (checkQuery qry) records) $ \record ->
-      wrapIO $ putStrLn $ prettyPrint record
+      wrapIO $ putTextLn $ prettyPrint record
 
 csvRecord :: ChartOfAccounts -> Ext Record -> Maybe Row
 csvRecord coa (Ext {getDate=date, getContent=rec}) = go date rec
@@ -46,10 +46,10 @@ catCSV sep qry = do
   allRecords <- gets lsLoadedRecords
   let records = filter (checkQuery qry) allRecords
       rows = mapMaybe (csvRecord coa) allRecords
-  wrapIO $ putStrLn $ unlines $
-           tableGrid (CSV sep) [(ALeft, ["DATE"]),
-                                (ALeft, ["CREDIT ACCOUNT"]),
-                                (ALeft, ["CREDIT AMOUNT"]),
-                                (ALeft, ["DEBIT ACCOUNT"]),
-                                (ALeft, ["DEBIT AMOUNT"])] rows
+  wrapIO $ putTextLn $ unlinesText $
+           tableGrid (CSV sep) [(ALeft, [output "DATE"]),
+                                (ALeft, [output "CREDIT ACCOUNT"]),
+                                (ALeft, [output "CREDIT AMOUNT"]),
+                                (ALeft, [output "DEBIT ACCOUNT"]),
+                                (ALeft, [output "DEBIT AMOUNT"])] rows
 

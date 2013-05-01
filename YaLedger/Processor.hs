@@ -55,7 +55,7 @@ processEntry :: forall l.
 processEntry date tranID pos attrs uentry = do
   -- First, check the entry
   entry@(CEntry dt cr rd) <- checkEntry date attrs uentry
-  $debug $ "Processing entry (" ++ show date ++ "):\n" ++ prettyPrint uentry
+  $debug $ "Processing entry (" ++ show date ++ "):\n" ++ pPrint uentry
   queue <- gets lsTranQueue
 
   let useHoldIfNeeded :: HoldOperations t => HoldUsage -> Posting Decimal t -> Atomic l ()
@@ -133,7 +133,7 @@ getNextP p doDelete = do
         return (Just x)
 
 debugPos pos r =
-  lift $ L.debug "YaLedger.Processor" $ "Record " ++ show (extID r) ++ ":\n" ++ prettyPrint r ++ "  at " ++ show pos
+  lift $ L.debug "YaLedger.Processor" $ "Record " ++ show (extID r) ++ ":\n" ++ pPrint r ++ "  at " ++ show pos
 
 insertRule new [] = [new]
 insertRule new@(name, _, _) list = go list list
@@ -196,7 +196,7 @@ processRecord = do
 
     Just rec@(Ext _ _ pos _ _) -> do
       lift $ setPos pos
-      lift $ $warning $ "Unknown record:\n" ++ prettyPrint rec ++ "\n  at " ++ show pos
+      lift $ $warning $ "Unknown record:\n" ++ pPrint rec ++ "\n  at " ++ show pos
       return []
 
 periodic name (Periodic x _ _) = name == x

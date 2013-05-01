@@ -85,11 +85,11 @@ registry qry options mbPath = do
                            (l:_) -> [IDescription l]
                            _ -> []
           let format = case [s | CCSV s <- flags] of
-                         []    -> showEntriesBalances' bqry showCurrs infoCols fullCoA ASCII totals
-                         (x:_) -> showEntriesBalances' bqry showCurrs infoCols fullCoA (CSV x) totals
+                         []    -> showEntriesBalances' bqry flags infoCols fullCoA ASCII totals
+                         (x:_) -> showEntriesBalances' bqry flags infoCols fullCoA (CSV x) totals
           if RDot `elem` options
             then wrapIO $ putStr $ unlines $ formatDot fullCoA $ mapMaybe (causedBy . getContent) $ nub $ balances'
-            else wrapIO $ putStr $ format (nub $ balances')
+            else wrapIO $ putTextLn $ format (nub $ balances')
       Branch {} -> do
           let accounts = map snd $ leafs coa
           allEntries <- forM accounts getEntries
@@ -98,11 +98,11 @@ registry qry options mbPath = do
                            (l:_) -> [IDescription l]
                            _ -> [IRatesDifference]
           let format = case [s | CCSV s <- flags] of
-                         []    -> showEntries' fullCoA ASCII   totals showCurrs infoCols 
-                         (x:_) -> showEntries' fullCoA (CSV x) totals showCurrs infoCols
+                         []    -> showEntries' fullCoA ASCII   totals flags infoCols 
+                         (x:_) -> showEntries' fullCoA (CSV x) totals flags infoCols
           if RDot `elem` options
             then wrapIO $ putStr $ unlines $ formatDot fullCoA $ map getContent $ nub $ sort $ entries
-            else wrapIO $ putStr $ format (nub $ sort $ entries)
+            else wrapIO $ putTextLn $ format (nub $ sort $ entries)
 
 formatDot :: ChartOfAccounts -> [Entry Decimal Checked] -> [String]
 formatDot coa entries =

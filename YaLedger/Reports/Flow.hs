@@ -116,27 +116,27 @@ flowStats coa qry flags showStats asDot grps = do
                    Nothing -> tableColumns ASCII
                    Just sep -> tableColumns (CSV sep)
         debitAcc  (x,_,_) = case needCSV flags of
-                             Nothing -> maybe "" (trimPath (maxFieldWidth ASCII)) $ accountFullPath (getID x) coa
-                             Just _  -> maybe "" (intercalate "/") $ accountFullPath (getID x) coa
+                             Nothing -> output $ maybe "" (trimPath (maxFieldWidth ASCII)) $ accountFullPath (getID x) coa
+                             Just _  -> output $ maybe "" (intercalate "/") $ accountFullPath (getID x) coa
         creditAcc (_,x,_) = case needCSV flags of
-                             Nothing -> maybe "" (trimPath (maxFieldWidth ASCII)) $ accountFullPath (getID x) coa
-                             Just _  -> maybe "" (intercalate "/") $ accountFullPath (getID x) coa
+                             Nothing -> output $ maybe "" (trimPath (maxFieldWidth ASCII)) $ accountFullPath (getID x) coa
+                             Just _  -> output $ maybe "" (intercalate "/") $ accountFullPath (getID x) coa
         thrd (_,_,x) = x
         showF fn (_,crAcc,x) = showDouble showCcy (getCurrency crAcc) (fn x)
     if asDot
       then wrapIO $ putStr $ unlines $ formatDot srSum double2int coa rows
-      else wrapIO $ putStr $ unlines $
-             format $ [(["DEBIT"], ALeft, map debitAcc rows),
-                       (["CREDIT"], ALeft, map creditAcc rows),
-                       (["SUM"], ARight, map (showF srSum) rows)] ++
+      else wrapIO $ putTextLn $ unlinesText $
+             format $ [([output "DEBIT"], ALeft, map debitAcc rows),
+                       ([output "CREDIT"], ALeft, map creditAcc rows),
+                       ([output "SUM"], ARight, map (showF srSum) rows)] ++
                        if showStats
-                         then [(["MIN"], ARight, map (showF srMin) rows),
-                               (["Q1"],  ARight, map (showF srQ1)  rows),
-                               (["MEDIAN"], ARight, map (showF srMedian) rows),
-                               (["Q3"],  ARight, map (showF srQ3)  rows),
-                               (["MAX"], ARight, map (showF srMax) rows),
-                               (["AVG"], ARight, map (showF srAvg) rows),
-                               (["SD"],  ARight, map (showF srSd)  rows)]
+                         then [([output "MIN"], ARight, map (showF srMin) rows),
+                               ([output "Q1"],  ARight, map (showF srQ1)  rows),
+                               ([output "MEDIAN"], ARight, map (showF srMedian) rows),
+                               ([output "Q3"],  ARight, map (showF srQ3)  rows),
+                               ([output "MAX"], ARight, map (showF srMax) rows),
+                               ([output "AVG"], ARight, map (showF srAvg) rows),
+                               ([output "SD"],  ARight, map (showF srSd)  rows)]
                          else []
 
 double2int :: Double -> Integer

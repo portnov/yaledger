@@ -65,7 +65,7 @@ closeHold :: forall t l.
            -> Posting Decimal t             -- ^ Hold posting
            -> Atomic l ()
 closeHold date mbEntry op qry posting = do
-    $infoSTM $ "Closing hold: " ++ prettyPrint posting
+    $infoSTM $ "Closing hold: " ++ pPrint posting
     let account = postingAccount' posting
         history = getHolds account
     holds <- readIOList history

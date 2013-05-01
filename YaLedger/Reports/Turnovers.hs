@@ -129,7 +129,7 @@ turnoversL queries options mbPath = do
     case coa of
       Leaf {..} -> byOneAccount queries options leafData
       _ -> forM_ queries $ \qry -> do
-                wrapIO $ putStrLn $ showInterval qry
+                wrapIO $ putTextLn $ showInterval qry
                 turnovers qry options coa
 
 byOneAccount queries options account = do
@@ -159,18 +159,18 @@ byOneAccount queries options account = do
   let format = case [s | TCSV s <- options] of
                  []    -> tableColumns ASCII
                  (x:_) -> tableColumns (CSV x)
-  wrapIO $ putStrLn $ unlines $ format $
-      [(["FROM"], ALeft, map showMaybeDate starts),
-       (["TO"],   ALeft, map showMaybeDate ends),
-       (["BALANCE C/F"], ARight, map show inc),
-       (["DEBIT"],       ARight, map show debits),
-       (["CREDIT"],      ARight, map show credits),
-       (["BALANCE B/D"], ARight, map show out)] ++
+  wrapIO $ putTextLn $ unlinesText $ format $
+      [([output "FROM"], ALeft, map showMaybeDate starts),
+       ([output "TO"],   ALeft, map showMaybeDate ends),
+       ([output "BALANCE C/F"], ARight, map prettyPrint inc),
+       ([output "DEBIT"],       ARight, map prettyPrint debits),
+       ([output "CREDIT"],      ARight, map prettyPrint credits),
+       ([output "BALANCE B/D"], ARight, map prettyPrint out)] ++
       (if calcTotals
-         then [(["TOTALS"], ARight, map (show . fromJust) totals)]
+         then [([output "TOTALS"], ARight, map (prettyPrint . fromJust) totals)]
          else []) ++
       (if calcSaldo
-         then [(["SALDO"],  ARight, map (show . fromJust) saldo)]
+         then [([output "SALDO"],  ARight, map (prettyPrint . fromJust) saldo)]
          else [])
 
 turnovers qry options coa = do
@@ -187,7 +187,7 @@ turnovers qry options coa = do
                 else tree
   let struct = case [s | TCSV s <- options] of
                  [] -> showTreeStructure tree'
-                 _  -> map (intercalate "/") (allPaths tree')
+                 _  -> map (output . intercalate "/") (allPaths tree')
       nodes = allNodes tree'
       credits = map trCredit nodes
       debits  = map trDebit  nodes
@@ -198,16 +198,16 @@ turnovers qry options coa = do
   let format = case [s | TCSV s <- options] of
                  []    -> tableColumns ASCII
                  (x:_) -> tableColumns (CSV x)
-  wrapIO $ putStrLn $ unlines $ format $
-      [(["ACCOUNT"],     ALeft, struct),
-       (["BALANCE C/F"], ARight, map show inc),
-       (["DEBIT"],       ARight, map show debits),
-       (["CREDIT"],      ARight, map show credits),
-       (["BALANCE B/D"], ARight,  map show out)] ++
+  wrapIO $ putTextLn $ unlinesText $ format $
+      [([output "ACCOUNT"],     ALeft, struct),
+       ([output "BALANCE C/F"], ARight, map prettyPrint inc),
+       ([output "DEBIT"],       ARight, map prettyPrint debits),
+       ([output "CREDIT"],      ARight, map prettyPrint credits),
+       ([output "BALANCE B/D"], ARight,  map prettyPrint out)] ++
       (if calcTotals
-         then [(["TOTALS"], ARight, map (show . fromJust) totals)]
+         then [([output "TOTALS"], ARight, map (prettyPrint . fromJust) totals)]
          else []) ++
       (if calcSaldo
-         then [(["SALDO"],  ARight, map (show . fromJust) saldo)]
+         then [([output "SALDO"],  ARight, map (prettyPrint . fromJust) saldo)]
          else [])
                   

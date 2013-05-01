@@ -33,11 +33,11 @@ instance ReportClass Saldo where
 commonFlags :: [SOptions] -> [CommonFlags]
 commonFlags opts = [flag | Common flag <- opts]
 
-showI :: Query -> [String]
-showI qry = [showD "beginning" (qStart qry), "...", showD "now" (qEnd qry)]
+showI :: Query -> [TextOutput]
+showI qry = [showD "beginning" (qStart qry), output "...", showD "now" (qEnd qry)]
   where
-    showD s Nothing = s
-    showD _ (Just date) = showDate date
+    showD s Nothing = output s
+    showD _ (Just date) = output $ showDate date
 
 getSaldo queries options mbPath = (do
     let flags = commonFlags options
@@ -46,7 +46,7 @@ getSaldo queries options mbPath = (do
       Leaf {..} -> byOneAccount queries flags leafData
       _         -> if Twoside `elem` options
                      then forM_ queries $ \qry -> do
-                              wrapIO $ putStrLn $ showInterval qry
+                              wrapIO $ putTextLn $ showInterval qry
                               twosideReport qry flags coa
                      else byGroup queries flags coa )
   `catchWithSrcLoc`
@@ -84,12 +84,12 @@ byOneAccount queries options acc = do
                    Nothing  -> tableColumns ASCII
                    Just sep -> tableColumns (CSV sep)
     let footer = case needCSV options of
-                   Nothing -> ["    TOTALS: " ++ show totals ++ show (getCurrency acc)]
+                   Nothing -> [output "    TOTALS: " <> prettyPrint totals <> show (getCurrency acc)]
                    _ -> []
-    wrapIO $ putStr $ unlines $
-             format [(["FROM"],    ALeft, map showMaybeDate starts),
-                     (["TO"],      ALeft, map showMaybeDate ends),
-                     (["BALANCE"], ARight, map (showAmt options) $ prepare results)] ++ footer
+    wrapIO $ putTextLn $ unlinesText $
+             format [([output "FROM"],    ALeft, map showMaybeDate starts),
+                     ([output "TO"],      ALeft, map showMaybeDate ends),
+                     ([output "BALANCE"], ARight, map (showAmt options) $ prepare results)] ++ footer
 
 byGroup queries options coa = do
     results <- treeSaldos queries coa
@@ -103,10 +103,10 @@ byGroup queries options coa = do
                      else results
     let hideGroups = CHideGroups `elem` options
     let format = case needCSV options of
-                   Nothing  -> showTreeList ["", "ACCOUNT", ""] showI (const show) options
-                   Just sep -> \n qs rs -> unlines $ tableColumns (CSV sep) (treeTable showInterval showAmt options n qs rs)
+                   Nothing  -> \n qs rs -> unlinesText $ showTreeList [emptyText, output "ACCOUNT", emptyText] showI (const prettyPrint) options n qs rs
+                   Just sep -> \n qs rs -> unlinesText $ tableColumns (CSV sep) (treeTable showInterval showAmt options n qs rs)
 
-    wrapIO $ putStr $ format (length queries) queries (prepare results')
+    wrapIO $ putTextLn $ format (length queries) queries (prepare results')
 
 twosideReport qry options coa = do
     opts <- gets lsConfig
@@ -127,27 +127,27 @@ twosideReport qry options coa = do
       else do
             assetsResults      <- treeSaldos [qry] assets
             liabilitiesResults <- treeSaldos [qry] liabilities
-            let balColumn rs = map (\l -> show (head l)) (allNodes rs)
+            let balColumn rs = map (\l -> prettyPrint (head l)) (allNodes rs)
             let format as ls =
                   let structAs = showTreeStructure as
                       structLs = showTreeStructure ls
                       deltaLen = length structAs - length structLs
-                      empties = replicate (abs deltaLen) ""
+                      empties = replicate (abs deltaLen) emptyText
                       emptyAs = if deltaLen > 0 then [] else empties
                       emptyLs = if deltaLen < 0 then [] else empties
                   in case needCSV options of
                        Nothing  ->  tableColumns ASCII $
-                                                   [(["ACCOUNT"], ALeft,  structAs ++ emptyAs),
-                                                    (["ASSETS"],  ARight, balColumn as ++ emptyAs),
-                                                    (["ACCOUNT"], ALeft, structLs ++ emptyLs),
-                                                    (["LIABILITIES"], ARight, balColumn ls ++ emptyLs)]
+                                                   [([output "ACCOUNT"], ALeft,  structAs ++ emptyAs),
+                                                    ([output "ASSETS"],  ARight, balColumn as ++ emptyAs),
+                                                    ([output "ACCOUNT"], ALeft, structLs ++ emptyLs),
+                                                    ([output "LIABILITIES"], ARight, balColumn ls ++ emptyLs)]
                        Just sep -> tableColumns (CSV sep) $
-                                                   [(["ACCOUNT"], ALeft,  structAs ++ emptyAs),
-                                                    (["ASSETS"],  ARight, balColumn as ++ emptyAs),
-                                                    (["ACCOUNT"], ALeft, structLs ++ emptyLs),
-                                                    (["LIABILITIES"], ARight, balColumn ls ++ emptyLs)]
+                                                   [([output "ACCOUNT"], ALeft,  structAs ++ emptyAs),
+                                                    ([output "ASSETS"],  ARight, balColumn as ++ emptyAs),
+                                                    ([output "ACCOUNT"], ALeft, structLs ++ emptyLs),
+                                                    ([output "LIABILITIES"], ARight, balColumn ls ++ emptyLs)]
 
-            wrapIO $ putStr $ unlines $ format
+            wrapIO $ putTextLn $ unlinesText $ format
                                           (filtered $ prepare assetsResults)
                                           (filtered $ prepare liabilitiesResults)
 

@@ -42,18 +42,18 @@ showHold coa fmt (Ext {getDate = date, getContent = (Hold posting cld)}) =
    [prettyPrint (getAmount posting)],
    [showMaybeDate cld]]
 
-showSign (CPosting {}) = "CR"
-showSign (DPosting {}) = "DR"
+showSign (CPosting {}) = output "CR"
+showSign (DPosting {}) = output "DR"
 
 holdsTable coa fmt holds =
   let showH = either (showHold coa fmt) (showHold coa fmt)
       list = map showH holds
-  in  unlines $
-      tableGrid fmt [(ALeft, ["DATE"]),
-                     (ACenter, ["SIGN"]),
-                     (ALeft, ["ACCOUNT"]),
-                     (ARight, ["AMOUNT"]),
-                     (ALeft, ["CLOSE"]) ] list
+  in  unlinesText $
+      tableGrid fmt [(ALeft,   [output "DATE"]),
+                     (ACenter, [output "SIGN"]),
+                     (ALeft,   [output "ACCOUNT"]),
+                     (ARight,  [output "AMOUNT"]),
+                     (ALeft,   [output "CLOSE"]) ] list
 
 showHolds' qry options account = do
   fullCoA <- gets lsCoA
@@ -76,5 +76,5 @@ showHolds' qry options account = do
     let Just path = accountFullPath (getID account) fullCoA
     wrapIO $ do
         putStrLn $ intercalate "/" path ++ ":"
-        putStrLn $ format holds
+        putTextLn $ format holds
 

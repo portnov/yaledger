@@ -34,10 +34,10 @@ postings qry options mbPath = do
       credit <- readIOListL =<< creditPostings acc
       debit  <- readIOListL =<< debitPostings  acc
       let postings = sort $ filter (checkQuery qry) (map left credit ++ map right debit)
-          res = unlines $ format postings
+          res = unlinesText $ format postings
       wrapIO $ do
         putStrLn $ path ++ ":"
-        putStrLn res
+        putTextLn res
 
 left :: Ext (Posting Decimal Credit) -> Ext (Either (Posting Decimal Credit) (Posting Decimal Debit))
 left (Ext date i pos attrs posting) = Ext date i pos attrs (Left posting)
@@ -45,13 +45,13 @@ left (Ext date i pos attrs posting) = Ext date i pos attrs (Left posting)
 right :: Ext (Posting Decimal Debit) -> Ext (Either (Posting Decimal Credit) (Posting Decimal Debit))
 right (Ext date i pos attrs posting) = Ext date i pos attrs (Right posting)
 
-showPostings :: TableFormat a => a -> [Ext (Either (Posting Decimal Credit) (Posting Decimal Debit))] -> [String]
-showPostings _ [] = ["No postings."]
+showPostings :: TableFormat a => a -> [Ext (Either (Posting Decimal Credit) (Posting Decimal Debit))] -> [TextOutput]
+showPostings _ [] = [output "No postings."]
 showPostings f list =
     let dates = map (prettyPrint . getDate) list
         amounts = map getAmountS list
 
-        getAmountS (Ext {getContent = (Left p)}) = show (getAmount p)
-        getAmountS (Ext {getContent = (Right p)}) = '-': show (getAmount p)
-    in  tableColumns f [(["DATE"], ALeft, dates), (["AMOUNT"], ARight, amounts)]
+        getAmountS (Ext {getContent = (Left p)}) = prettyPrint (getAmount p)
+        getAmountS (Ext {getContent = (Right p)}) = "-" <> prettyPrint (getAmount p)
+    in  tableColumns f [([output "DATE"], ALeft, dates), ([output "AMOUNT"], ARight, amounts)]
 

@@ -1,83 +1,85 @@
-
+{-# LANGUAGE OverloadedStrings #-}
 module YaLedger.Output.ASCII where
 
 import Data.List
+import Data.String
 
+import YaLedger.Output.ANSI
 import YaLedger.Output.Tables
 
 data ASCII = ASCII
 
-align :: Int -> Align -> String -> String
+align :: Int -> Align -> TextOutput -> TextOutput
 align w ALeft str
-  | length str >= w = take w str
-  | otherwise = str ++ replicate (w - length str) ' '
+  | textLength str >= w = takeText w str
+  | otherwise = str <> replicate (w - textLength str) ' '
 align w ARight str
-  | length str >= w = take w str
-  | otherwise = replicate (w - length str) ' ' ++ str
+  | textLength str >= w = takeText w str
+  | otherwise = replicate (w - textLength str) ' ' <> str
 align w ACenter str
-  | length str >= w = take w str
+  | textLength str >= w = takeText w str
   | otherwise =
-    let m = (w - length str) `div` 2
-        n = w - length str - m
+    let m = (w - textLength str) `div` 2
+        n = w - textLength str - m
         pad1 = replicate m ' '
         pad2 = replicate n ' '
-    in pad1 ++ str ++ pad2
+    in pad1 <> str <> pad2
 
-alignPad :: Int -> Align -> String -> String
+alignPad :: Int -> Align -> TextOutput -> TextOutput
 alignPad w ALeft str
-  | length str >= w = take w str
-  | otherwise = " " ++ str ++ replicate (w - length str - 1) ' '
+  | textLength str >= w = takeText w str
+  | otherwise = space <> str <> spaces (w - textLength str - 1)
 alignPad w ARight str
-  | length str >= w = take w str
-  | otherwise = replicate (w - length str - 1) ' ' ++ str ++ " " 
+  | textLength str >= w = takeText w str
+  | otherwise = spaces (w - textLength str - 1)  <> str <> space
 alignPad w ACenter str
-  | length str >= w = take w str
+  | textLength str >= w = takeText w str
   | otherwise =
-    let m = (w - length str) `div` 2
-        n = w - length str - m
-        pad1 = replicate m ' '
-        pad2 = replicate n ' '
-    in pad1 ++ str ++ pad2
+    let m = (w - textLength str) `div` 2
+        n = w - textLength str - m
+        pad1 = spaces m
+        pad2 = spaces n
+    in pad1 <> str <> pad2
 
 alignMax :: Align -> Column -> Column 
 alignMax a list =
-  let m = maximum (map length list)
+  let m = maximum (map textLength list)
   in  map (pad . align m a) list
 
-pad :: String -> String
-pad s = " " ++ s ++ " "
+pad :: TextOutput -> TextOutput
+pad s = space <> s <> space
 
-zipS :: String -> Column -> Column -> Column
+zipS :: TextOutput -> Column -> Column -> Column
 zipS sep l1 l2 =
   let m = max (length l1) (length l2)
-      m1 = if null l1 then 0 else maximum (map length l1)
-      m2 = if null l2 then 0 else maximum (map length l2)
+      m1 = if null l1 then 0 else maximum (map textLength l1)
+      m2 = if null l2 then 0 else maximum (map textLength l2)
       l1' = take m $ map Just l1 ++ repeat Nothing
       l2' = take m $ map Just l2 ++ repeat Nothing
-      s n Nothing = replicate n ' '
+      s n Nothing = spaces n
       s _ (Just x) = x
-      go x y = s m1 x ++ sep ++ s m2 y
+      go x y = s m1 x <> sep <> s m2 y
   in  zipWith go l1' l2'
 
-twoColumns :: String -> String -> Column -> Column -> Column
+twoColumns :: TextOutput -> TextOutput -> Column -> Column -> Column
 twoColumns h1 h2 l1 l2 =
-  let m1 = maximum (map length (h1:l1))
-      m2 = maximum (map length (h2:l2))
+  let m1 = maximum (map textLength (h1:l1))
+      m2 = maximum (map textLength (h2:l2))
       h1' = align m1 ACenter h1
       h2' = align m2 ACenter h2
   in  tabline TopLine [m1,m2]:
-      ("│" ++ h1' ++ "│" ++ h2' ++ "│"):
+      (vbar <> h1' <> vbar <> h2' <> vbar):
       tabline MidLine [m1,m2]:
-      map (\l -> '│':l ++ "│") (zipS "│" l1 l2) ++
+      map (\l -> vbar <> l <> vbar) (zipS vbar l1 l2) ++
       [tabline BottomLine [m1, m2]]
 
 columns' :: [Column] -> Column
-columns' list = foldr (zipS "│") [] list
+columns' list = foldr (zipS vbar) [] list
 
 understrike :: Column -> Column
 understrike list =
-  let m = maximum (map length list)
-  in  list ++ [replicate m '═']
+  let m = maximum (map textLength list)
+  in  list ++ [fromString $ replicate m '═']
 
 data LineKind = TopLine | MidLine | BottomLine
   deriving (Eq, Show)
@@ -97,23 +99,23 @@ endchar TopLine    = '╕'
 endchar MidLine    = '╡'
 endchar BottomLine = '╛'
 
-tabline :: LineKind -> [Int] -> String
-tabline k ms = startchar k: concatMap go (init ms) ++ line (last ms) ++ [endchar k]
+tabline :: LineKind -> [Int] -> TextOutput
+tabline k ms = boldText $ startchar k: concatMap go (init ms) ++ line (last ms) ++ [endchar k]
   where
     go m = line m ++ [midchar k]
     line m = replicate m '═'
 
 instance TableFormat ASCII where
   tableColumns ASCII list =
-    let ms = [(a, maximum (map length (h ++ l)) + 2) | (h, a, l) <- list]
+    let ms = [(a, maximum (map textLength (h ++ l)) + 2) | (h, a, l) <- list]
         ws = map snd ms
         ss = [replicate m '═' | (_,m) <- ms]
         hs = map (\(x,_,_) -> x) list
         bs = map (\(_,_,x) -> x) list
     in  tabline TopLine ws :
-        map ('│':) ( foldr (zipS "│") [] [map (alignPad m ACenter) h | (h,(a,m),s,l) <- zip4 hs ms ss bs] ) ++
+        map (vbar <>) ( foldr (zipS vbar) [] [map (alignPad m ACenter) h | (h,(a,m),s,l) <- zip4 hs ms ss bs] ) ++
         [tabline MidLine ws] ++
-        map ('│':) ( foldr (zipS "│") [] [map (alignPad m a) l | (h,(a,m),s,l) <- zip4 hs ms ss bs] ) ++
+        map (vbar <>) ( foldr (zipS vbar) [] [map (alignPad m a) l | (h,(a,m),s,l) <- zip4 hs ms ss bs] ) ++
         [tabline BottomLine ws]
 
   tableGrid ASCII _ [] = []
@@ -122,7 +124,7 @@ instance TableFormat ASCII where
         aligns  = map fst colHeaders
         rows' = map padColumns rows :: [Row]
         cols = foldr1 (zipWith (++)) rows' :: Row
-        wds = [maximum $ map length (h ++ column) | (h,column) <- zip headers cols]
+        wds = [maximum $ map textLength (h ++ column) | (h,column) <- zip headers cols]
         colsAligned = [map (align (w+2) a) col | (w,col,a) <- zip3 wds cols aligns]
         headersAligned = [map (align (w+2) ACenter) h | (w,h) <- zip wds headers]
     in  tableColumns ASCII $ zip3 headersAligned aligns colsAligned

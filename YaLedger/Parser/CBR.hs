@@ -164,7 +164,7 @@ loadCBR opts configPath currs coa cachePath = do
              return $ Ext date 0 nowhere M.empty $ SetRate $
                         map (convert currs) rates
     let records = cache ++ new
-    writeFile cachePath $ unlines $ map prettyPrint records
+    writeFile cachePath $ unlines $ map pPrint records
     return records
   where
     convert currs (cFromS, rev, (aFrom, aTo)) =

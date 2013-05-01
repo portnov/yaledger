@@ -38,5 +38,5 @@ details qry options mbPath = do
       res <- saldo qry acc
       wrapIO $ do
         putStrLn $ path ++ ":"
-        putStrLn $ format res (reverse $ filter (checkQuery qry) entries)
+        putTextLn $ format res (reverse $ filter (checkQuery qry) entries)
 

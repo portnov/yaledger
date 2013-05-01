@@ -751,9 +751,9 @@ formatReconMessage format coa account actual calculated diff =
                Nothing -> error $ "Impossible: Kernel.formatReconMessage: no account: " ++ show account
                Just p  -> intercalate "/" p
   in formatMessage [("account",    path),
-                    ("calculated", prettyPrint calculated),
-                    ("actual",     prettyPrint actual),
-                    ("diff",       prettyPrint diff) ] format
+                    ("calculated", pPrint calculated),
+                    ("actual",     pPrint actual),
+                    ("diff",       pPrint diff) ] format
 
 -- | Calculate sum of balance infos in accounts group.
 sumGroupBI :: (Monad m,

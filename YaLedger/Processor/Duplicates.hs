@@ -122,9 +122,9 @@ setAttributes sets newRecord oldRecord = foldl apply oldRecord sets
     apply record (targetName := src)
       | targetName == "date" = record {getDate = getDate newRecord}
       | SExactly "date" <- src = 
-          setAttr targetName (Exactly $ prettyPrint $ getDate newRecord) record
+          setAttr targetName (Exactly $ pPrint $ getDate newRecord) record
       | SOptional "date" <- src = 
-          setAttr targetName (Optional $ prettyPrint $ getDate newRecord) record
+          setAttr targetName (Optional $ pPrint $ getDate newRecord) record
       | SExactly sourceName <- src = 
           case getAttr sourceName newRecord of
             Nothing -> record
@@ -172,11 +172,11 @@ deduplicate rules records = go $ reverse records
             (Just old, other) -> 
               case action of
                 DError -> throw $ DuplicatedRecord
-                                      (prettyPrint r ++ "\nOld was:\n" ++ prettyPrint old)
+                                      (pPrint r ++ "\nOld was:\n" ++ pPrint old)
                                       (getLocation r)
                 DWarning -> do
-                    $warning $ "Duplicated records:\n" ++ prettyPrint r ++
-                              "\nOld was:\n" ++ prettyPrint old
+                    $warning $ "Duplicated records:\n" ++ pPrint r ++
+                              "\nOld was:\n" ++ pPrint old
                     (r:) <$> go rs
                 DDuplicate -> (r:) <$> go rs
                 DIgnoreNew -> go rs

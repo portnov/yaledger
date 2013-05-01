@@ -1,15 +1,18 @@
+{-# LANGUAGE MultiParamTypeClasses, OverloadedStrings #-}
 
 module YaLedger.Output.CSV where
 
 import Data.Maybe
 import Data.List
+import Data.String
 
+import YaLedger.Output.ANSI
 import YaLedger.Output.Tables
 
 data CSV = CSV (Maybe String)
 
 csvTable :: Maybe String -> [Column] -> Column
-csvTable mbSep lists = map (intercalate sep . map quote) lists
+csvTable mbSep lists = map fromString $ map (intercalate sep . map (quote . toString)) lists
   where
     sep = fromMaybe ";" mbSep
 

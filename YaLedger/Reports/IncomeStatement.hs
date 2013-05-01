@@ -83,10 +83,10 @@ incomeStatement' qry options mbPath = do
         expencesS = lines (show $ filterLeafs nz expences')
         m = max (length incomesS) (length expencesS)
         padE list = list ++ replicate (m - length list) ""
-        res = twoColumns "INCOMES" "EXPENCES"
-                 (alignMax ALeft $ padE incomesS)
-                 (alignMax ALeft $ padE expencesS)
-        footer = "    TOTALS: " ++ show (incomeD - outcomeD) ++ show defcur
+        res = twoColumns (output "INCOMES") (output "EXPENCES")
+                 (alignMax ALeft $ map output $ padE incomesS)
+                 (alignMax ALeft $ map output $ padE expencesS)
+        footer = "    TOTALS: " <> prettyPrint (incomeD - outcomeD) <> show defcur
 
-    wrapIO $ putStrLn $ unlines (res ++ [footer])
+    wrapIO $ putTextLn $ unlinesText (res ++ [footer])
 
