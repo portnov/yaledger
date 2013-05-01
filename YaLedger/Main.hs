@@ -90,6 +90,7 @@ apply (SetReportsInterval i) opts = opts {reportsInterval = Just i}
 apply (SetDebugLevel ("", lvl))  opts = opts {defaultLogSeverity = lvl}
 apply (SetDebugLevel (name, lvl))  opts = opts {logSeveritySetup = logSeveritySetup opts ++ [(name,lvl)] }
 apply (SetParserConfig (n,p)) opts = opts {parserConfigs = (n,p): parserConfigs opts}
+apply (SetColorizeOutput) opts = opts {colorizeOutput = True}
 apply SetHelp _ = Help
                          
 -- | Parse command line
@@ -163,6 +164,8 @@ parseCmdLine argv = do
                    "Set debug level (for MODULE or for all modules) to LEVEL",
        Option "p" ["parser-config"] (ReqArg (SetParserConfig . pconfig) "PARSER=CONFIGFILE")
                    "Use specified config file for this parser",
+       Option "" ["color", "colorize"] (NoArg SetColorizeOutput)
+                   "Use coloring when writing report to console",
        Option "h" ["help"] (NoArg SetHelp)
                    "Show this help and exit" ]
   case getOpt RequireOrder options argv of

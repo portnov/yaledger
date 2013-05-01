@@ -109,6 +109,7 @@ flowCoA fullCoA qry opts coaDebit coaCredit = do
     flowStats fullCoA qry flags (FStats `elem` opts) (FDot `elem` opts) groupped
 
 flowStats coa qry flags showStats asDot grps = do
+    colorize <- gets (colorizeOutput . lsConfig)
     let calc = Stats.calculate (qStart qry) (qEnd qry) . V.fromList . map toDouble
         showCcy = CNoCurrencies `notElem` flags
         rows = [(a1,a2, calc xs) | (a1,a2,xs) <- grps]
@@ -125,7 +126,7 @@ flowStats coa qry flags showStats asDot grps = do
         showF fn (_,crAcc,x) = showDouble showCcy (getCurrency crAcc) (fn x)
     if asDot
       then wrapIO $ putStr $ unlines $ formatDot srSum double2int coa rows
-      else wrapIO $ putTextLn $ unlinesText $
+      else wrapIO $ putTextLn colorize $ unlinesText $
              format $ [([output "DEBIT"], ALeft, map debitAcc rows),
                        ([output "CREDIT"], ALeft, map creditAcc rows),
                        ([output "SUM"], ARight, map (showF srSum) rows)] ++

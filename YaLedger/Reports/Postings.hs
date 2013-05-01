@@ -26,6 +26,7 @@ instance ReportClass Postings where
       (\l (e :: InvalidPath) -> handler l e)
 
 postings qry options mbPath = do
+  colorize <- gets (colorizeOutput . lsConfig)
   coa <- getCoAItemL mbPath
   let format = case [s | PCSV s <- options] of
                  []    -> showPostings ASCII
@@ -37,7 +38,7 @@ postings qry options mbPath = do
           res = unlinesText $ format postings
       wrapIO $ do
         putStrLn $ path ++ ":"
-        putTextLn res
+        putTextLn colorize res
 
 left :: Ext (Posting Decimal Credit) -> Ext (Either (Posting Decimal Credit) (Posting Decimal Debit))
 left (Ext date i pos attrs posting) = Ext date i pos attrs (Left posting)

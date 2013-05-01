@@ -51,12 +51,13 @@ byBalance options bi
   | otherwise = True
 
 balance queries options mbPath = (do
+    colorize <- gets (colorizeOutput . lsConfig)
     coa <- getCoAItemL mbPath
     case coa of
       Leaf {..} -> byOneAccount queries (commonFlags options) leafData
       _         -> if Twoside `elem` options
                      then forM_ queries $ \qry -> do
-                              wrapIO $ putTextLn $ showInterval qry
+                              wrapIO $ putTextLn colorize $ showInterval qry
                               twosideReport qry options coa
                      else byGroup queries (commonFlags options) coa )
   `catchWithSrcLoc`
@@ -65,16 +66,18 @@ balance queries options mbPath = (do
     (\l (e :: NoSuchRate) -> handler l e)
 
 byOneAccount queries options acc = do
+    colorize <- gets (colorizeOutput . lsConfig)
     results <- forM queries $ \qry -> runAtomically $ getBalanceAt (qEnd qry) AvailableBalance acc
     let ends   = map qEnd   queries
     let format = case needCSV options of
                    Nothing  -> tableColumns ASCII
                    Just sep -> tableColumns (CSV sep)
-    wrapIO $ putTextLn $ unlinesText $
+    wrapIO $ putTextLn colorize $ unlinesText $
              format [([output "DATE"],    ALeft, map showMaybeDate ends),
                      ([output "BALANCE"], ARight, map prettyPrint results)]
 
 byGroup queries options coa = do
+    colorize <- gets (colorizeOutput . lsConfig)
     let btype = if CBothBalances `elem` options
                   then BothBalances
                   else if CLedgerBalances `elem` options
@@ -94,7 +97,7 @@ byGroup queries options coa = do
                    Nothing  -> \n qs rs -> unlinesText $ showTreeList [output "ACCOUNT"] showI showBI options n qs rs
                    Just sep -> \n qs rs -> unlinesText $ tableColumns (CSV sep) (treeTable showQry showBI options n qs rs)
 
-    wrapIO $ putTextLn $ format (length queries) queries results'
+    wrapIO $ putTextLn colorize $ format (length queries) queries results'
 
 twosideReport qry options coa = do
     opts <- gets lsConfig
@@ -139,7 +142,7 @@ twosideReport qry options coa = do
                                                     ([output "ACCOUNT"], ALeft, structLs ++ emptyLs),
                                                     ([output "LIABILITIES"], ARight, balColumn ls ++ emptyLs)]
 
-            wrapIO $ putTextLn $ unlinesText $ format
+            wrapIO $ putTextLn (colorizeOutput opts) $ unlinesText $ format
                                           (prepare $ filtered assetsResults)
                                           (prepare $ filtered liabilitiesResults)
 

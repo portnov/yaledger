@@ -41,12 +41,13 @@ showI qry = [showD "beginning" (qStart qry), output "...", showD "now" (qEnd qry
 
 getSaldo queries options mbPath = (do
     let flags = commonFlags options
+    colorize <- gets (colorizeOutput . lsConfig)
     coa <- getCoAItemL mbPath
     case coa of
       Leaf {..} -> byOneAccount queries flags leafData
       _         -> if Twoside `elem` options
                      then forM_ queries $ \qry -> do
-                              wrapIO $ putTextLn $ showInterval qry
+                              wrapIO $ putTextLn colorize $ showInterval qry
                               twosideReport qry flags coa
                      else byGroup queries flags coa )
   `catchWithSrcLoc`
@@ -71,6 +72,7 @@ mbAbs options = if CAbsoluteValues `elem` options
             else id
 
 byOneAccount queries options acc = do
+    colorize <- gets (colorizeOutput . lsConfig)
     results <- forM queries $ \qry -> saldo qry acc
     let starts = map qStart queries
         ends   = map qEnd   queries
@@ -86,12 +88,13 @@ byOneAccount queries options acc = do
     let footer = case needCSV options of
                    Nothing -> [output "    TOTALS: " <> prettyPrint totals <> show (getCurrency acc)]
                    _ -> []
-    wrapIO $ putTextLn $ unlinesText $
+    wrapIO $ putTextLn colorize $ unlinesText $
              format [([output "FROM"],    ALeft, map showMaybeDate starts),
                      ([output "TO"],      ALeft, map showMaybeDate ends),
                      ([output "BALANCE"], ARight, map (showAmt options) $ prepare results)] ++ footer
 
 byGroup queries options coa = do
+    colorize <- gets (colorizeOutput . lsConfig)
     results <- treeSaldos queries coa
     let prepare
           | COnlyPositive `elem` options = mapTree onlyPositive onlyPositive
@@ -106,7 +109,7 @@ byGroup queries options coa = do
                    Nothing  -> \n qs rs -> unlinesText $ showTreeList [emptyText, output "ACCOUNT", emptyText] showI (const prettyPrint) options n qs rs
                    Just sep -> \n qs rs -> unlinesText $ tableColumns (CSV sep) (treeTable showInterval showAmt options n qs rs)
 
-    wrapIO $ putTextLn $ format (length queries) queries (prepare results')
+    wrapIO $ putTextLn colorize $ format (length queries) queries (prepare results')
 
 twosideReport qry options coa = do
     opts <- gets lsConfig
@@ -147,7 +150,7 @@ twosideReport qry options coa = do
                                                     ([output "ACCOUNT"], ALeft, structLs ++ emptyLs),
                                                     ([output "LIABILITIES"], ARight, balColumn ls ++ emptyLs)]
 
-            wrapIO $ putTextLn $ unlinesText $ format
+            wrapIO $ putTextLn (colorizeOutput opts) $ unlinesText $ format
                                           (filtered $ prepare assetsResults)
                                           (filtered $ prepare liabilitiesResults)
 

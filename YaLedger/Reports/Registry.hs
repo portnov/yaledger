@@ -54,6 +54,7 @@ absBalance extBalance@(Ext {getContent = balance}) =
              }
 
 registry qry options mbPath = do
+    colorize <- gets (colorizeOutput . lsConfig)
     fullCoA <- gets lsCoA
     coa <- getCoAItemL mbPath
     totals <- do
@@ -89,7 +90,7 @@ registry qry options mbPath = do
                          (x:_) -> showEntriesBalances' bqry flags infoCols fullCoA (CSV x) totals
           if RDot `elem` options
             then wrapIO $ putStr $ unlines $ formatDot fullCoA $ mapMaybe (causedBy . getContent) $ nub $ balances'
-            else wrapIO $ putTextLn $ format (nub $ balances')
+            else wrapIO $ putTextLn colorize $ format (nub $ balances')
       Branch {} -> do
           let accounts = map snd $ leafs coa
           allEntries <- forM accounts getEntries
@@ -102,7 +103,7 @@ registry qry options mbPath = do
                          (x:_) -> showEntries' fullCoA (CSV x) totals flags infoCols
           if RDot `elem` options
             then wrapIO $ putStr $ unlines $ formatDot fullCoA $ map getContent $ nub $ sort $ entries
-            else wrapIO $ putTextLn $ format (nub $ sort $ entries)
+            else wrapIO $ putTextLn colorize $ format (nub $ sort $ entries)
 
 formatDot :: ChartOfAccounts -> [Entry Decimal Checked] -> [String]
 formatDot coa entries =

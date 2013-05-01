@@ -34,7 +34,8 @@ data LedgerOptions =
       deduplicationRules :: [DeduplicationRule],
       defaultReport :: String,
       defaultReportParams :: M.Map String String,
-      reportParams :: [String] }
+      reportParams :: [String],
+      colorizeOutput :: Bool }
   | Help
   deriving (Eq, Show)
 
@@ -53,6 +54,7 @@ data SetOption =
   | SetReportsInterval DateInterval
   | SetDebugLevel (String, Priority)
   | SetParserConfig (String, FilePath)
+  | SetColorizeOutput
   | SetHelp
   deriving (Eq,Show)
 

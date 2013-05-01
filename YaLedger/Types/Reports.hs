@@ -19,6 +19,7 @@ import YaLedger.Exceptions
 import YaLedger.Types.Ledger
 import YaLedger.Types.Transactions
 import YaLedger.Types.Monad
+import YaLedger.Types.Config
 import YaLedger.Output.Pretty
 import YaLedger.Output.ANSI
 import YaLedger.Kernel.Common
@@ -95,9 +96,10 @@ class (ReportParameter (Parameters a)) => ReportClass a where
             -> [Options a]   -- ^ Report options, parsed by GetOpt
             -> Parameters a  -- ^ Report parameters, parsed by report's specific parser
             -> Ledger l ()
-  runReportL report queries opts params =
+  runReportL report queries opts params = do
+      colorize <- gets (colorizeOutput . lsConfig)
       forM_ queries $ \qry -> do
-          wrapIO $ putTextLn $ showInterval qry
+          wrapIO $ putTextLn colorize $ showInterval qry
           runReport report qry opts params
 
   -- | Description of report and it's parameters/options.

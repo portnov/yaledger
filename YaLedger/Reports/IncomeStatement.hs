@@ -88,5 +88,5 @@ incomeStatement' qry options mbPath = do
                  (alignMax ALeft $ map output $ padE expencesS)
         footer = "    TOTALS: " <> prettyPrint (incomeD - outcomeD) <> show defcur
 
-    wrapIO $ putTextLn $ unlinesText (res ++ [footer])
+    wrapIO $ putTextLn (colorizeOutput opts) $ unlinesText (res ++ [footer])
 

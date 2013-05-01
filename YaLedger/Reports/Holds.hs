@@ -72,9 +72,10 @@ showHolds' qry options account = do
                  []    -> holdsTable fullCoA ASCII
                  (x:_) -> holdsTable fullCoA (CSV x)
 
+  colorize <- gets (colorizeOutput . lsConfig)
   when (not $ null holds) $ do
     let Just path = accountFullPath (getID account) fullCoA
     wrapIO $ do
         putStrLn $ intercalate "/" path ++ ":"
-        putTextLn $ format holds
+        putTextLn colorize $ format holds
 

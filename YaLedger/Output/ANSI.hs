@@ -13,6 +13,7 @@ module YaLedger.Output.ANSI
 
 import Data.String
 import Data.List
+import System.IO
 import System.Console.ANSI
 
 data OutAttributes =
@@ -105,8 +106,12 @@ unlinesText texts = intercalate newline texts
 unwordsText :: [TextOutput] -> TextOutput
 unwordsText texts = intercalate space texts
 
-putText :: TextOutput -> IO ()
-putText fs = mapM_ put fs
+putText :: Bool -> TextOutput -> IO ()
+putText colorize fs = do
+    tty <- hIsTerminalDevice stdout
+    if tty && colorize
+      then mapM_ put fs
+      else putStr $ toString fs
   where
     put (Fragment Plain str) = putStr str
     put (Fragment attr str) = do
@@ -114,6 +119,6 @@ putText fs = mapM_ put fs
         putStr str
         setSGR [Reset]
 
-putTextLn :: TextOutput -> IO ()
-putTextLn text = putText text >> putStrLn ""
+putTextLn :: Bool -> TextOutput -> IO ()
+putTextLn colorize text = putText colorize text >> putStrLn ""
 
