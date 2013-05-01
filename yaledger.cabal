@@ -72,6 +72,7 @@ library
                    YaLedger.Output.CSV
                    YaLedger.Output.Pretty
                    YaLedger.Output.Messages
+                   YaLedger.Output.ANSI
                    YaLedger.Processor
                    YaLedger.Processor.Rules
                    YaLedger.Processor.Templates
@@ -108,6 +109,7 @@ library
   build-depends:       base >= 4 && < 5, mtl >=2.1,
                        template-haskell >= 2.5,
                        transformers >= 0.3,
+                       ansi-terminal >= 0.6,
                        vector >= 0.10.0,
                        failure >= 0.2.0.1,
                        control-monad-exception ==0.10.*,
@@ -150,6 +152,7 @@ executable yaledger
   build-depends:       base >= 4 && < 5, mtl >=2.1,
                        template-haskell >= 2.5,
                        transformers >= 0.3,
+                       ansi-terminal >= 0.6,
                        vector >= 0.10.0,
                        failure >= 0.2.0.1,
                        control-monad-exception ==0.10.*,
