@@ -80,7 +80,7 @@ emptyPState now opts coa currs mbFormat =
   where
     dParser = case mbFormat of
                  Nothing -> Nothing
-                 Just str -> case runParser pFormat () str str of
+                 Just str -> case runParser pFormat True str str of
                                Left err     -> error $ "Cannot use specified date format: " ++ show err
                                Right format -> Just $! formatParser format
 

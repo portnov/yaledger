@@ -50,11 +50,13 @@ pad s = " " ++ s ++ " "
 zipS :: String -> Column -> Column -> Column
 zipS sep l1 l2 =
   let m = max (length l1) (length l2)
+      m1 = if null l1 then 0 else maximum (map length l1)
+      m2 = if null l2 then 0 else maximum (map length l2)
       l1' = take m $ map Just l1 ++ repeat Nothing
       l2' = take m $ map Just l2 ++ repeat Nothing
-      s Nothing = replicate m ' '
-      s (Just x) = x
-      go x y = s x ++ sep ++ s y
+      s n Nothing = replicate n ' '
+      s _ (Just x) = x
+      go x y = s m1 x ++ sep ++ s m2 y
   in  zipWith go l1' l2'
 
 twoColumns :: String -> String -> Column -> Column -> Column
