@@ -101,5 +101,5 @@ trace :: Q Exp
 trace = liftQ2 'L.trace
 
 traceS :: Q Exp
-traceS = liftQ2 'L.trace
+traceS = liftQ2 'L.traceS
 

@@ -65,7 +65,7 @@ matchBy :: DateIndex (Ext Record)
         -> [Ext Record]                     -- ^ All other records
         -> (Maybe (Ext Record), [Ext Record])
 matchBy index checks oldAttrs newRecord oldRecords
-    | (CDate dx:_) <- checks = $trace ("Matching " ++ show (extID newRecord)) $
+    | (CDate dx:_) <- checks = $trace ("Matching " ++ show (extID newRecord) ++ " by " ++ show checks) $
                                case go (lookupDatePrev (getDate newRecord) dx index) of
                                  Nothing -> $trace "No match found" (Nothing, oldRecords)
                                  Just r -> $trace ("Match found: " ++ show r) (Just r,  filter (r /=) oldRecords)
@@ -75,7 +75,7 @@ matchBy index checks oldAttrs newRecord oldRecords
                     Just r -> (Just r,  filter (r /=) oldRecords)
   where
     go [] = Nothing
-    go (r:rs) = 
+    go (r:rs) = $trace ("Comparing with " ++ show (extID r)) $
       if (newRecord /= r) && checkAttrs oldAttrs r && all (matches r) checks
         then Just r
         else go rs

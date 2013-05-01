@@ -20,7 +20,7 @@ logSTM name priority message = do
 
 debugSTM :: Throws InternalError l => String -> String -> Atomic l ()
 #ifdef DEBUG
-debugSTM name message = logSTM INFO $ "DEBUG: " ++ name ++ ": " ++ message
+debugSTM name message = logSTM name INFO $ "DEBUG: " ++ name ++ ": " ++ message
 #else
 debugSTM _ _ = return ()
 #endif
