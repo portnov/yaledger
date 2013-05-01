@@ -79,8 +79,8 @@ incomeStatement' qry options mbPath = do
     incomeD  :# _ <- convert (qEnd qry) defcur (amount incomes')
     outcomeD :# _ <- convert (qEnd qry) defcur (amount expences')
 
-    let incomesS  = lines (show $ filterLeafs nz incomes')
-        expencesS = lines (show $ filterLeafs nz expences')
+    let incomesS  = map toString $ showTree $ filterLeafs nz incomes'
+        expencesS = map toString $ showTree $ filterLeafs nz expences'
         m = max (length incomesS) (length expencesS)
         padE list = list ++ replicate (m - length list) ""
         res = twoColumns (output "INCOMES") (output "EXPENCES")

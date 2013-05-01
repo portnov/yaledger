@@ -82,7 +82,7 @@ takeText :: Int -> TextOutput -> TextOutput
 takeText _ [] = []
 takeText n (f:fs)
   | length (fText f) == n = [f]
-  | length (fText f) < n = [f {fText = take n (fText f)}]
+  | length (fText f) > n = [f {fText = take n (fText f)}]
   | otherwise = f: takeText (n - length (fText f)) fs
 
 emptyText :: TextOutput
