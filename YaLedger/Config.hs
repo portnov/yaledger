@@ -50,6 +50,7 @@ instance Monoid LedgerOptions where
       defaultReport = defaultReport o2,
       defaultReportParams = defaultReportParams o2 `M.union` defaultReportParams o1,
       reportParams = if null (reportParams o2) then reportParams o1 else reportParams o2,
+      outputFile = outputFile o2 `mplus` outputFile o1,
       colorizeOutput = colorizeOutput o1 || colorizeOutput o2 }
 
 chooseDate :: (DateTime -> DateTime -> Bool) -> Maybe DateTime -> Maybe DateTime -> Maybe DateTime
@@ -93,6 +94,7 @@ instance FromJSON LedgerOptions where
       <*> v .:? "default-report" .!= "balance"
       <*> (parseReportParams =<< (v .:? "reports-options"))
       <*> return []
+      <*> v .:? "output" .!= Nothing
       <*> v .:? "colorize" .!= False
   parseJSON Null = return mempty
   parseJSON x = fail $ "LedgerOptions: invalid object: " ++ show x
@@ -253,6 +255,7 @@ getDefaultLedgerOptions = do
         defaultReport = "balance",
         defaultReportParams = M.empty,
         reportParams = [],
+        outputFile = Nothing,
         colorizeOutput = False }
 
 loadConfig :: FilePath -> IO LedgerOptions

@@ -5,6 +5,7 @@ module YaLedger.Types.Reports
    Report (..),
    OptDescr (..), ArgDescr (..),
    showInterval, showMaybeDate,
+   outputText, outputString,
    runAReport
   ) where
 
@@ -12,6 +13,7 @@ import Control.Applicative ((<$>))
 import Control.Monad.State
 import Control.Monad.Exception
 import Data.Dates
+import System.IO
 import System.Console.GetOpt
 
 import YaLedger.Tree
@@ -97,9 +99,8 @@ class (ReportParameter (Parameters a)) => ReportClass a where
             -> Parameters a  -- ^ Report parameters, parsed by report's specific parser
             -> Ledger l ()
   runReportL report queries opts params = do
-      colorize <- gets (colorizeOutput . lsConfig)
       forM_ queries $ \qry -> do
-          wrapIO $ putTextLn colorize $ showInterval qry
+          outputText $ showInterval qry
           runReport report qry opts params
 
   -- | Description of report and it's parameters/options.
@@ -184,4 +185,16 @@ showInterval qry =
   where
     showMD s Nothing = output s
     showMD _ (Just date) = prettyPrint date
+
+outputText :: Throws InternalError l => FormattedText -> Ledger l ()
+outputText text = do
+  colorize <- gets (colorizeOutput . lsConfig)
+  handle <- gets lsOutput
+  wrapIO $ putText handle colorize text
+  wrapIO $ hPutStrLn handle ""
+
+outputString :: Throws InternalError l => String -> Ledger l ()
+outputString str = do
+  handle <- gets lsOutput
+  wrapIO $ hPutStrLn handle str
 

@@ -26,10 +26,9 @@ instance ReportClass Cat where
       (\l (e :: InternalError) -> handler l e)
 
 cat qry = do
-  colorize <- gets (colorizeOutput . lsConfig)
   records <- gets lsLoadedRecords
   forM_ (filter (checkQuery qry) records) $ \record ->
-      wrapIO $ putTextLn colorize $ prettyPrint record
+      outputText $ prettyPrint record
 
 csvRecord :: ChartOfAccounts -> Ext Record -> Maybe Row
 csvRecord coa (Ext {getDate=date, getContent=rec}) = go date rec
@@ -43,12 +42,11 @@ csvRecord coa (Ext {getDate=date, getContent=rec}) = go date rec
     go _ t = Nothing
 
 catCSV sep qry = do
-  colorize <- gets (colorizeOutput . lsConfig)
   coa <- gets lsCoA
   allRecords <- gets lsLoadedRecords
   let records = filter (checkQuery qry) allRecords
       rows = mapMaybe (csvRecord coa) allRecords
-  wrapIO $ putTextLn colorize $ unlinesText $
+  outputString $ toString $ unlinesText $
            tableGrid (CSV sep) [(ALeft, [output "DATE"]),
                                 (ALeft, [output "CREDIT ACCOUNT"]),
                                 (ALeft, [output "CREDIT AMOUNT"]),

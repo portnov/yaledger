@@ -112,19 +112,19 @@ unlinesText texts = intercalate newline texts
 unwordsText :: [FormattedText] -> FormattedText
 unwordsText texts = intercalate space texts
 
-putText :: Bool -> FormattedText -> IO ()
-putText colorize fs = do
-    tty <- hIsTerminalDevice stdout
+putText :: Handle -> Bool -> FormattedText -> IO ()
+putText handle colorize fs = do
+    tty <- hIsTerminalDevice handle
     if tty && colorize
       then mapM_ put fs
-      else putStr $ toString fs
+      else hPutStr handle $ toString fs
   where
     put (Fragment Plain str) = putStr str
     put (Fragment attr str) = do
-        setSGR (toSGR attr)
-        putStr str
-        setSGR [Reset]
+        hSetSGR handle (toSGR attr)
+        hPutStr handle str
+        hSetSGR handle [Reset]
 
-putTextLn :: Bool -> FormattedText -> IO ()
-putTextLn colorize text = putText colorize text >> putStrLn ""
+putTextLn :: Handle -> Bool -> FormattedText -> IO ()
+putTextLn handle colorize text = putText handle colorize text >> hPutStrLn handle ""
 

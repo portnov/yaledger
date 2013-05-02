@@ -29,7 +29,6 @@ instance ReportClass Details where
       (\l (e :: NoSuchRate) -> handler l e)
 
 details qry options mbPath = do
-    colorize <- gets (colorizeOutput . lsConfig)
     coa <- getCoAItemL mbPath
     let format = case [s | DCSV s <- options] of
                    []    -> showEntries ASCII
@@ -37,7 +36,6 @@ details qry options mbPath = do
     forL coa $ \path acc -> do
       entries <- getEntries acc
       res <- saldo qry acc
-      wrapIO $ do
-        putStrLn $ path ++ ":"
-        putTextLn colorize $ format res (reverse $ filter (checkQuery qry) entries)
+      outputString $ path ++ ":"
+      outputText $ format res (reverse $ filter (checkQuery qry) entries)
 

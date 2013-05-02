@@ -35,6 +35,7 @@ data LedgerOptions =
       defaultReport :: String,
       defaultReportParams :: M.Map String String,
       reportParams :: [String],
+      outputFile :: Maybe FilePath,
       colorizeOutput :: Bool }
   | Help
   deriving (Eq, Show)
@@ -54,6 +55,7 @@ data SetOption =
   | SetReportsInterval DateInterval
   | SetDebugLevel (String, Priority)
   | SetParserConfig (String, FilePath)
+  | SetOutputFile FilePath
   | SetColorizeOutput
   | SetHelp
   deriving (Eq,Show)

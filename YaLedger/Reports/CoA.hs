@@ -26,5 +26,5 @@ showCoA' :: (Throws InvalidPath l,
           -> Ledger l ()
 showCoA' mbPath = do
   coa <- getCoAItemL mbPath
-  wrapIO $ putStrLn $ show coa
+  outputString $ show coa
 

@@ -125,12 +125,11 @@ turnoversL :: (Throws InvalidPath l,
                Throws InternalError l)
            => [Query] -> [TOptions] -> Maybe Path -> Ledger l ()
 turnoversL queries options mbPath = do
-    colorize <- gets (colorizeOutput . lsConfig)
     coa <- getCoAItemL mbPath
     case coa of
       Leaf {..} -> byOneAccount queries options leafData
       _ -> forM_ queries $ \qry -> do
-                wrapIO $ putTextLn colorize $ showInterval qry
+                outputText $ showInterval qry
                 turnovers qry options coa
 
 byOneAccount queries options account = do
@@ -160,8 +159,7 @@ byOneAccount queries options account = do
   let format = case [s | TCSV s <- options] of
                  []    -> tableColumns ASCII
                  (x:_) -> tableColumns (CSV x)
-  colorize <- gets (colorizeOutput . lsConfig)
-  wrapIO $ putTextLn colorize $ unlinesText $ format $
+  outputText $ unlinesText $ format $
       [([output "FROM"], ALeft, map showMaybeDate starts),
        ([output "TO"],   ALeft, map showMaybeDate ends),
        ([output "BALANCE C/F"], ARight, map prettyPrint inc),
@@ -200,8 +198,7 @@ turnovers qry options coa = do
   let format = case [s | TCSV s <- options] of
                  []    -> tableColumns ASCII
                  (x:_) -> tableColumns (CSV x)
-  colorize <- gets (colorizeOutput . lsConfig)
-  wrapIO $ putTextLn colorize $ unlinesText $ format $
+  outputText $ unlinesText $ format $
       [([output "ACCOUNT"],     ALeft, struct),
        ([output "BALANCE C/F"], ARight, map prettyPrint inc),
        ([output "DEBIT"],       ARight, map prettyPrint debits),

@@ -8,6 +8,7 @@ import Control.Concurrent.STM
 import Data.Dates
 import qualified Data.Map as M
 import Text.Parsec.Pos
+import System.IO (Handle)
 import System.Log.Logger (Priority (..))
 
 import YaLedger.Types.Attributes
@@ -52,6 +53,7 @@ data LedgerState = LedgerState {
   , lsLoadedRecords   :: [Ext Record]                                  -- ^ All records loaded from source files.
   , lsTranQueue       :: Queue (Transaction Amount)                    -- ^ Transactions queue.
   , lsMessages        :: TChan (String, Priority, String)              -- ^ Log messages queue. Is used to output messages from 'Atomic' transactions
+  , lsOutput          :: Handle
   , lsConfig          :: LedgerOptions                                 -- ^ Configuration options
   , lsPosition        :: SourcePos                                     -- ^ Source location of current transaction
   }

@@ -12,6 +12,7 @@ import Control.Concurrent.STM
 import Data.Dates
 import qualified Data.Map as M
 import Text.Parsec.Pos
+import System.IO (stdout)
 import System.Log.Logger (logM)
 
 import YaLedger.Tree
@@ -46,6 +47,7 @@ emptyLedgerState opts coa amap records = do
              lsTranQueue = queue,
              lsMessages = chan,
              lsConfig = opts,
+             lsOutput = stdout,
              lsPosition = nowhere
            }
 

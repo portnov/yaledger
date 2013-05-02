@@ -205,7 +205,6 @@ isNotZeroSR :: StatRecord -> Bool
 isNotZeroSR sr = any (/= 0.0) (toList sr)
 
 byOneAccount coa queries options account = do
-  colorize <- gets (colorizeOutput . lsConfig)
   internalGroup <- case [val | SInternal val <- options] of
                      [] -> return Nothing
                      (Nothing:_) -> return $ Just coa
@@ -226,7 +225,7 @@ byOneAccount coa queries options account = do
       format = case needCSV flags of
                  Nothing  -> tableColumns ASCII
                  Just sep -> tableColumns (CSV sep)
-  wrapIO $ putTextLn colorize $ unlinesText $
+  outputText $ unlinesText $
            format [([output "FROM"],   ALeft,  map (showMaybeDate . srFrom) results'),
                    ([output "TO"],     ALeft,  map (showMaybeDate . srTo)   results'),
                    ([output "OPEN"],   ARight, map (showDouble showCcy ccy . srOpen)   results'),
@@ -240,16 +239,15 @@ byOneAccount coa queries options account = do
                    ([output "CLOSE"],  ARight, map (showDouble showCcy ccy . srClose)  results') ]
 
 byGroup queries options coa = do
-    colorize <- gets (colorizeOutput . lsConfig)
     internalGroup <- case [val | SInternal val <- options] of
                        [] -> return Nothing
                        (Nothing:_) -> return $ Just coa
                        (Just grp:_) -> Just <$> getCoAItem (mkPath grp)
     forM_ queries $ \qry -> do
-        wrapIO $ putTextLn colorize $ showInterval qry
-        go internalGroup colorize qry
+        outputText $ showInterval qry
+        go internalGroup qry
   where
-    go internalGroup colorize qry = do
+    go internalGroup qry = do
       let flags = commonFlags options
       lopts <- gets lsConfig
       srcData <- mapTreeBranchesM (loadGroupData options internalGroup qry)
@@ -267,5 +265,5 @@ byGroup queries options coa = do
                      Nothing  -> \n qs rs -> unlinesText $ showTreeList [output "ACCOUNT"] (\x -> [x]) showD flags n qs rs
                      Just sep -> \n qs rs -> unlinesText $ tableColumns (CSV sep) (treeTable id showD flags n qs rs)
       let columns = map output ["OPEN", "MIN", "Q1", "MEDIAN", "Q3", "MAX", "AVG", "SD", "CLOSE"]
-      wrapIO $ putTextLn colorize $ format (length columns) columns (prepare results)
+      outputText $ format (length columns) columns (prepare results)
 

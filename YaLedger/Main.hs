@@ -1,4 +1,4 @@
-{-# LANGUAGE OverlappingInstances, ScopedTypeVariables, TemplateHaskell #-}
+{-# LANGUAGE OverlappingInstances, ScopedTypeVariables, TemplateHaskell, FlexibleContexts #-}
 module YaLedger.Main
   (module YaLedger.Types,
    module YaLedger.Types.Reports,
@@ -29,6 +29,7 @@ import System.Console.GetOpt
 import Text.Parsec hiding (try)
 import System.FilePath
 import System.Environment.XDG.BaseDir
+import System.IO
 import System.Log.Logger
 
 import YaLedger.Types
@@ -91,6 +92,7 @@ apply (SetDebugLevel ("", lvl))  opts = opts {defaultLogSeverity = lvl}
 apply (SetDebugLevel (name, lvl))  opts = opts {logSeveritySetup = logSeveritySetup opts ++ [(name,lvl)] }
 apply (SetParserConfig (n,p)) opts = opts {parserConfigs = (n,p): parserConfigs opts}
 apply (SetColorizeOutput) opts = opts {colorizeOutput = True}
+apply (SetOutputFile path) opts = opts {outputFile = Just path}
 apply SetHelp _ = Help
                          
 -- | Parse command line
@@ -164,6 +166,8 @@ parseCmdLine argv = do
                    "Set debug level (for MODULE or for all modules) to LEVEL",
        Option "p" ["parser-config"] (ReqArg (SetParserConfig . pconfig) "PARSER=CONFIGFILE")
                    "Use specified config file for this parser",
+       Option "o" ["output"] (ReqArg SetOutputFile "FILE")
+                   "Output report to specified FILE",
        Option "" ["color", "colorize"] (NoArg SetColorizeOutput)
                    "Use coloring when writing report to console",
        Option "h" ["help"] (NoArg SetHelp)
@@ -267,6 +271,19 @@ loadConfigs cpath coaPath mapPath = do
   amap <- readAMap coa mapPath
   return (currsMap, coa, amap)
 
+withOutputFile :: Throws InternalError l => Ledger l a -> Ledger l a
+withOutputFile action = do
+    mbPath <- gets (outputFile . lsConfig)
+    case mbPath of
+      Just path -> do
+        handle <- wrapIO $ openFile path WriteMode
+        modify $ \st -> st {lsOutput = handle}
+        result <- action
+        wrapIO $ hClose handle
+        modify $ \st -> st {lsOutput = stdout}
+        return result
+      Nothing -> action
+
 runYaLedger :: [(String, String, InputParser)]
             -> LedgerOptions
             -> Report
@@ -314,7 +331,7 @@ processYaLedger qry mbInterval rules records qryReport report params = do
                       Nothing -> [qryReport]
                       Just int -> splitQuery firstDate now qryReport int
 
-      runAReport queries params report
+      (withOutputFile $ runAReport queries params report)
          `catch`
            (\(e :: InvalidCmdLine) -> do
                  wrapIO (putStrLn $ show e))
