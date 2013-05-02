@@ -1,5 +1,5 @@
 {-# LANGUAGE TypeSynonymInstances, FlexibleInstances, OverloadedStrings #-}
-module YaLedger.Output.ANSI
+module YaLedger.Output.Formatted
   (Color (..),
    OutAttributes (..), Fragment (..), FormattedText,
    output, boldText,

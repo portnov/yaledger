@@ -4,7 +4,7 @@ module YaLedger.Output.ASCII where
 import Data.List
 import Data.String
 
-import YaLedger.Output.ANSI
+import YaLedger.Output.Formatted
 import YaLedger.Output.Tables
 
 data ASCII = ASCII

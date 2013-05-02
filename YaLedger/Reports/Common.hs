@@ -11,7 +11,6 @@ import Text.Printf
 
 import YaLedger.Types
 import YaLedger.Output
-import YaLedger.Output.ANSI
 import YaLedger.Kernel
 
 data CommonFlags =

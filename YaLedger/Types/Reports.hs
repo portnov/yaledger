@@ -21,7 +21,7 @@ import YaLedger.Types.Transactions
 import YaLedger.Types.Monad
 import YaLedger.Types.Config
 import YaLedger.Output.Pretty
-import YaLedger.Output.ANSI
+import YaLedger.Output.Formatted
 import YaLedger.Kernel.Common
 import YaLedger.Kernel.STM
 

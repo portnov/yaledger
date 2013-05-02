@@ -11,7 +11,6 @@ import Data.String
 
 import YaLedger.Types
 import YaLedger.Output
-import YaLedger.Output.ANSI
 import YaLedger.Kernel
 import YaLedger.Exceptions
 import YaLedger.Reports.Common

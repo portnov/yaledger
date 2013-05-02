@@ -24,7 +24,6 @@ module YaLedger.Reports.API
    module YaLedger.Reports.Common,
    module YaLedger.Reports.Ledger,
    module YaLedger.Output,
-   module YaLedger.Output.ANSI,
 
    getCoAItemL
   ) where
@@ -48,7 +47,6 @@ import YaLedger.Logger
 import YaLedger.Reports.Common
 import YaLedger.Reports.Ledger
 import YaLedger.Output
-import YaLedger.Output.ANSI
 
 getCoAItemL :: Throws InvalidPath l
             => Maybe Path

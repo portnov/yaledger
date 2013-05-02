@@ -1,7 +1,7 @@
 {-# LANGUAGE MultiParamTypeClasses, OverloadedStrings #-}
 module YaLedger.Output.Tables where
 
-import YaLedger.Output.ANSI
+import YaLedger.Output.Formatted
 
 data Align = ALeft | ACenter | ARight
   deriving (Eq, Show)

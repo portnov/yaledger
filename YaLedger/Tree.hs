@@ -10,7 +10,7 @@ import Data.List
 import Data.String
 
 import YaLedger.Output.Tables
-import YaLedger.Output.ANSI
+import YaLedger.Output.Formatted
 import YaLedger.Output.ASCII
 
 type Path = [String]

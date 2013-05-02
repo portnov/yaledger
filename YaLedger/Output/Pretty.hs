@@ -9,7 +9,7 @@ import qualified Data.Map as M
 import Text.Printf
 
 import YaLedger.Types
-import YaLedger.Output.ANSI
+import YaLedger.Output.Formatted
 
 class Pretty a where
   prettyPrint :: a -> FormattedText
