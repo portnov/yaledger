@@ -10,6 +10,7 @@ import YaLedger.Output.Formatted
 import YaLedger.Output.Tables
 
 data CSV = CSV (Maybe String)
+  deriving (Eq, Show)
 
 csvTable :: Maybe String -> [Column] -> Column
 csvTable mbSep lists = map fromString $ map (intercalate sep . map (quote . toString)) lists

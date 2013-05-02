@@ -22,8 +22,10 @@ import YaLedger.Types.Ledger
 import YaLedger.Types.Transactions
 import YaLedger.Types.Monad
 import YaLedger.Types.Config
+import YaLedger.Types.Output
 import YaLedger.Output.Pretty
 import YaLedger.Output.Formatted
+import YaLedger.Output.Tables
 import YaLedger.Kernel.Common
 import YaLedger.Kernel.STM
 
@@ -77,6 +79,15 @@ class (ReportParameter (Parameters a)) => ReportClass a where
   -- | Default set of options
   defaultOptions :: a -> [Options a]
   defaultOptions _ = []
+
+  initReport :: (Throws InvalidCmdLine l,
+                Throws InternalError l)
+             => a
+             -> [Options a]
+             -> Parameters a
+             -> Ledger l ()
+  initReport _ _ _ = return ()
+
 
   -- | Main function of this class.
   -- It usually outputs report to stdout.
@@ -173,6 +184,7 @@ runAReport queries cmdline (Report r) = do
                  (_,_, errs) -> do
                    let message = usageInfo (reportHelp r) ropts
                    throw (InvalidCmdLine $ concat errs ++ message)
+      initReport r options (fst params)
       runReportL r queries options (fst params)
 
 showMaybeDate :: Maybe DateTime -> FormattedText
@@ -196,5 +208,8 @@ outputText text = do
 outputString :: Throws InternalError l => String -> Ledger l ()
 outputString str = do
   handle <- gets lsOutput
-  wrapIO $ hPutStrLn handle str
+  format <- gets lsOutputFormat
+  case format of
+    OASCII _ -> wrapIO $ hPutStrLn handle $ formatLine ASCII str
+    OCSV csv -> wrapIO $ hPutStrLn handle $ formatLine csv str
 

@@ -20,6 +20,9 @@ class TableFormat a where
   showFooter :: a -> FormattedText -> Column
   showFooter _ s = [s]
 
+  formatLine :: a -> String -> String
+  formatLine _ str = str
+
 data TableColumn a = TableColumn {
     columnTitle :: Column,
     columnAlign :: Align,

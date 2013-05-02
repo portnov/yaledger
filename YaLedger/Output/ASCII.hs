@@ -8,6 +8,7 @@ import YaLedger.Output.Formatted
 import YaLedger.Output.Tables
 
 data ASCII = ASCII
+  deriving (Eq, Show)
 
 align :: Int -> Align -> FormattedText -> FormattedText
 align w ALeft str

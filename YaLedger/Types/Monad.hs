@@ -17,6 +17,7 @@ import YaLedger.Types.Ledger
 import YaLedger.Types.Map
 import YaLedger.Types.Transactions
 import YaLedger.Types.Config
+import YaLedger.Types.Output
 
 -- | Base layer of Ledger monad: StateT transformer.
 newtype LedgerStateT m a = LedgerStateT (StateT LedgerState m a)
@@ -54,6 +55,7 @@ data LedgerState = LedgerState {
   , lsTranQueue       :: Queue (Transaction Amount)                    -- ^ Transactions queue.
   , lsMessages        :: TChan (String, Priority, String)              -- ^ Log messages queue. Is used to output messages from 'Atomic' transactions
   , lsOutput          :: Handle
+  , lsOutputFormat    :: OutputFormat
   , lsConfig          :: LedgerOptions                                 -- ^ Configuration options
   , lsPosition        :: SourcePos                                     -- ^ Source location of current transaction
   }

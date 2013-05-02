@@ -3,11 +3,11 @@
 module YaLedger.Reports.Cat
   (Cat (..)) where
 
-import YaLedger.Reports.API hiding (CommonFlags (..))
+import YaLedger.Reports.API
 
 data Cat = Cat
 
-data COptions = CCSV (Maybe String)
+type COptions = CommonFlags
 
 instance ReportClass Cat where
   type Options Cat = COptions
@@ -18,10 +18,12 @@ instance ReportClass Cat where
 
   reportHelp _ = "Outputs all loaded records (after deduplication, if any)."
 
+  initReport _ options _ = setOutputFormat options
+
   runReport _ qry options () = 
-      case [s | CCSV s <- options] of
-        [] -> cat qry
-        (s:_) -> catCSV s qry
+      case selectOutputFormat options of
+        OASCII _ -> cat qry
+        OCSV (CSV s) -> catCSV s qry
     `catchWithSrcLoc`
       (\l (e :: InternalError) -> handler l e)
 

@@ -7,17 +7,18 @@ import YaLedger.Reports.API
 
 data Details = Details
 
-data DOptions = DCSV (Maybe String)
-  deriving (Eq)
+type DOptions = CommonFlags
 
 instance ReportClass Details where
   type Options Details = DOptions
   type Parameters Details = Maybe Path
 
   reportOptions _ =
-    [Option "C" ["csv"] (OptArg DCSV "SEPARATOR") "Output data in CSV format using given fields delimiter (semicolon by default)"]
+    [Option "C" ["csv"] (OptArg CCSV "SEPARATOR") "Output data in CSV format using given fields delimiter (semicolon by default)"]
 
   reportHelp _ = ""
+
+  initReport _ options _ = setOutputFormat options
 
   runReport _ qry options mbPath = 
       details qry options mbPath
@@ -30,9 +31,9 @@ instance ReportClass Details where
 
 details qry options mbPath = do
     coa <- getCoAItemL mbPath
-    let format = case [s | DCSV s <- options] of
-                   []    -> showEntries ASCII
-                   (x:_) -> showEntries (CSV x)
+    let format = case selectOutputFormat options of
+                   OASCII _ -> showEntries ASCII
+                   OCSV csv -> showEntries csv
     forL coa $ \path acc -> do
       entries <- getEntries acc
       res <- saldo qry acc

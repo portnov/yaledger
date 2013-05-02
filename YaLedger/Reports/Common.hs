@@ -2,6 +2,7 @@
 
 module YaLedger.Reports.Common where
 
+import Control.Monad.State
 import Data.Maybe
 import Data.List
 import Data.Decimal
@@ -10,6 +11,7 @@ import Data.String
 import Text.Printf
 
 import YaLedger.Types
+import YaLedger.Types.Output
 import YaLedger.Output
 import YaLedger.Kernel
 
@@ -24,6 +26,20 @@ data CommonFlags =
   | CNoCurrencies
   | CCSV (Maybe String)
   deriving (Eq, Show)
+
+selectOutputFormat :: [CommonFlags] -> OutputFormat
+selectOutputFormat flags =
+  case [s | CCSV s <- flags] of
+    (x:_) -> OCSV (CSV x)
+    [] ->  OASCII ASCII
+
+setOutputFormat :: [CommonFlags] -> Ledger l ()
+setOutputFormat flags = do
+  let format = selectOutputFormat flags
+  modify $ \st -> st {lsOutputFormat = format}
+
+getOutputFormat :: Ledger l OutputFormat
+getOutputFormat = gets lsOutputFormat
 
 listTable :: (ToTable opts a, TableFormat fmt) => fmt -> opts -> [a] -> Column
 listTable fmt opts list =

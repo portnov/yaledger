@@ -5,7 +5,8 @@ module YaLedger.Output
    module YaLedger.Output.CSV,
    module YaLedger.Output.Pretty,
    module YaLedger.Output.Formatted,
-   module YaLedger.Output.Messages) where
+   module YaLedger.Output.Messages
+   ) where
 
 import YaLedger.Output.Tables
 import YaLedger.Output.ASCII

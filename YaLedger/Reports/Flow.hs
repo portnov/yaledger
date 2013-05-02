@@ -44,7 +44,12 @@ instance ReportClass Flow where
                  "  FROM: mandatory. Account or group FROM money are going.\n" ++
                  "  TO: optional. Account or group TO money are going. All accounts, if not specified."
 
+  initReport _ options _ = setOutputFormat (commonFlags options)
+
   runReport _ qry opts (p1,p2) = flow qry opts p1 p2
+
+commonFlags :: [FOptions] -> [CommonFlags]
+commonFlags opts = [flag | Common flag <- opts]
 
 getCoABalances qry coa = do
   balLists <- mapM readIOListL (map accountBalances $ allLeafs coa)
@@ -100,7 +105,7 @@ flatMap m = concatMap (uncurry go) $ M.assocs (M.map (sortCredits . M.assocs) m)
     go acc list = [(acc, a2, xs) | (a2, xs) <- list]
 
 flowCoA fullCoA qry opts coaDebit coaCredit = do
-    let flags = [f | Common f <- opts]
+    let flags = commonFlags opts
     balsDebit  <- getCoABalances qry coaDebit
     let entriesDebit  = mapMaybe (causedBy . getContent) balsDebit
         entries = filter (checkCreditAcc coaCredit) entriesDebit
@@ -112,15 +117,15 @@ flowStats coa qry flags showStats asDot grps = do
     let calc = Stats.calculate (qStart qry) (qEnd qry) . V.fromList . map toDouble
         showCcy = CNoCurrencies `notElem` flags
         rows = [(a1,a2, calc xs) | (a1,a2,xs) <- grps]
-        format = case needCSV flags of
-                   Nothing -> tableColumns ASCII
-                   Just sep -> tableColumns (CSV sep)
-        debitAcc  (x,_,_) = case needCSV flags of
-                             Nothing -> output $ maybe "" (trimPath (maxFieldWidth ASCII)) $ accountFullPath (getID x) coa
-                             Just _  -> output $ maybe "" (intercalate "/") $ accountFullPath (getID x) coa
-        creditAcc (_,x,_) = case needCSV flags of
-                             Nothing -> output $ maybe "" (trimPath (maxFieldWidth ASCII)) $ accountFullPath (getID x) coa
-                             Just _  -> output $ maybe "" (intercalate "/") $ accountFullPath (getID x) coa
+        format = case selectOutputFormat flags of
+                   OASCII ASCII -> tableColumns ASCII
+                   OCSV csv -> tableColumns csv
+        debitAcc  (x,_,_) = case selectOutputFormat flags of
+                             OASCII _ -> output $ maybe "" (trimPath (maxFieldWidth ASCII)) $ accountFullPath (getID x) coa
+                             OCSV _  -> output $ maybe "" (intercalate "/") $ accountFullPath (getID x) coa
+        creditAcc (_,x,_) = case selectOutputFormat flags of
+                             OASCII _ -> output $ maybe "" (trimPath (maxFieldWidth ASCII)) $ accountFullPath (getID x) coa
+                             OCSV _  -> output $ maybe "" (intercalate "/") $ accountFullPath (getID x) coa
         thrd (_,_,x) = x
         showF fn (_,crAcc,x) = showDouble showCcy (getCurrency crAcc) (fn x)
     if asDot

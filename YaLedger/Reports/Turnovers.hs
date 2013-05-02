@@ -12,7 +12,7 @@ data TOptions =
   | TBothBalances
   | TShowTotals
   | TShowSaldo
-  | TCSV (Maybe String)
+  | Common CommonFlags
   deriving (Eq)
 
 instance ReportClass Turnovers where
@@ -26,7 +26,9 @@ instance ReportClass Turnovers where
      Option "z" ["no-zeros"] (NoArg TNoZeros) "Do not show accounts with zero balance",
      Option "t" ["show-totals"] (NoArg TShowTotals) "Show total turnovers",
      Option "s" ["show-saldo"] (NoArg TShowSaldo) "Show saldo (credit - debit)",
-     Option "C" ["csv"] (OptArg TCSV "SEPARATOR") "Output data in CSV format using given fields delimiter (semicolon by default)" ]
+     Option "C" ["csv"] (OptArg (Common . CCSV) "SEPARATOR") "Output data in CSV format using given fields delimiter (semicolon by default)" ]
+
+  initReport _ options _ = setOutputFormat [f | Common f <- options]
 
   runReportL _ queries opts mbPath =
     turnoversL queries opts mbPath
@@ -156,9 +158,10 @@ byOneAccount queries options account = do
       saldo   = map trSaldo    turns'
       starts  = map qStart queries'
       ends    = map qEnd   queries'
-  let format = case [s | TCSV s <- options] of
-                 []    -> tableColumns ASCII
-                 (x:_) -> tableColumns (CSV x)
+  oformat <- getOutputFormat
+  let format = case oformat of
+                 OASCII ASCII -> tableColumns ASCII
+                 OCSV csv -> tableColumns csv
   outputText $ unlinesText $ format $
       [([output "FROM"], ALeft, map showMaybeDate starts),
        ([output "TO"],   ALeft, map showMaybeDate ends),
@@ -185,9 +188,10 @@ turnovers qry options coa = do
   let tree' = if TNoZeros `elem` options
                 then filterLeafs noZeroTurns tree
                 else tree
-  let struct = case [s | TCSV s <- options] of
-                 [] -> showTreeStructure tree'
-                 _  -> map (output . intercalate "/") (allPaths tree')
+  oformat <- getOutputFormat
+  let struct = case oformat of
+                 OASCII _ -> showTreeStructure tree'
+                 OCSV _  -> map (output . intercalate "/") (allPaths tree')
       nodes = allNodes tree'
       credits = map trCredit nodes
       debits  = map trDebit  nodes
@@ -195,9 +199,10 @@ turnovers qry options coa = do
       out     = map trOutSaldo nodes
       totals  = map trTotals nodes
       saldo   = map trSaldo  nodes
-  let format = case [s | TCSV s <- options] of
-                 []    -> tableColumns ASCII
-                 (x:_) -> tableColumns (CSV x)
+  oformat <- getOutputFormat
+  let format = case oformat of
+                 OASCII ASCII    -> tableColumns ASCII
+                 OCSV csv -> tableColumns csv
   outputText $ unlinesText $ format $
       [([output "ACCOUNT"],     ALeft, struct),
        ([output "BALANCE C/F"], ARight, map prettyPrint inc),

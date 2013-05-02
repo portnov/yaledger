@@ -27,6 +27,8 @@ instance ReportClass Saldo where
   defaultOptions _ = []
   reportHelp _ = "Show accounts balances. One optional parameter: account or accounts group."
 
+  initReport _ options _ = setOutputFormat (commonFlags options)
+
   runReport _ qry opts mbPath = getSaldo [qry] opts mbPath
   runReportL _ queries opts mbPath = getSaldo queries opts mbPath
 
@@ -80,11 +82,11 @@ byOneAccount queries options acc = do
           | CAbsoluteValues `elem` options = map absAmount
           | otherwise = id
     totals <- runAtomically $ getCurrentBalance AvailableBalance acc
-    let format = case needCSV options of
-                   Nothing  -> tableColumns ASCII
-                   Just sep -> tableColumns (CSV sep)
-    let footer = case needCSV options of
-                   Nothing -> [output "    TOTALS: " <> prettyPrint totals <> show (getCurrency acc)]
+    let format = case selectOutputFormat options of
+                   OASCII ASCII -> tableColumns ASCII
+                   OCSV csv -> tableColumns csv
+    let footer = case selectOutputFormat options of
+                   OASCII _ -> [output "    TOTALS: " <> prettyPrint totals <> show (getCurrency acc)]
                    _ -> []
     outputText $ unlinesText $
              format [([output "FROM"],    ALeft, map showMaybeDate starts),
@@ -102,9 +104,9 @@ byGroup queries options coa = do
                      then filterLeafs (any isNotZero) results
                      else results
     let hideGroups = CHideGroups `elem` options
-    let format = case needCSV options of
-                   Nothing  -> \n qs rs -> unlinesText $ showTreeList [emptyText, output "ACCOUNT", emptyText] showI (const prettyPrint) options n qs rs
-                   Just sep -> \n qs rs -> unlinesText $ tableColumns (CSV sep) (treeTable showInterval showAmt options n qs rs)
+    let format = case selectOutputFormat options of
+                   OASCII _  -> \n qs rs -> unlinesText $ showTreeList [emptyText, output "ACCOUNT", emptyText] showI (const prettyPrint) options n qs rs
+                   OCSV csv -> \n qs rs -> unlinesText $ tableColumns csv (treeTable showInterval showAmt options n qs rs)
 
     outputText $ format (length queries) queries (prepare results')
 
@@ -135,13 +137,13 @@ twosideReport qry options coa = do
                       empties = replicate (abs deltaLen) emptyText
                       emptyAs = if deltaLen > 0 then [] else empties
                       emptyLs = if deltaLen < 0 then [] else empties
-                  in case needCSV options of
-                       Nothing  ->  tableColumns ASCII $
+                  in case selectOutputFormat options of
+                       OASCII ASCII  ->  tableColumns ASCII $
                                                    [([output "ACCOUNT"], ALeft,  structAs ++ emptyAs),
                                                     ([output "ASSETS"],  ARight, balColumn as ++ emptyAs),
                                                     ([output "ACCOUNT"], ALeft, structLs ++ emptyLs),
                                                     ([output "LIABILITIES"], ARight, balColumn ls ++ emptyLs)]
-                       Just sep -> tableColumns (CSV sep) $
+                       OCSV csv -> tableColumns csv $
                                                    [([output "ACCOUNT"], ALeft,  structAs ++ emptyAs),
                                                     ([output "ASSETS"],  ARight, balColumn as ++ emptyAs),
                                                     ([output "ACCOUNT"], ALeft, structLs ++ emptyLs),

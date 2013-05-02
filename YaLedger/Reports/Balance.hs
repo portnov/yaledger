@@ -29,6 +29,8 @@ instance ReportClass Balances where
   defaultOptions _ = []
   reportHelp _ = "Show accounts balances. One optional parameter: account or accounts group."
 
+  initReport _ options _ = setOutputFormat (commonFlags options)
+
   runReport _ qry opts mbPath = balance [qry] opts mbPath
   runReportL _ queries opts mbPath = balance queries opts mbPath
 
@@ -67,9 +69,9 @@ balance queries options mbPath = (do
 byOneAccount queries options acc = do
     results <- forM queries $ \qry -> runAtomically $ getBalanceAt (qEnd qry) AvailableBalance acc
     let ends   = map qEnd   queries
-    let format = case needCSV options of
-                   Nothing  -> tableColumns ASCII
-                   Just sep -> tableColumns (CSV sep)
+    let format = case selectOutputFormat options of
+                   OASCII _ -> tableColumns ASCII
+                   OCSV csv -> tableColumns csv
     outputText $ unlinesText $
              format [([output "DATE"],    ALeft, map showMaybeDate ends),
                      ([output "BALANCE"], ARight, map prettyPrint results)]
@@ -90,9 +92,9 @@ byGroup queries options coa = do
           | CAbsoluteValues `elem` options = mapTree (map absBI) (map absBI) filteredResults
           | otherwise = filteredResults
     let showQry = showMaybeDate . qEnd
-    let format = case needCSV options of
-                   Nothing  -> \n qs rs -> unlinesText $ showTreeList [output "ACCOUNT"] showI showBI options n qs rs
-                   Just sep -> \n qs rs -> unlinesText $ tableColumns (CSV sep) (treeTable showQry showBI options n qs rs)
+    let format = case selectOutputFormat options of
+                   OASCII _ -> \n qs rs -> unlinesText $ showTreeList [output "ACCOUNT"] showI showBI options n qs rs
+                   OCSV csv -> \n qs rs -> unlinesText $ tableColumns csv (treeTable showQry showBI options n qs rs)
 
     outputText $ format (length queries) queries results'
 
@@ -127,13 +129,13 @@ twosideReport qry options coa = do
                       empties = replicate (abs deltaLen) emptyText
                       emptyAs = if deltaLen > 0 then [] else empties
                       emptyLs = if deltaLen < 0 then [] else empties
-                  in case needCSV flags of
-                       Nothing  ->  tableColumns ASCII $
+                  in case selectOutputFormat flags of
+                       OASCII _  ->  tableColumns ASCII $
                                                    [([output "ACCOUNT"], ALeft,  structAs ++ emptyAs),
                                                     ([output "ASSETS"],  ARight, balColumn as ++ emptyAs),
                                                     ([output "ACCOUNT"], ALeft, structLs ++ emptyLs),
                                                     ([output "LIABILITIES"], ARight, balColumn ls ++ emptyLs)]
-                       Just sep -> tableColumns (CSV sep) $
+                       OCSV csv -> tableColumns csv $
                                                    [([output "ACCOUNT"], ALeft,  structAs ++ emptyAs),
                                                     ([output "ASSETS"],  ARight, balColumn as ++ emptyAs),
                                                     ([output "ACCOUNT"], ALeft, structLs ++ emptyLs),

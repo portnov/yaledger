@@ -27,6 +27,7 @@ import YaLedger.Exceptions.Utils
 import YaLedger.Kernel.STM
 import YaLedger.Processor.Queue
 import YaLedger.Logger
+import YaLedger.Types.Output
 
 -- | Create default LedgerState.
 emptyLedgerState :: LedgerOptions -> ChartOfAccounts -> AccountMap -> [Ext Record] -> IO LedgerState
@@ -48,6 +49,7 @@ emptyLedgerState opts coa amap records = do
              lsMessages = chan,
              lsConfig = opts,
              lsOutput = stdout,
+             lsOutputFormat = defaultOutputFormat,
              lsPosition = nowhere
            }
 

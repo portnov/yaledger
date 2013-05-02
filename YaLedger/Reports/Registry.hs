@@ -31,6 +31,8 @@ instance ReportClass Registry where
      Option "D" ["dot"] (NoArg RDot) "Output data (only credit amount sums) in DOT format (GraphViz)",
      Option "C" ["csv"] (OptArg (Common . CCSV) "SEPARATOR") "Output data in CSV format using given fields delimiter (semicolon by default)"]
 
+  initReport _ options _ = setOutputFormat (commonFlags options)
+
   runReport _ qry options mbPath = 
       registry qry options mbPath
     `catchWithSrcLoc`
@@ -39,6 +41,9 @@ instance ReportClass Registry where
       (\l (e :: InvalidPath) -> handler l e)
     `catchWithSrcLoc`
       (\l (e :: NoSuchRate) -> handler l e)
+
+commonFlags :: [ROptions] -> [CommonFlags]
+commonFlags opts = [flag | Common flag <- opts]
 
 rDescriptions :: Maybe String -> ROptions
 rDescriptions Nothing = RDescriptions 15
@@ -61,7 +66,7 @@ registry qry options mbPath = do
               case res of
                 Leaf {..}   -> return leafData
                 Branch {..} -> return branchData
-    let flags = [flag | Common flag <- options]
+    let flags = commonFlags options
     let showCurrs = CNoCurrencies `notElem` flags
     groupInternal <- case [val | RInternal val <- options] of
                        [] -> return Nothing

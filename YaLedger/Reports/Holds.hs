@@ -9,7 +9,7 @@ data Holds = Holds
 
 data HOptions =
     HOpenOnly
-  | HCSV (Maybe String)
+  | Common CommonFlags
   deriving (Eq)
 
 instance ReportClass Holds where
@@ -18,11 +18,16 @@ instance ReportClass Holds where
 
   reportOptions _ = 
     [Option "o" ["open-only"] (NoArg HOpenOnly) "Show open holds only",
-     Option "C" ["csv"] (OptArg HCSV "SEPARATOR") "Output data in CSV format using given fields delimiter (semicolon by default)"]
+     Option "C" ["csv"] (OptArg (Common . CCSV) "SEPARATOR") "Output data in CSV format using given fields delimiter (semicolon by default)"]
+
+  initReport _ options _ = setOutputFormat (commonFlags options)
 
   runReport _ qry options path = showHolds qry options path
 
   reportHelp _ = "Show account holds. One optional parameter: account or accounts group."
+
+commonFlags :: [HOptions] -> [CommonFlags]
+commonFlags opts = [flag | Common flag <- opts]
 
 showHolds qry options mbPath = do
       coa <- getCoAItemL mbPath
@@ -68,9 +73,9 @@ showHolds' qry options account = do
 
   let holds = sort $ filter checkHold allHolds
 
-  let format = case [s | HCSV s <- options] of
-                 []    -> holdsTable fullCoA ASCII
-                 (x:_) -> holdsTable fullCoA (CSV x)
+  let format = case selectOutputFormat (commonFlags options) of
+                 OASCII _    -> holdsTable fullCoA ASCII
+                 OCSV csv -> holdsTable fullCoA csv
 
   when (not $ null holds) $ do
     let Just path = accountFullPath (getID account) fullCoA

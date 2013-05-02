@@ -18,6 +18,7 @@ module YaLedger.Reports.API
    module YaLedger.Types.Monad,
    module YaLedger.Exceptions,
    module YaLedger.Types.Reports,
+   module YaLedger.Types.Output,
    module YaLedger.Kernel,
    module YaLedger.Kernel.STM,
    module YaLedger.Logger,
@@ -40,6 +41,7 @@ import Data.Decimal
 import YaLedger.Types
 import YaLedger.Types.Monad
 import YaLedger.Types.Reports
+import YaLedger.Types.Output
 import YaLedger.Kernel
 import YaLedger.Kernel.STM
 import YaLedger.Exceptions

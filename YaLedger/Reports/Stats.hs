@@ -34,15 +34,14 @@ instance ReportClass Stats where
      Option "C" ["csv"] (OptArg (Common . CCSV) "SEPARATOR") "Output data in CSV format using given fields delimiter (semicolon by default)"]
   defaultOptions _ = []
   reportHelp _ = "Show accounts statistics: min, max, avg, quantilies. One optional parameter: account or accounts group."
+
+  initReport _ options _ = setOutputFormat (commonFlags options)
   
   runReport _ qry opts mbPath = stats [qry] opts mbPath
   runReportL _ qrys opts mbPath = stats qrys opts mbPath
 
 commonFlags :: [SOptions] -> [CommonFlags]
-commonFlags opts = mapMaybe get opts
-  where
-    get (Common f) = Just f
-    get _ = Nothing
+commonFlags opts = [flag | Common flag <- opts]
 
 toDouble :: Decimal -> Double
 toDouble d = fromIntegral (decimalMantissa d) / (10 ^ decimalPlaces d)
@@ -222,9 +221,9 @@ byOneAccount coa queries options account = do
                   then filter isNotZeroSR
                   else id
       results' = prepare results
-      format = case needCSV flags of
-                 Nothing  -> tableColumns ASCII
-                 Just sep -> tableColumns (CSV sep)
+      format = case selectOutputFormat flags of
+                 OASCII _  -> tableColumns ASCII
+                 OCSV csv -> tableColumns csv
   outputText $ unlinesText $
            format [([output "FROM"],   ALeft,  map (showMaybeDate . srFrom) results'),
                    ([output "TO"],     ALeft,  map (showMaybeDate . srTo)   results'),
@@ -261,9 +260,9 @@ byGroup queries options coa = do
             | x < 0 = [Fragment (color Red) (printf "%0.4f" x)]
             | x == 0 = [Fragment faint (printf "%0.4f" x)]
             | otherwise = output $ printf "%0.4f" x
-      let format = case needCSV flags of
-                     Nothing  -> \n qs rs -> unlinesText $ showTreeList [output "ACCOUNT"] (\x -> [x]) showD flags n qs rs
-                     Just sep -> \n qs rs -> unlinesText $ tableColumns (CSV sep) (treeTable id showD flags n qs rs)
+      let format = case selectOutputFormat flags of
+                     OASCII _ -> \n qs rs -> unlinesText $ showTreeList [output "ACCOUNT"] (\x -> [x]) showD flags n qs rs
+                     OCSV csv -> \n qs rs -> unlinesText $ tableColumns csv (treeTable id showD flags n qs rs)
       let columns = map output ["OPEN", "MIN", "Q1", "MEDIAN", "Q3", "MAX", "AVG", "SD", "CLOSE"]
       outputText $ format (length columns) columns (prepare results)
 

@@ -7,16 +7,18 @@ import YaLedger.Reports.API
 
 data Postings = Postings
 
-data POptions = PCSV (Maybe String)
+type POptions = CommonFlags
 
 instance ReportClass Postings where
   type Options Postings = POptions
   type Parameters Postings = Maybe Path
 
   reportOptions _ =
-    [Option "C" ["csv"] (OptArg PCSV "SEPARATOR") "Output data in CSV format using given fields delimiter (semicolon by default)"]
+    [Option "C" ["csv"] (OptArg CCSV "SEPARATOR") "Output data in CSV format using given fields delimiter (semicolon by default)"]
 
   reportHelp _ = "Outputs list of postings from one account or accounts group."
+
+  initReport _ options _ = setOutputFormat options
 
   runReport _ qry options mbPath =
       postings qry options mbPath
@@ -27,9 +29,9 @@ instance ReportClass Postings where
 
 postings qry options mbPath = do
   coa <- getCoAItemL mbPath
-  let format = case [s | PCSV s <- options] of
-                 []    -> showPostings ASCII
-                 (x:_) -> showPostings (CSV x)
+  let format = case selectOutputFormat options of
+                 OASCII _ -> showPostings ASCII
+                 OCSV csv -> showPostings csv
   forL coa $ \path acc -> do
       credit <- readIOListL =<< creditPostings acc
       debit  <- readIOListL =<< debitPostings  acc
