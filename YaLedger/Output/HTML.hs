@@ -94,7 +94,7 @@ instance TableFormat HTML where
       "<html>\n" ++
       "<header>\n" ++
       "<style>\n" ++
-      "  td, th {border-right: 1px black solid;}\n" ++
+      "  td, th {border-right: 1px black solid; padding-left: 1em; padding-right: 1em;}\n" ++
       "  th {border-bottom: 1px black solid;}\n" ++
       "  table {border: 1px black solid;}\n" ++
       "</style>\n" ++
