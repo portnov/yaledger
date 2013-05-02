@@ -4,7 +4,7 @@ module YaLedger.Output.ANSI
    OutAttributes (..), Fragment (..), TextOutput,
    output, boldText,
    (<>),
-   bold, color,
+   bold, color, dull, faint,
    toString, textLength, takeText,
    unlinesText, unwordsText,
    emptyText, space, spaces, newline, vbar,
@@ -50,6 +50,12 @@ bold = OutAttributes Nothing Nothing (Just BoldIntensity)
 
 color :: Color -> OutAttributes
 color clr = OutAttributes (Just clr) Nothing Nothing
+
+dull :: OutAttributes
+dull = OutAttributes Nothing (Just Dull) Nothing
+
+faint :: OutAttributes
+faint = OutAttributes Nothing Nothing (Just FaintIntensity)
 
 instance IsString TextOutput where
   fromString str = [Fragment Plain str] 

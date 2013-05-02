@@ -105,7 +105,9 @@ showDouble showCurrencies c x =
                 else ""
   in  if x < 0
         then [Fragment (color Red) str]
-        else output str
+        else if x == 0
+             then [Fragment faint str]
+             else output str
 
 treeTable :: (q -> TextOutput) -> ([CommonFlags] -> a -> TextOutput) -> [CommonFlags] -> Int -> [q] -> Tree [a] [a] -> [(Column, Align, Column)]
 treeTable showQry showX options n qrys tree =

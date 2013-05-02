@@ -34,7 +34,9 @@ instance Pretty Decimal where
     let str = show (roundTo 4 x)
     in  if x < 0
           then [Fragment (color Red) str]
-          else fromString str
+          else if x == 0
+                 then [Fragment faint str]
+                 else fromString str
 
 instance Pretty Attributes where
   prettyPrint as = go $ M.filterWithKey (\name _ -> name `notElem` ["category", "description","status"]) as
@@ -112,7 +114,9 @@ instance Pretty Amount where
     let str = show amt
     in  if x < 0
           then [Fragment (color Red) str]
-          else fromString str
+          else if x == 0
+                 then [Fragment faint str]
+                 else fromString str
 
 instance (Pretty a, Eq a) => Pretty (BalanceInfo a) where
   prettyPrint (BalanceInfo Nothing Nothing) = output "NA"

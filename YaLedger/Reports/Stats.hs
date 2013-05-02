@@ -261,6 +261,7 @@ byGroup queries options coa = do
             | otherwise = id
       let showD _ x
             | x < 0 = [Fragment (color Red) (printf "%0.4f" x)]
+            | x == 0 = [Fragment faint (printf "%0.4f" x)]
             | otherwise = output $ printf "%0.4f" x
       let format = case needCSV flags of
                      Nothing  -> \n qs rs -> unlinesText $ showTreeList [output "ACCOUNT"] (\x -> [x]) showD flags n qs rs
