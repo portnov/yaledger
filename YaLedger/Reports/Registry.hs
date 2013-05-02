@@ -29,7 +29,8 @@ instance ReportClass Registry where
      Option ""  ["no-currencies"] (NoArg $ Common CNoCurrencies) "Do not show currencies in amounts",
      Option "d" ["descriptions"] (OptArg rDescriptions "MAXLENGTH") "Show entries descriptions (but do not show rates differences)",
      Option "D" ["dot"] (NoArg RDot) "Output data (only credit amount sums) in DOT format (GraphViz)",
-     Option "C" ["csv"] (OptArg (Common . CCSV) "SEPARATOR") "Output data in CSV format using given fields delimiter (semicolon by default)"]
+     Option "C" ["csv"] (OptArg (Common . CCSV) "SEPARATOR") "Output data in CSV format using given fields delimiter (semicolon by default)",
+     Option "H" ["html"] (NoArg (Common CHTML)) "Output data in HTML format"]
 
   initReport _ options _ = setOutputFormat (commonFlags options)
 
@@ -89,9 +90,10 @@ registry qry options mbPath = do
           let infoCols = case [k | RDescriptions k <- options] of
                            (l:_) -> [IDescription l]
                            _ -> []
-          let format = case [s | CCSV s <- flags] of
-                         []    -> showEntriesBalances' bqry flags infoCols fullCoA ASCII totals
-                         (x:_) -> showEntriesBalances' bqry flags infoCols fullCoA (CSV x) totals
+          let format = case selectOutputFormat flags of
+                         OASCII _ -> showEntriesBalances' bqry flags infoCols fullCoA ASCII totals
+                         OCSV csv -> showEntriesBalances' bqry flags infoCols fullCoA csv totals
+                         OHTML html -> showEntriesBalances' bqry flags infoCols fullCoA html totals
           if RDot `elem` options
             then outputString $ unlines $ formatDot fullCoA $ mapMaybe (causedBy . getContent) $ nub $ balances'
             else outputText $ format (nub balances')
@@ -102,9 +104,10 @@ registry qry options mbPath = do
           let infoCols = case [k | RDescriptions k <- options] of
                            (l:_) -> [IDescription l]
                            _ -> [IRatesDifference]
-          let format = case [s | CCSV s <- flags] of
-                         []    -> showEntries' fullCoA ASCII   totals flags infoCols 
-                         (x:_) -> showEntries' fullCoA (CSV x) totals flags infoCols
+          let format = case selectOutputFormat flags of
+                         OASCII _ -> showEntries' fullCoA ASCII   totals flags infoCols 
+                         OCSV csv -> showEntries' fullCoA csv totals flags infoCols
+                         OHTML html -> showEntries' fullCoA html totals flags infoCols
           if RDot `elem` options
             then outputString $ unlines $ formatDot fullCoA $ map getContent $ nub $ sort $ entries
             else outputText $ format (nub $ sort $ entries)

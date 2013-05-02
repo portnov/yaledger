@@ -70,6 +70,7 @@ library
                    YaLedger.Output.Tables
                    YaLedger.Output.ASCII
                    YaLedger.Output.CSV
+                   YaLedger.Output.HTML
                    YaLedger.Output.Pretty
                    YaLedger.Output.Messages
                    YaLedger.Output.ANSI
@@ -104,6 +105,7 @@ library
                    YaLedger.Types.Transactions
                    YaLedger.Types.Attributes
                    YaLedger.Types.Config
+                   YaLedger.Types.Output
                    YaLedger.Installer
 
   build-depends:       base >= 4 && < 5, mtl >=2.1,
