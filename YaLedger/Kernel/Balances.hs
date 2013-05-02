@@ -31,6 +31,7 @@ isNotZeroBI :: BalanceInfo Amount -> Bool
 isNotZeroBI (BalanceInfo (Just x) Nothing) = isNotZero x
 isNotZeroBI (BalanceInfo Nothing (Just x)) = isNotZero x
 isNotZeroBI (BalanceInfo (Just x) (Just y)) = isNotZero x || isNotZero y
+isNotZeroBI bi = error $ "Impossible: isNotZeroBI: " ++ show bi
 
 absBI :: BalanceInfo Amount -> BalanceInfo Amount
 absBI bi = bi {

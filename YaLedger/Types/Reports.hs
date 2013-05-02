@@ -88,6 +88,13 @@ class (ReportParameter (Parameters a)) => ReportClass a where
              -> Ledger l ()
   initReport _ _ _ = return ()
 
+  finishReport :: (Throws InvalidCmdLine l,
+                Throws InternalError l)
+             => a
+             -> [Options a]
+             -> Parameters a
+             -> Ledger l ()
+  finishReport _ _ _ = finishOutputFormat
 
   -- | Main function of this class.
   -- It usually outputs report to stdout.
@@ -186,6 +193,7 @@ runAReport queries cmdline (Report r) = do
                    throw (InvalidCmdLine $ concat errs ++ message)
       initReport r options (fst params)
       runReportL r queries options (fst params)
+      finishReport r options (fst params)
 
 showMaybeDate :: Maybe DateTime -> FormattedText
 showMaybeDate Nothing = output "NA"
@@ -212,4 +220,13 @@ outputString str = do
   case format of
     OASCII _ -> wrapIO $ hPutStrLn handle $ formatLine ASCII str
     OCSV csv -> wrapIO $ hPutStrLn handle $ formatLine csv str
+    OHTML html -> wrapIO $ hPutStrLn handle $ formatLine html str
+
+finishOutputFormat :: Throws InternalError l => Ledger l ()
+finishOutputFormat = do
+  format <- gets lsOutputFormat
+  case format of
+    OASCII ascii -> outputText $ formatTrailer ascii
+    OCSV csv     -> outputText $ formatTrailer csv
+    OHTML html   -> outputText $ formatTrailer html
 

@@ -14,7 +14,8 @@ instance ReportClass Postings where
   type Parameters Postings = Maybe Path
 
   reportOptions _ =
-    [Option "C" ["csv"] (OptArg CCSV "SEPARATOR") "Output data in CSV format using given fields delimiter (semicolon by default)"]
+    [Option "C" ["csv"] (OptArg CCSV "SEPARATOR") "Output data in CSV format using given fields delimiter (semicolon by default)",
+     Option "H" ["html"] (NoArg CHTML) "Output data in HTML format"]
 
   reportHelp _ = "Outputs list of postings from one account or accounts group."
 
@@ -32,6 +33,7 @@ postings qry options mbPath = do
   let format = case selectOutputFormat options of
                  OASCII _ -> showPostings ASCII
                  OCSV csv -> showPostings csv
+                 OHTML html -> showPostings html
   forL coa $ \path acc -> do
       credit <- readIOListL =<< creditPostings acc
       debit  <- readIOListL =<< debitPostings  acc

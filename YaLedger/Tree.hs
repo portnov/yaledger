@@ -52,6 +52,7 @@ showTreeStructure tree = struct [True] tree
          (struct (True:b:bs) $ last children)
     struct (b:bs) (Leaf {nodeName = name, leafData = a}) =
         [concatMap bar (reverse bs) <> glyph b <> name <> ": "]
+    struct [] x = error $ "Impossible: showTreeStructure.sruct [] " ++ show x
 
     bar :: Bool -> FormattedText
     bar True  = fromString "  "

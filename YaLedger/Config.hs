@@ -164,6 +164,7 @@ instance FromJSON Priority where
       "alert"     -> return ALERT
       "emergency" -> return EMERGENCY
       _ -> fail $ "Unknown debug level: " ++ T.unpack text
+  parseJSON x = fail $ "Priority: invalid object: " ++ show x
 
 instance FromJSON Query where
   parseJSON (Object v) =
@@ -180,6 +181,7 @@ instance FromJSON DateTime where
     in case parseDate now (T.unpack text) of
          Left err -> fail $ show err
          Right date -> return date
+  parseJSON x = fail $ "DateTime: invalid object: " ++ show x
 
 parseAttrs :: [T.Text] -> Maybe Object -> Parser Attributes
 parseAttrs _ Nothing = return M.empty

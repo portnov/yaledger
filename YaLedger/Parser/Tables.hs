@@ -111,6 +111,7 @@ getRules obj = do
             String str -> return (T.unpack name, T.unpack str)
             Bool b     -> return (T.unpack name, show b)
             x -> fail $ "Tables.getRules: invalid object: " ++ show x
+    _ -> fail $ "Rules: invalid object: " ++ show rec
 
 reservedFields :: IsString s => [s]
 reservedFields =

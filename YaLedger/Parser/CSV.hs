@@ -23,6 +23,7 @@ instance FromJSON ParserConfig where
       <$> v .:? "encoding"
       <*> v .:? "separator" .!= ','
       <*> parseGenericConfig [] v
+  parseJSON x = fail $ "CSV parser config: invalid object: " ++ show x
 
 csvCells :: Char -> String -> [[String]]
 csvCells sep str = map parseRow $ lines str

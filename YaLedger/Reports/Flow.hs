@@ -38,7 +38,8 @@ instance ReportClass Flow where
     [Option ""  ["no-currencies"] (NoArg $ Common CNoCurrencies) "Do not show currencies in amounts",
      Option "s" ["stats"] (NoArg FStats) "Show statistics",
      Option "D" ["dot"] (NoArg FDot) "Output data (only sums) in DOT format (Graphviz)",
-     Option "C" ["csv"] (OptArg (Common . CCSV) "SEPARATOR") "Output data in CSV format using given fields delimiter (semicolon by default)"]
+     Option "C" ["csv"] (OptArg (Common . CCSV) "SEPARATOR") "Output data in CSV format using given fields delimiter (semicolon by default)",
+     Option "H" ["html"] (NoArg (Common CHTML)) "Output data in HTML format"]
   defaultOptions _ = []
   reportHelp _ = "Show money flow between two groups of accounts. Parameters:\n" ++
                  "  FROM: mandatory. Account or group FROM money are going.\n" ++
@@ -119,13 +120,16 @@ flowStats coa qry flags showStats asDot grps = do
         rows = [(a1,a2, calc xs) | (a1,a2,xs) <- grps]
         format = case selectOutputFormat flags of
                    OASCII ASCII -> tableColumns ASCII
-                   OCSV csv -> tableColumns csv
+                   OCSV csv   -> tableColumns csv
+                   OHTML html -> tableColumns html
         debitAcc  (x,_,_) = case selectOutputFormat flags of
                              OASCII _ -> output $ maybe "" (trimPath (maxFieldWidth ASCII)) $ accountFullPath (getID x) coa
                              OCSV _  -> output $ maybe "" (intercalate "/") $ accountFullPath (getID x) coa
+                             OHTML html  -> output $ maybe "" (trimPath (maxFieldWidth html)) $ accountFullPath (getID x) coa
         creditAcc (_,x,_) = case selectOutputFormat flags of
                              OASCII _ -> output $ maybe "" (trimPath (maxFieldWidth ASCII)) $ accountFullPath (getID x) coa
                              OCSV _  -> output $ maybe "" (intercalate "/") $ accountFullPath (getID x) coa
+                             OHTML html -> output $ maybe "" (trimPath (maxFieldWidth html)) $ accountFullPath (getID x) coa
         thrd (_,_,x) = x
         showF fn (_,crAcc,x) = showDouble showCcy (getCurrency crAcc) (fn x)
     if asDot

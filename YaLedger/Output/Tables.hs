@@ -23,6 +23,12 @@ class TableFormat a where
   formatLine :: a -> String -> String
   formatLine _ str = str
 
+  formatHeader :: a -> FormattedText
+  formatHeader _ = []
+
+  formatTrailer :: a -> FormattedText
+  formatTrailer _ = []
+
 data TableColumn a = TableColumn {
     columnTitle :: Column,
     columnAlign :: Align,

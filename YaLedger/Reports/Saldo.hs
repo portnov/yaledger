@@ -23,7 +23,8 @@ instance ReportClass Saldo where
      Option "g" ["hide-groups"] (NoArg $ Common CHideGroups) "Hide accounts groups in CSV output",
      Option ""  ["no-currencies"] (NoArg $ Common CNoCurrencies) "Do not show currencies in amounts",
      Option "t" ["twoside"] (NoArg Twoside) "Show twoside (assets/liablities) report",
-     Option "C" ["csv"] (OptArg (Common . CCSV) "SEPARATOR") "Output data in CSV format using given fields delimiter (semicolon by default)"]
+     Option "C" ["csv"] (OptArg (Common . CCSV) "SEPARATOR") "Output data in CSV format using given fields delimiter (semicolon by default)",
+     Option "H" ["html"] (NoArg (Common CHTML)) "Output data in HTML format"]
   defaultOptions _ = []
   reportHelp _ = "Show accounts balances. One optional parameter: account or accounts group."
 
@@ -84,7 +85,8 @@ byOneAccount queries options acc = do
     totals <- runAtomically $ getCurrentBalance AvailableBalance acc
     let format = case selectOutputFormat options of
                    OASCII ASCII -> tableColumns ASCII
-                   OCSV csv -> tableColumns csv
+                   OCSV csv   -> tableColumns csv
+                   OHTML html -> tableColumns html
     let footer = case selectOutputFormat options of
                    OASCII _ -> [output "    TOTALS: " <> prettyPrint totals <> show (getCurrency acc)]
                    _ -> []
@@ -107,6 +109,7 @@ byGroup queries options coa = do
     let format = case selectOutputFormat options of
                    OASCII _  -> \n qs rs -> unlinesText $ showTreeList [emptyText, output "ACCOUNT", emptyText] showI (const prettyPrint) options n qs rs
                    OCSV csv -> \n qs rs -> unlinesText $ tableColumns csv (treeTable showInterval showAmt options n qs rs)
+                   OHTML html -> \n qs rs -> unlinesText $ tableColumns html (treeTable showInterval showAmt options n qs rs)
 
     outputText $ format (length queries) queries (prepare results')
 
@@ -144,6 +147,11 @@ twosideReport qry options coa = do
                                                     ([output "ACCOUNT"], ALeft, structLs ++ emptyLs),
                                                     ([output "LIABILITIES"], ARight, balColumn ls ++ emptyLs)]
                        OCSV csv -> tableColumns csv $
+                                                   [([output "ACCOUNT"], ALeft,  structAs ++ emptyAs),
+                                                    ([output "ASSETS"],  ARight, balColumn as ++ emptyAs),
+                                                    ([output "ACCOUNT"], ALeft, structLs ++ emptyLs),
+                                                    ([output "LIABILITIES"], ARight, balColumn ls ++ emptyLs)]
+                       OHTML html -> tableColumns html $
                                                    [([output "ACCOUNT"], ALeft,  structAs ++ emptyAs),
                                                     ([output "ASSETS"],  ARight, balColumn as ++ emptyAs),
                                                     ([output "ACCOUNT"], ALeft, structLs ++ emptyLs),

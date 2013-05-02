@@ -25,7 +25,8 @@ instance ReportClass Balances where
      Option "l" ["ledger"] (NoArg $ Common CLedgerBalances) "Show ledger balances instead of available balances",
      Option "b" ["both"] (NoArg $ Common CBothBalances) "Show both available and ledger balances",
      Option "t" ["twoside"] (NoArg Twoside) "Show twoside (assets/liablities) report",
-     Option "C" ["csv"] (OptArg (Common . CCSV) "SEPARATOR") "Output data in CSV format using given fields delimiter (semicolon by default)"]
+     Option "C" ["csv"] (OptArg (Common . CCSV) "SEPARATOR") "Output data in CSV format using given fields delimiter (semicolon by default)",
+     Option "H" ["html"] (NoArg (Common CHTML)) "Output data in HTML format"]
   defaultOptions _ = []
   reportHelp _ = "Show accounts balances. One optional parameter: account or accounts group."
 
@@ -72,6 +73,7 @@ byOneAccount queries options acc = do
     let format = case selectOutputFormat options of
                    OASCII _ -> tableColumns ASCII
                    OCSV csv -> tableColumns csv
+                   OHTML html -> tableColumns html
     outputText $ unlinesText $
              format [([output "DATE"],    ALeft, map showMaybeDate ends),
                      ([output "BALANCE"], ARight, map prettyPrint results)]
@@ -95,6 +97,7 @@ byGroup queries options coa = do
     let format = case selectOutputFormat options of
                    OASCII _ -> \n qs rs -> unlinesText $ showTreeList [output "ACCOUNT"] showI showBI options n qs rs
                    OCSV csv -> \n qs rs -> unlinesText $ tableColumns csv (treeTable showQry showBI options n qs rs)
+                   OHTML html -> \n qs rs -> unlinesText $ tableColumns html (treeTable showQry showBI options n qs rs)
 
     outputText $ format (length queries) queries results'
 
@@ -136,6 +139,11 @@ twosideReport qry options coa = do
                                                     ([output "ACCOUNT"], ALeft, structLs ++ emptyLs),
                                                     ([output "LIABILITIES"], ARight, balColumn ls ++ emptyLs)]
                        OCSV csv -> tableColumns csv $
+                                                   [([output "ACCOUNT"], ALeft,  structAs ++ emptyAs),
+                                                    ([output "ASSETS"],  ARight, balColumn as ++ emptyAs),
+                                                    ([output "ACCOUNT"], ALeft, structLs ++ emptyLs),
+                                                    ([output "LIABILITIES"], ARight, balColumn ls ++ emptyLs)]
+                       OHTML html -> tableColumns html $
                                                    [([output "ACCOUNT"], ALeft,  structAs ++ emptyAs),
                                                     ([output "ASSETS"],  ARight, balColumn as ++ emptyAs),
                                                     ([output "ACCOUNT"], ALeft, structLs ++ emptyLs),

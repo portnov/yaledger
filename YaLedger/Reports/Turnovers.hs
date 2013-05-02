@@ -26,7 +26,8 @@ instance ReportClass Turnovers where
      Option "z" ["no-zeros"] (NoArg TNoZeros) "Do not show accounts with zero balance",
      Option "t" ["show-totals"] (NoArg TShowTotals) "Show total turnovers",
      Option "s" ["show-saldo"] (NoArg TShowSaldo) "Show saldo (credit - debit)",
-     Option "C" ["csv"] (OptArg (Common . CCSV) "SEPARATOR") "Output data in CSV format using given fields delimiter (semicolon by default)" ]
+     Option "C" ["csv"] (OptArg (Common . CCSV) "SEPARATOR") "Output data in CSV format using given fields delimiter (semicolon by default)",
+     Option "H" ["html"] (NoArg (Common CHTML)) "Output data in HTML format"]
 
   initReport _ options _ = setOutputFormat [f | Common f <- options]
 
@@ -161,7 +162,8 @@ byOneAccount queries options account = do
   oformat <- getOutputFormat
   let format = case oformat of
                  OASCII ASCII -> tableColumns ASCII
-                 OCSV csv -> tableColumns csv
+                 OCSV csv   -> tableColumns csv
+                 OHTML html -> tableColumns html
   outputText $ unlinesText $ format $
       [([output "FROM"], ALeft, map showMaybeDate starts),
        ([output "TO"],   ALeft, map showMaybeDate ends),
@@ -192,6 +194,7 @@ turnovers qry options coa = do
   let struct = case oformat of
                  OASCII _ -> showTreeStructure tree'
                  OCSV _  -> map (output . intercalate "/") (allPaths tree')
+                 OHTML _ -> showTreeStructure tree'
       nodes = allNodes tree'
       credits = map trCredit nodes
       debits  = map trDebit  nodes
@@ -201,8 +204,9 @@ turnovers qry options coa = do
       saldo   = map trSaldo  nodes
   oformat <- getOutputFormat
   let format = case oformat of
-                 OASCII ASCII    -> tableColumns ASCII
-                 OCSV csv -> tableColumns csv
+                 OASCII ASCII -> tableColumns ASCII
+                 OCSV csv   -> tableColumns csv
+                 OHTML html -> tableColumns html
   outputText $ unlinesText $ format $
       [([output "ACCOUNT"],     ALeft, struct),
        ([output "BALANCE C/F"], ARight, map prettyPrint inc),

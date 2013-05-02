@@ -18,7 +18,8 @@ instance ReportClass Holds where
 
   reportOptions _ = 
     [Option "o" ["open-only"] (NoArg HOpenOnly) "Show open holds only",
-     Option "C" ["csv"] (OptArg (Common . CCSV) "SEPARATOR") "Output data in CSV format using given fields delimiter (semicolon by default)"]
+     Option "C" ["csv"] (OptArg (Common . CCSV) "SEPARATOR") "Output data in CSV format using given fields delimiter (semicolon by default)",
+     Option "H" ["html"] (NoArg (Common CHTML)) "Output data in HTML format"]
 
   initReport _ options _ = setOutputFormat (commonFlags options)
 
@@ -76,6 +77,7 @@ showHolds' qry options account = do
   let format = case selectOutputFormat (commonFlags options) of
                  OASCII _    -> holdsTable fullCoA ASCII
                  OCSV csv -> holdsTable fullCoA csv
+                 OHTML html -> holdsTable fullCoA html
 
   when (not $ null holds) $ do
     let Just path = accountFullPath (getID account) fullCoA

@@ -14,7 +14,8 @@ instance ReportClass Details where
   type Parameters Details = Maybe Path
 
   reportOptions _ =
-    [Option "C" ["csv"] (OptArg CCSV "SEPARATOR") "Output data in CSV format using given fields delimiter (semicolon by default)"]
+    [Option "C" ["csv"] (OptArg CCSV "SEPARATOR") "Output data in CSV format using given fields delimiter (semicolon by default)",
+     Option "H" ["html"] (NoArg CHTML) "Output data in HTML format"]
 
   reportHelp _ = ""
 
@@ -34,6 +35,7 @@ details qry options mbPath = do
     let format = case selectOutputFormat options of
                    OASCII _ -> showEntries ASCII
                    OCSV csv -> showEntries csv
+                   OHTML html -> showEntries html
     forL coa $ \path acc -> do
       entries <- getEntries acc
       res <- saldo qry acc

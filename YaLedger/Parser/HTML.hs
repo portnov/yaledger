@@ -26,6 +26,7 @@ instance FromJSON ParserConfig where
       <$> v .:? "encoding"
       <*> v .:? "selector" .!= "table"
       <*> parseGenericConfig ["encoding", "selector"] v
+  parseJSON x = fail $ "HTML parser config: invalid object: " ++ show x
 
 readHTML :: ParserConfig -> FilePath -> IO [[String]]
 readHTML pc path = do

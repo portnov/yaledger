@@ -14,7 +14,8 @@ instance ReportClass Cat where
   type Parameters Cat = ()
 
   reportOptions _ = 
-    [ Option "C" ["csv"] (OptArg CCSV "SEPARATOR") "Output data in CSV format using given fields delimiter (semicolon by default). Only entries are ouput."]
+    [ Option "C" ["csv"] (OptArg CCSV "SEPARATOR") "Output data in CSV format using given fields delimiter (semicolon by default). Only entries are ouput.",
+     Option "H" ["html"] (NoArg CHTML) "Output data in HTML format"]
 
   reportHelp _ = "Outputs all loaded records (after deduplication, if any)."
 
@@ -23,7 +24,8 @@ instance ReportClass Cat where
   runReport _ qry options () = 
       case selectOutputFormat options of
         OASCII _ -> cat qry
-        OCSV (CSV s) -> catCSV s qry
+        OCSV csv -> catEntries csv qry
+        OHTML html -> catEntries html qry
     `catchWithSrcLoc`
       (\l (e :: InternalError) -> handler l e)
 
@@ -43,13 +45,13 @@ csvRecord coa (Ext {getDate=date, getContent=rec}) = go date rec
        map showPostingValue                 uEntryDebitPostings ]
     go _ t = Nothing
 
-catCSV sep qry = do
+catEntries fmt qry = do
   coa <- gets lsCoA
   allRecords <- gets lsLoadedRecords
   let records = filter (checkQuery qry) allRecords
       rows = mapMaybe (csvRecord coa) allRecords
   outputString $ toString $ unlinesText $
-           tableGrid (CSV sep) [(ALeft, [output "DATE"]),
+           tableGrid fmt [(ALeft, [output "DATE"]),
                                 (ALeft, [output "CREDIT ACCOUNT"]),
                                 (ALeft, [output "CREDIT AMOUNT"]),
                                 (ALeft, [output "DEBIT ACCOUNT"]),

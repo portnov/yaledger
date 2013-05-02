@@ -134,6 +134,7 @@ instance Pretty Param where
            ")"
   prettyPrint (Plus x y) =
     prettyPrint x <> " + " <> prettyPrint y
+  prettyPrint (FromBalance c) = "#balance*" <> show c
 
 instance (Pretty t) => Pretty (Transaction t) where
   prettyPrint (TEntry e) = prettyPrint e

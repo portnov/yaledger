@@ -3,6 +3,7 @@
 module YaLedger.Reports.Common where
 
 import Control.Monad.State
+import Control.Monad.Exception
 import Data.Maybe
 import Data.List
 import Data.Decimal
@@ -11,9 +12,11 @@ import Data.String
 import Text.Printf
 
 import YaLedger.Types
+import YaLedger.Types.Reports
 import YaLedger.Types.Output
 import YaLedger.Output
 import YaLedger.Kernel
+import YaLedger.Exceptions
 
 data CommonFlags =
     CNoZeros
@@ -25,18 +28,25 @@ data CommonFlags =
   | CBothBalances
   | CNoCurrencies
   | CCSV (Maybe String)
+  | CHTML
   deriving (Eq, Show)
 
 selectOutputFormat :: [CommonFlags] -> OutputFormat
 selectOutputFormat flags =
   case [s | CCSV s <- flags] of
     (x:_) -> OCSV (CSV x)
-    [] ->  OASCII ASCII
+    [] -> if CHTML `elem` flags
+            then OHTML HTML
+            else OASCII ASCII
 
-setOutputFormat :: [CommonFlags] -> Ledger l ()
+setOutputFormat :: Throws InternalError l => [CommonFlags] -> Ledger l ()
 setOutputFormat flags = do
   let format = selectOutputFormat flags
   modify $ \st -> st {lsOutputFormat = format}
+  case format of
+    OASCII ascii -> outputText $ formatHeader ascii
+    OCSV csv     -> outputText $ formatHeader csv
+    OHTML html   -> outputText $ formatHeader html
 
 getOutputFormat :: Ledger l OutputFormat
 getOutputFormat = gets lsOutputFormat
