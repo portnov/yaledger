@@ -35,7 +35,7 @@ instance ReportClass Balances where
 commonFlags :: [BOptions] -> [CommonFlags]
 commonFlags opts = [flag | Common flag <- opts]
 
-showI :: Query -> [TextOutput]
+showI :: Query -> [FormattedText]
 showI qry = [showD "now" (qEnd qry)]
   where
     showD s Nothing = output s

@@ -96,7 +96,7 @@ trimPath (Just n) ps =
         [] -> last ps
         xs -> intercalate "/" (reverse $ map fst xs)
 
-showDouble :: Bool -> Currency -> Double -> TextOutput
+showDouble :: Bool -> Currency -> Double -> FormattedText
 showDouble showCurrencies c x =
   let fmt = "%0." ++ show (cPrecision c) ++ "f"
       str = printf fmt x ++
@@ -109,7 +109,7 @@ showDouble showCurrencies c x =
              then [Fragment faint str]
              else output str
 
-treeTable :: (q -> TextOutput) -> ([CommonFlags] -> a -> TextOutput) -> [CommonFlags] -> Int -> [q] -> Tree [a] [a] -> [(Column, Align, Column)]
+treeTable :: (q -> FormattedText) -> ([CommonFlags] -> a -> FormattedText) -> [CommonFlags] -> Int -> [q] -> Tree [a] [a] -> [(Column, Align, Column)]
 treeTable showQry showX options n qrys tree =
   let paths = map fromString $ map (intercalate "/") $ getPaths tree
       hideGroups = CHideGroups `elem` options
@@ -119,7 +119,7 @@ treeTable showQry showX options n qrys tree =
   in  (["ACCOUNT"], ALeft, paths):
       [([showQry qry], ALeft, col) | (col, qry) <- zip cols qrys]
    
-showTreeList :: Show a => Column -> (q -> [TextOutput]) -> ([CommonFlags] -> a -> TextOutput) -> [CommonFlags] -> Int -> [q] -> Tree [a] [a] -> Column
+showTreeList :: Show a => Column -> (q -> [FormattedText]) -> ([CommonFlags] -> a -> FormattedText) -> [CommonFlags] -> Int -> [q] -> Tree [a] [a] -> Column
 showTreeList title showQry showX options n qrys tree =
   let struct = showTreeStructure tree
       cols = [map (\l -> showX options (l !! i)) (allNodes tree) | i <- [0..n-1]]

@@ -33,7 +33,7 @@ instance ReportClass Saldo where
 commonFlags :: [SOptions] -> [CommonFlags]
 commonFlags opts = [flag | Common flag <- opts]
 
-showI :: Query -> [TextOutput]
+showI :: Query -> [FormattedText]
 showI qry = [showD "beginning" (qStart qry), output "...", showD "now" (qEnd qry)]
   where
     showD s Nothing = output s

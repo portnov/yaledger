@@ -1,7 +1,7 @@
 {-# LANGUAGE TypeSynonymInstances, FlexibleInstances, OverloadedStrings #-}
 module YaLedger.Output.ANSI
   (Color (..),
-   OutAttributes (..), Fragment (..), TextOutput,
+   OutAttributes (..), Fragment (..), FormattedText,
    output, boldText,
    (<>),
    bold, color, dull, faint,
@@ -43,7 +43,7 @@ data Fragment = Fragment {
 instance Show Fragment where
   show f = fText f
 
-type TextOutput = [Fragment]
+type FormattedText = [Fragment]
 
 bold :: OutAttributes
 bold = OutAttributes Nothing Nothing (Just BoldIntensity)
@@ -57,62 +57,62 @@ dull = OutAttributes Nothing (Just Dull) Nothing
 faint :: OutAttributes
 faint = OutAttributes Nothing Nothing (Just FaintIntensity)
 
-instance IsString TextOutput where
+instance IsString FormattedText where
   fromString str = [Fragment Plain str] 
 
 class ToOutput a where
-  toOutput :: a -> TextOutput
+  toOutput :: a -> FormattedText
 
 instance ToOutput String where
   toOutput str = [Fragment Plain str]
 
-instance ToOutput TextOutput where
+instance ToOutput FormattedText where
   toOutput = id
 
-(<>) :: (ToOutput a, ToOutput b) => a -> b -> TextOutput
+(<>) :: (ToOutput a, ToOutput b) => a -> b -> FormattedText
 x <> y = toOutput x ++ toOutput y
 
-output :: String -> TextOutput
+output :: String -> FormattedText
 output = toOutput
 
-boldText :: String -> TextOutput
+boldText :: String -> FormattedText
 boldText str = [Fragment bold str]
 
-toString :: TextOutput -> String
+toString :: FormattedText -> String
 toString t = concatMap fText t
 
-textLength :: TextOutput -> Int
+textLength :: FormattedText -> Int
 textLength t = sum $ map (length . fText) t
 
-takeText :: Int -> TextOutput -> TextOutput
+takeText :: Int -> FormattedText -> FormattedText
 takeText _ [] = []
 takeText n (f:fs)
   | length (fText f) == n = [f]
   | length (fText f) > n = [f {fText = take n (fText f)}]
   | otherwise = f: takeText (n - length (fText f)) fs
 
-emptyText :: TextOutput
+emptyText :: FormattedText
 emptyText = []
 
-space :: TextOutput
+space :: FormattedText
 space = " "
 
-newline :: TextOutput
+newline :: FormattedText
 newline = "\n"
 
-spaces :: Int -> TextOutput
+spaces :: Int -> FormattedText
 spaces n = fromString $ replicate n ' '
 
-vbar :: TextOutput
+vbar :: FormattedText
 vbar = [Fragment bold "│"]
 
-unlinesText :: [TextOutput] -> TextOutput
+unlinesText :: [FormattedText] -> FormattedText
 unlinesText texts = intercalate newline texts
 
-unwordsText :: [TextOutput] -> TextOutput
+unwordsText :: [FormattedText] -> FormattedText
 unwordsText texts = intercalate space texts
 
-putText :: Bool -> TextOutput -> IO ()
+putText :: Bool -> FormattedText -> IO ()
 putText colorize fs = do
     tty <- hIsTerminalDevice stdout
     if tty && colorize
@@ -125,6 +125,6 @@ putText colorize fs = do
         putStr str
         setSGR [Reset]
 
-putTextLn :: Bool -> TextOutput -> IO ()
+putTextLn :: Bool -> FormattedText -> IO ()
 putTextLn colorize text = putText colorize text >> putStrLn ""
 

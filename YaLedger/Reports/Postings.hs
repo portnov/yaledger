@@ -46,7 +46,7 @@ left (Ext date i pos attrs posting) = Ext date i pos attrs (Left posting)
 right :: Ext (Posting Decimal Debit) -> Ext (Either (Posting Decimal Credit) (Posting Decimal Debit))
 right (Ext date i pos attrs posting) = Ext date i pos attrs (Right posting)
 
-showPostings :: TableFormat a => a -> [Ext (Either (Posting Decimal Credit) (Posting Decimal Debit))] -> [TextOutput]
+showPostings :: TableFormat a => a -> [Ext (Either (Posting Decimal Credit) (Posting Decimal Debit))] -> [FormattedText]
 showPostings _ [] = [output "No postings."]
 showPostings f list =
     let dates = map (prettyPrint . getDate) list

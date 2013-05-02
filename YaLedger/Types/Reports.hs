@@ -174,11 +174,11 @@ runAReport queries cmdline (Report r) = do
                    throw (InvalidCmdLine $ concat errs ++ message)
       runReportL r queries options (fst params)
 
-showMaybeDate :: Maybe DateTime -> TextOutput
+showMaybeDate :: Maybe DateTime -> FormattedText
 showMaybeDate Nothing = output "NA"
 showMaybeDate (Just date) = prettyPrint date
 
-showInterval :: Query -> TextOutput
+showInterval :: Query -> FormattedText
 showInterval qry =
     "From " <> showMD "the begining" (qStart qry) <> " till " <> showMD "now" (qEnd qry)
   where

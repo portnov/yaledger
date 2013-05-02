@@ -12,7 +12,7 @@ import YaLedger.Types
 import YaLedger.Output.ANSI
 
 class Pretty a where
-  prettyPrint :: a -> TextOutput
+  prettyPrint :: a -> FormattedText
 
 pPrint :: Pretty a => a -> String
 pPrint x = toString $ prettyPrint x

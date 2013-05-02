@@ -6,18 +6,18 @@ import YaLedger.Output.ANSI
 data Align = ALeft | ACenter | ARight
   deriving (Eq, Show)
 
-type Column = [TextOutput]
+type Column = [FormattedText]
 type Row = [Column]
 
 class TableFormat a where
-  tableColumns :: a -> [([TextOutput], Align, Column)] -> Column
+  tableColumns :: a -> [([FormattedText], Align, Column)] -> Column
 
-  tableGrid :: a -> [(Align, [TextOutput])] -> [Row] -> Column
+  tableGrid :: a -> [(Align, [FormattedText])] -> [Row] -> Column
 
   maxFieldWidth :: a -> Maybe Int
   maxFieldWidth _ = Nothing
 
-  showFooter :: a -> TextOutput -> Column
+  showFooter :: a -> FormattedText -> Column
   showFooter _ s = [s]
 
 data TableColumn a = TableColumn {

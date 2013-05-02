@@ -33,7 +33,7 @@ instance (Eq n, Eq a) => Eq (Tree n a) where
 
   _ == _ = False
 
-showTree :: (Show n, Show a) => Tree n a -> [TextOutput]
+showTree :: (Show n, Show a) => Tree n a -> [FormattedText]
 showTree tree =
     zipS emptyText (alignMax ALeft $ showTreeStructure tree)
             (alignMax ARight $ values tree)
@@ -41,7 +41,7 @@ showTree tree =
     values (Branch {..}) = fromString (show branchData): concatMap values branchChildren
     values (Leaf {..})   = [fromString $ show leafData]
 
-showTreeStructure :: (Show n, Show a) => Tree n a -> [TextOutput]
+showTreeStructure :: (Show n, Show a) => Tree n a -> [FormattedText]
 showTreeStructure tree = struct [True] tree
   where
     struct (b:bs) (Branch {nodeName = name, branchData = n, branchChildren = []}) =
@@ -53,11 +53,11 @@ showTreeStructure tree = struct [True] tree
     struct (b:bs) (Leaf {nodeName = name, leafData = a}) =
         [concatMap bar (reverse bs) <> glyph b <> name <> ": "]
 
-    bar :: Bool -> TextOutput
+    bar :: Bool -> FormattedText
     bar True  = fromString "  "
     bar False = fromString "│ "
 
-    glyph :: Bool -> TextOutput
+    glyph :: Bool -> FormattedText
     glyph True  = fromString "╰—□ "
     glyph False = fromString "├—□ "
 

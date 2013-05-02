@@ -22,13 +22,13 @@ data InfoColumn =
   deriving (Eq,Show)
 
 -- | Show amount: show currency only if there is no CNoCurrencies flag in options.
-showAmt :: [CommonFlags] -> Amount -> TextOutput
+showAmt :: [CommonFlags] -> Amount -> FormattedText
 showAmt options a@(x :# c)
   | CNoCurrencies `elem` options = prettyPrint x
   | otherwise = prettyPrint a
 
 -- | Show BalanceInfo: show currency only if there is no CNoCurrencies flag in options.
-showBI :: [CommonFlags] -> BalanceInfo Amount -> TextOutput
+showBI :: [CommonFlags] -> BalanceInfo Amount -> FormattedText
 showBI _ (BalanceInfo Nothing Nothing) = output "NA"
 showBI options (BalanceInfo (Just x) Nothing) = showAmt options x
 showBI options (BalanceInfo Nothing (Just x)) = showAmt options x
@@ -37,7 +37,7 @@ showBI options (BalanceInfo (Just a) (Just l))
     | otherwise = showAmt options a <> output " / " <> showAmt options l
 
 -- | Show BalanceInfo: show currency only if there is no CNoCurrencies flag in options.
-showBI' :: [CommonFlags] -> BalanceInfo Decimal -> Currency -> TextOutput
+showBI' :: [CommonFlags] -> BalanceInfo Decimal -> Currency -> FormattedText
 showBI' _ (BalanceInfo Nothing Nothing) _ = output "NA"
 showBI' options (BalanceInfo (Just x) Nothing) c = showAmt options (x :# c)
 showBI' options (BalanceInfo Nothing (Just x)) c = showAmt options (x :# c)
@@ -45,17 +45,17 @@ showBI' options (BalanceInfo (Just a) (Just l)) c
     | a == l = showAmt options (a :# c)
     | otherwise = showAmt options (a :# c) <> output " / " <> showAmt options (l :# c)
 
-showPostingAccount :: Maybe Int -> ChartOfAccounts -> Posting v t -> TextOutput
+showPostingAccount :: Maybe Int -> ChartOfAccounts -> Posting v t -> FormattedText
 showPostingAccount t coa (CPosting acc _ _) = output $ maybe "" (trimPath t) $ accountFullPath (getID acc) coa
 showPostingAccount t coa (DPosting acc _ _) = output $ maybe "" (trimPath t) $ accountFullPath (getID acc) coa
 
-showPostingValueD :: Bool -> Posting Decimal t -> TextOutput
+showPostingValueD :: Bool -> Posting Decimal t -> FormattedText
 showPostingValueD True (CPosting acc x _) = prettyPrint (x :# getCurrency acc)
 showPostingValueD True (DPosting acc x _) = prettyPrint (x :# getCurrency acc)
 showPostingValueD False (CPosting _ x _) = prettyPrint x
 showPostingValueD False (DPosting _ x _) = prettyPrint x
 
-showPostingValue :: Posting Amount t -> TextOutput
+showPostingValue :: Posting Amount t -> FormattedText
 showPostingValue (CPosting _ x _) = prettyPrint x
 showPostingValue (DPosting _ x _) = prettyPrint x
 
@@ -130,11 +130,11 @@ showB' t flags infos bqry coa currency (Ext {getDate = date, getContent = balanc
          (l:_) -> [output (takeS l description): padding]
          _ -> []
 
-posting :: Posting Decimal t -> TextOutput
+posting :: Posting Decimal t -> FormattedText
 posting (DPosting acc x _) = getName acc <> output ": " <> prettyPrint (x :# getCurrency acc)
 posting (CPosting acc x _) = getName acc <> output ": " <> prettyPrint (x :# getCurrency acc)
 
-showEntries :: (TableFormat a) => a -> Amount -> [Ext (Entry Decimal Checked)] -> TextOutput
+showEntries :: (TableFormat a) => a -> Amount -> [Ext (Entry Decimal Checked)] -> FormattedText
 showEntries fmt totals list =
   let l = map showE list
       footer = showFooter fmt $ "    TOTALS: " <> show totals
@@ -144,7 +144,7 @@ showEntries fmt totals list =
                      (ARight, [output "CREDIT"]),
                      (ARight, [output "RATES DIFF."])] l ++ footer
 
-showEntries' :: (TableFormat a) => ChartOfAccounts -> a -> Amount -> [CommonFlags] -> [InfoColumn] -> [Ext (Entry Decimal Checked)] -> TextOutput
+showEntries' :: (TableFormat a) => ChartOfAccounts -> a -> Amount -> [CommonFlags] -> [InfoColumn] -> [Ext (Entry Decimal Checked)] -> FormattedText
 showEntries' coa fmt totals flags infos list =
   let l = map (showE' (maxFieldWidth fmt) flags infos coa) list
       footer = showFooter fmt $ "    TOTALS: " <> show totals
@@ -161,7 +161,7 @@ showEntries' coa fmt totals flags infos list =
                        [] -> []
                        _ -> [(ALeft, [output "DESCRIPTION"])] ) l ++ footer
 
-showEntriesBalances :: (TableFormat a) => a -> Amount -> [Ext (Balance Checked)] -> TextOutput
+showEntriesBalances :: (TableFormat a) => a -> Amount -> [Ext (Balance Checked)] -> FormattedText
 showEntriesBalances fmt totals list =
   let l = map (showB $ getCurrency totals) list
       footer = showFooter fmt $ "    TOTALS: " <> show totals
@@ -171,7 +171,7 @@ showEntriesBalances fmt totals list =
                      (ARight, [output "CREDIT"]),
                      (ARight, [output "BALANCE B/D"])] l ++ footer
 
-showEntriesBalances' :: (TableFormat a) => BalanceQuery -> [CommonFlags] -> [InfoColumn] -> ChartOfAccounts -> a -> Amount -> [Ext (Balance Checked)] -> TextOutput
+showEntriesBalances' :: (TableFormat a) => BalanceQuery -> [CommonFlags] -> [InfoColumn] -> ChartOfAccounts -> a -> Amount -> [Ext (Balance Checked)] -> FormattedText
 showEntriesBalances' bqry flags infos coa fmt totals list =
   let l = map (showB' (maxFieldWidth fmt) flags infos bqry coa (getCurrency totals)) list
       footer = showFooter fmt $ "    TOTALS: " <> show totals

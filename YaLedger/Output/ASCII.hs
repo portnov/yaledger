@@ -9,7 +9,7 @@ import YaLedger.Output.Tables
 
 data ASCII = ASCII
 
-align :: Int -> Align -> TextOutput -> TextOutput
+align :: Int -> Align -> FormattedText -> FormattedText
 align w ALeft str
   | textLength str >= w = takeText w str
   | otherwise = str <> replicate (w - textLength str) ' '
@@ -25,7 +25,7 @@ align w ACenter str
         pad2 = replicate n ' '
     in pad1 <> str <> pad2
 
-alignPad :: Int -> Align -> TextOutput -> TextOutput
+alignPad :: Int -> Align -> FormattedText -> FormattedText
 alignPad w ALeft str
   | textLength str >= w = takeText w str
   | otherwise = space <> str <> spaces (w - textLength str - 1)
@@ -46,10 +46,10 @@ alignMax a list =
   let m = maximum (map textLength list)
   in  map (pad . align m a) list
 
-pad :: TextOutput -> TextOutput
+pad :: FormattedText -> FormattedText
 pad s = space <> s <> space
 
-zipS :: TextOutput -> Column -> Column -> Column
+zipS :: FormattedText -> Column -> Column -> Column
 zipS sep l1 l2 =
   let m = max (length l1) (length l2)
       m1 = if null l1 then 0 else maximum (map textLength l1)
@@ -61,7 +61,7 @@ zipS sep l1 l2 =
       go x y = s m1 x <> sep <> s m2 y
   in  zipWith go l1' l2'
 
-twoColumns :: TextOutput -> TextOutput -> Column -> Column -> Column
+twoColumns :: FormattedText -> FormattedText -> Column -> Column -> Column
 twoColumns h1 h2 l1 l2 =
   let m1 = maximum (map textLength (h1:l1))
       m2 = maximum (map textLength (h2:l2))
@@ -99,7 +99,7 @@ endchar TopLine    = '╕'
 endchar MidLine    = '╡'
 endchar BottomLine = '╛'
 
-tabline :: LineKind -> [Int] -> TextOutput
+tabline :: LineKind -> [Int] -> FormattedText
 tabline k ms = boldText $ startchar k: concatMap go (init ms) ++ line (last ms) ++ [endchar k]
   where
     go m = line m ++ [midchar k]
