@@ -51,10 +51,10 @@ toRows list =
       go a t = (a,t)
   in  map (zipWith go aligns) texts
 
-mkHeader :: [FormattedText] -> String
+mkHeader :: [[FormattedText]] -> String
 mkHeader hdrs = "<tr>" ++ concatMap th hdrs ++ "</tr>"
   where
-    th text = printf "<th>%s</th>" (formatHTML text)
+    th text = printf "<th>%s</th>" (unlinesHTML text)
 
 unlinesHTML :: [FormattedText] -> String
 unlinesHTML ls = intercalate "<br/>" $ map formatHTML ls
@@ -74,7 +74,7 @@ instance TableFormat HTML where
       map formatRow' (toRows list) ++
       [ "</table>" ]
     where
-      getHeader = map (\(h,_,_) -> concat h) list
+      getHeader = map (\(h,_,_) -> h) list
 
   tableGrid HTML cols rows = map output $
       [ "<table style='white-space: pre'>"
@@ -82,7 +82,7 @@ instance TableFormat HTML where
       map formatRow alignedRows ++
       [ "</table>" ]
     where
-      getHeader = map (\(_,h) -> concat h) cols
+      getHeader = map (\(_,h) -> h) cols
       alignedRows = map (zipWith go aligns) rows
       aligns = map fst cols
       go a t = (a,t)

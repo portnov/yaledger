@@ -93,7 +93,7 @@ byGroup queries options coa = do
     let results'
           | CAbsoluteValues `elem` options = mapTree (map absBI) (map absBI) filteredResults
           | otherwise = filteredResults
-    let showQry = showMaybeDate . qEnd
+    let showQry q = [showMaybeDate $ qEnd q]
     let format = case selectOutputFormat options of
                    OASCII _ -> \n qs rs -> unlinesText $ showTreeList [output "ACCOUNT"] showI showBI options n qs rs
                    OCSV csv -> \n qs rs -> unlinesText $ tableColumns csv (treeTable showQry showBI options n qs rs)

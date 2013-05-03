@@ -108,8 +108,8 @@ byGroup queries options coa = do
     let hideGroups = CHideGroups `elem` options
     let format = case selectOutputFormat options of
                    OASCII _  -> \n qs rs -> unlinesText $ showTreeList [emptyText, output "ACCOUNT", emptyText] showI (const prettyPrint) options n qs rs
-                   OCSV csv -> \n qs rs -> unlinesText $ tableColumns csv (treeTable showInterval showAmt options n qs rs)
-                   OHTML html -> \n qs rs -> unlinesText $ tableColumns html (treeTable showInterval showAmt options n qs rs)
+                   OCSV csv -> \n qs rs -> unlinesText $ tableColumns csv (treeTable (\i -> [showInterval i]) showAmt options n qs rs)
+                   OHTML html -> \n qs rs -> unlinesText $ tableColumns html (treeTable showI showAmt options n qs rs)
 
     outputText $ format (length queries) queries (prepare results')
 

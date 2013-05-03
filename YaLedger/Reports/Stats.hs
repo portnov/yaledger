@@ -264,8 +264,8 @@ byGroup queries options coa = do
             | otherwise = output $ printf "%0.4f" x
       let format = case selectOutputFormat flags of
                      OASCII _ -> \n qs rs -> unlinesText $ showTreeList [output "ACCOUNT"] (\x -> [x]) showD flags n qs rs
-                     OCSV csv -> \n qs rs -> unlinesText $ tableColumns csv (treeTable id showD flags n qs rs)
-                     OHTML html -> \n qs rs -> unlinesText $ tableColumns html (treeTable id showD flags n qs rs)
+                     OCSV csv -> \n qs rs -> unlinesText $ tableColumns csv (treeTable (\x -> [x]) showD flags n qs rs)
+                     OHTML html -> \n qs rs -> unlinesText $ tableColumns html (treeTable (\x -> [x]) showD flags n qs rs)
       let columns = map output ["OPEN", "MIN", "Q1", "MEDIAN", "Q3", "MAX", "AVG", "SD", "CLOSE"]
       outputText $ format (length columns) columns (prepare results)
 

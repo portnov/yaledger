@@ -134,7 +134,7 @@ showDouble showCurrencies c x =
              then [Fragment faint str]
              else output str
 
-treeTable :: (q -> FormattedText) -> ([CommonFlags] -> a -> FormattedText) -> [CommonFlags] -> Int -> [q] -> Tree [a] [a] -> [(Column, Align, Column)]
+treeTable :: (q -> [FormattedText]) -> ([CommonFlags] -> a -> FormattedText) -> [CommonFlags] -> Int -> [q] -> Tree [a] [a] -> [(Column, Align, Column)]
 treeTable showQry showX options n qrys tree =
   let paths = map fromString $ map (intercalate "/") $ getPaths tree
       hideGroups = CHideGroups `elem` options
@@ -142,7 +142,7 @@ treeTable showQry showX options n qrys tree =
       getPaths = if hideGroups then allLeafPaths else allPaths
       getNodes = if hideGroups then allLeafs else allNodes
   in  (["ACCOUNT"], ALeft, paths):
-      [([showQry qry], ALeft, col) | (col, qry) <- zip cols qrys]
+      [(showQry qry, ARight, col) | (col, qry) <- zip cols qrys]
    
 showTreeList :: Show a => Column -> (q -> [FormattedText]) -> ([CommonFlags] -> a -> FormattedText) -> [CommonFlags] -> Int -> [q] -> Tree [a] [a] -> Column
 showTreeList title showQry showX options n qrys tree =
