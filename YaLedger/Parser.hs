@@ -1,9 +1,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 -- | This module contains high-level functions for parsing input files
 module YaLedger.Parser
-  (InputParser,
-   allParsers,
-   parseInputFiles,
+  (parseInputFiles,
    readCoA,
    readAMap
   ) where
@@ -27,32 +25,20 @@ import qualified YaLedger.Parser.CSV as CSV
 import qualified YaLedger.Parser.HTML as HTML
 import qualified YaLedger.Parser.CBR as CBR
 
-type InputParser = LedgerOptions -> FilePath -> Currencies -> ChartOfAccounts -> FilePath -> IO [Ext Record]
-
--- | All supported parsers
-allParsers :: [(String, String, InputParser)]
-allParsers =
-  [("yaledger", "*.yaledger", T.loadTransactions),
-   ("csv",      "*.csv",      CSV.loadCSV),
-   ("html",     "*.html",     HTML.loadHTML),
-   ("cbr",      "*.cbr",      CBR.loadCBR)]
-
 -- | Lookup for parser by file mask
-lookupMask :: FilePath -> [(String, String, InputParser)] -> Maybe (String, InputParser)
+lookupMask :: FilePath -> [ParserSpec] -> Maybe ParserSpec
 lookupMask _ [] = Nothing
-lookupMask file ((name,mask,parser):xs)
-  | match (compile mask) file = Just (name, parser)
-  | otherwise                 = lookupMask file xs
+lookupMask file (spec:xs)
+  | match (compile (psMask spec)) file = Just spec
+  | otherwise                          = lookupMask file xs
 
 -- | Parse all input files using corresponding parsers
 parseInputFiles :: LedgerOptions
-                -> [(String, String, InputParser)] -- ^ List of parsers: (name, files mask, parser)
-                -> [(String, FilePath)]            -- ^ (parser name, config path)
                 -> Currencies                      -- ^ Set of declared currencies
                 -> ChartOfAccounts
                 -> [FilePath]                      -- ^ List of files or masks (*.yaledger)
                 -> IO [Ext Record]
-parseInputFiles options parsers configs currs coa masks = do
+parseInputFiles options currs coa masks = do
     $debugIO $ "Start parsing input files by masks: " ++ show masks
     inputFiles <- concat <$> mapM glob masks
     $debugIO $ "Input files:\n" ++ unlines inputFiles
@@ -60,17 +46,18 @@ parseInputFiles options parsers configs currs coa masks = do
     traceEventIO "All files loaded."
     return $ sort $ concat records
   where
+    parsers = parserConfigs options
     loadFile file = do
        case lookupMask (takeFileName file) parsers of
          Nothing -> do
                     $infoIO $ "Unknown file type: " ++ file
                     return []
-         Just (parserName, parser) ->
-           let configFile = fromMaybe (parserName ++ ".yaml") $
-                                lookup parserName configs
+         Just spec ->
+           let configFile = psConfigPath spec
+               parse      = psParser spec
            in  do
-               rec <- parser options configFile currs coa file
-               $infoIO $ "Read " ++ show (length rec) ++ " records from " ++ file
+               rec <- parse options configFile currs coa file
+               $infoIO $ "Read " ++ show (length rec) ++ " records from " ++ file ++ " (parser config: " ++ configFile ++ ")"
                traceEventIO $ "File loaded: " ++ file
                return rec
 

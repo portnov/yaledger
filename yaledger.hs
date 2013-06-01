@@ -19,7 +19,6 @@ import YaLedger.Reports.Flow
 main :: IO ()
 main =
   defaultMain
-    allParsers
     [("balances", Report Balances),
      ("saldo",    Report Saldo),
      ("registry", Report Registry),

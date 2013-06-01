@@ -4,15 +4,33 @@ module YaLedger.Types.Config
    SetOption (..),
    SetValue (..), SetAttribute (..),
    CheckAttribute (..), DAction (..),
-   DeduplicationRule (..)
+   DeduplicationRule (..),
+   ParserSpec (..),
+   InputParser
   ) where
 
 import Data.Dates
 import System.Log.Logger
 import qualified Data.Map as M
 
+import YaLedger.Types.Common
+import YaLedger.Types.Ledger
 import YaLedger.Types.Attributes
 import YaLedger.Types.Transactions
+
+data ParserSpec = ParserSpec {
+    psType :: String,
+    psMask :: String,
+    psConfigPath :: String,
+    psParser :: InputParser }
+
+instance Eq ParserSpec where
+  p1 == p2 = (psType p1 == psType p2) && (psMask p1 == psMask p2)
+
+instance Show ParserSpec where
+  show ps = "<Parser `" ++ psType ps ++ "' for `" ++ psMask ps ++ "' files, config `" ++ psConfigPath ps ++ "'>"
+
+type InputParser = LedgerOptions -> FilePath -> Currencies -> ChartOfAccounts -> FilePath -> IO [Ext Record]
 
 data LedgerOptions =
     LedgerOptions {
@@ -30,7 +48,7 @@ data LedgerOptions =
       expenceAccounts :: Attributes,
       defaultLogSeverity :: Priority,
       logSeveritySetup :: [(String, Priority)],
-      parserConfigs :: [(String, FilePath)],
+      parserConfigs :: [ParserSpec],
       deduplicationRules :: [DeduplicationRule],
       defaultReport :: String,
       defaultReportParams :: M.Map String String,

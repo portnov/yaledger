@@ -4,7 +4,7 @@ module YaLedger.Main
    module YaLedger.Types.Reports,
    LedgerOptions (..),
    parseCmdLine,
-   allParsers,
+   defaultParsers,
    defaultMain,
    lookupInit,
    initialize,
@@ -90,11 +90,20 @@ apply (SetReportEnd   date) opts = let qry = reportsQuery opts
 apply (SetReportsInterval i) opts = opts {reportsInterval = Just i}
 apply (SetDebugLevel ("", lvl))  opts = opts {defaultLogSeverity = lvl}
 apply (SetDebugLevel (name, lvl))  opts = opts {logSeveritySetup = logSeveritySetup opts ++ [(name,lvl)] }
-apply (SetParserConfig (n,p)) opts = opts {parserConfigs = (n,p): parserConfigs opts}
+apply (SetParserConfig (n,p)) opts = opts {parserConfigs = setParserConfig n p (parserConfigs opts)}
 apply (SetColorizeOutput) opts = opts {colorizeOutput = True}
 apply (SetOutputFile path) opts = opts {outputFile = Just path}
 apply SetHelp _ = Help
-                         
+
+setParserConfig :: String -> String -> [ParserSpec] -> [ParserSpec]
+setParserConfig name path specs =
+  let p = case parserByName' name specs of
+            Nothing -> case parserByName name of
+                         Nothing -> error $ "Unknown parser: " ++ name
+                         Just p  -> p
+            Just p -> p
+  in (p {psConfigPath = path}): specs
+
 -- | Parse command line
 parseCmdLine :: [String] -> IO LedgerOptions
 parseCmdLine argv = do
@@ -202,11 +211,10 @@ parseCmdLine argv = do
 lookupInit :: String -> [(String, a)] -> [a]
 lookupInit key list = [v | (k,v) <- list, key `isPrefixOf` k]
 
-initialize :: [(String, String, InputParser)] -- ^ List of parsers to support: (parser name, files mask, parser)
-            -> [(String, Report)]              -- ^ List of reports to support: (report name, report)
+initialize :: [(String, Report)]              -- ^ List of reports to support: (report name, report)
             -> [String]
             -> IO (Maybe (Report, LedgerOptions, [String]))
-initialize parsers reports argv = do
+initialize reports argv = do
   options <- parseCmdLine argv
   case options of
     Help -> do
@@ -217,7 +225,7 @@ initialize parsers reports argv = do
          $infoIO $ "Using chart of accounts: " ++ fromJust (chartOfAccounts options)
          $infoIO $ "Using accounts map: " ++ fromJust (accountMap options)
          $debugIO $ "Using parser configs:\n" ++
-             (unlines $ map (\(name,config) -> name ++ ": " ++ config) (parserConfigs options))
+             (unlines $ map show (parserConfigs options))
          let report = defaultReport options
          params <- if null (reportParams options)
                      then case lookupInit report (M.assocs $ defaultReportParams options) of
@@ -243,19 +251,18 @@ initialize parsers reports argv = do
                 return Nothing
 
 -- | Default `main' function
-defaultMain :: [(String, String, InputParser)] -- ^ List of parsers to support: (parser name, files mask, parser)
-            -> [(String, Report)]              -- ^ List of reports to support: (report name, report)
+defaultMain :: [(String, Report)]              -- ^ List of reports to support: (report name, report)
             -> IO ()
-defaultMain parsers reports = do
+defaultMain reports = do
   argv <- getArgs
   if (not $ null argv) && (head argv == "init")
     then install $ tail argv
     else do
-         init <- initialize parsers reports argv
+         init <- initialize reports argv
          case init of
            Nothing -> return ()
            Just (report, options, params) ->
-             runYaLedger parsers options report params
+             runYaLedger options report params
 
 tryE action =
   (Right <$> action) `catchWithSrcLoc` (\l e -> return (Left (l, e)))
@@ -284,17 +291,15 @@ withOutputFile action = do
         return result
       Nothing -> action
 
-runYaLedger :: [(String, String, InputParser)]
-            -> LedgerOptions
+runYaLedger :: LedgerOptions
             -> Report
             -> [String]
             -> IO ()
-runYaLedger parsers options report params = do
+runYaLedger options report params = do
   coaPath <- fromJustM "No CoA path specified" (chartOfAccounts options)
   mapPath <- fromJustM "No accounts map path specified" (accountMap options)
   cpath   <- fromJustM "No currencies list file specified" (currenciesList options)
-  let configs = ("yaledger", fromJust (mainConfigPath options)): parserConfigs options
-      mbInterval = reportsInterval options
+  let mbInterval = reportsInterval options
       rules = deduplicationRules options
       inputPaths = files options
       qry = query options
@@ -306,8 +311,7 @@ runYaLedger parsers options report params = do
                                 fail $ "An error occured while loading configs:\n  " ++ show e ++
                                        "\nIf you do not have any configs, just run `yaledger init' command." )
 
-
-  records <- parseInputFiles options parsers configs currsMap coa inputPaths
+  records <- parseInputFiles options currsMap coa inputPaths
   $debugIO $ "Records loaded."
   runLedger options coa amap records $ runEMT $ do
     -- Build full map of groups of accounts.

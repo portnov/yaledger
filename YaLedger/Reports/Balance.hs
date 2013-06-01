@@ -97,7 +97,7 @@ byGroup queries options coa = do
     let format = case selectOutputFormat options of
                    OASCII _ -> \n qs rs -> unlinesText $ showTreeList [output "ACCOUNT"] showI showBI options n qs rs
                    OCSV csv -> \n qs rs -> unlinesText $ tableColumns csv (treeTable showQry showBI options n qs rs)
-                   OHTML html -> \n qs rs -> unlinesText $ tableColumns html (treeTable showQry showBI options n qs rs)
+                   OHTML html -> \n qs rs -> unlinesText $ showTreeList [output "ACCOUNT"] showI showBI options n qs rs
 
     outputText $ format (length queries) queries results'
 

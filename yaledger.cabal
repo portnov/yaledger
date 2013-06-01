@@ -73,7 +73,7 @@ library
                    YaLedger.Output.HTML
                    YaLedger.Output.Pretty
                    YaLedger.Output.Messages
-                   YaLedger.Output.ANSI
+                   YaLedger.Output.Formatted
                    YaLedger.Processor
                    YaLedger.Processor.Rules
                    YaLedger.Processor.Templates

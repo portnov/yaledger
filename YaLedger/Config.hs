@@ -8,6 +8,7 @@ import qualified Data.Text as T
 import qualified Data.HashMap.Strict as H
 import qualified Data.ByteString as B
 import qualified Data.Map as M
+import qualified Data.Vector as V
 import Data.Yaml
 import Data.Dates
 import System.FilePath
@@ -21,7 +22,32 @@ import YaLedger.Types.Transactions
 import YaLedger.Types.Config
 import YaLedger.Types.Attributes
 import YaLedger.Logger
+import YaLedger.Config.CommonInstances ()
 import YaLedger.Parser.Common (pAttributeValue)
+import qualified YaLedger.Parser.CoA as CoA
+import qualified YaLedger.Parser.Map  as Map
+import qualified YaLedger.Parser.Transactions as T
+import qualified YaLedger.Parser.CSV as CSV
+import qualified YaLedger.Parser.HTML as HTML
+import qualified YaLedger.Parser.CBR as CBR
+
+defaultParsers :: [ParserSpec]
+defaultParsers =
+  [ParserSpec "yaledger" "*.yaledger" "yaledger.yaml" T.loadTransactions,
+   ParserSpec "csv"       "*.csv"     "csv.yaml"      CSV.loadCSV,
+   ParserSpec "html"      "*.html"    "html.yaml"     HTML.loadHTML,
+   ParserSpec "cbr"       "*.cbr"     "cbr.yaml"      CBR.loadCBR]
+
+parserByName :: String -> Maybe ParserSpec
+parserByName name = parserByName' name defaultParsers
+
+parserByName' :: String -> [ParserSpec] -> Maybe ParserSpec
+parserByName' name specs = get name specs
+  where
+    get _ [] = Nothing
+    get n (p:ps)
+      | psType p == n = Just p
+      | otherwise     = get n ps
 
 instance Monoid LedgerOptions where
   mempty = Help
@@ -99,13 +125,6 @@ instance FromJSON LedgerOptions where
   parseJSON Null = return mempty
   parseJSON x = fail $ "LedgerOptions: invalid object: " ++ show x
 
-instance FromJSON DateInterval where
-  parseJSON (String text) =
-    case runParser pDateInterval () (T.unpack text) (T.unpack text) of
-      Left err -> fail $ show err
-      Right interval -> return interval
-  parseJSON _ = fail "Date interval: invalid object"
-
 instance FromJSON DeduplicationRule where
   parseJSON (Object v) =
     DeduplicationRule
@@ -175,14 +194,6 @@ instance FromJSON Query where
       <*> parseAttrs ["start","end","all-admin"] (Just v)
   parseJSON _ = fail "Invalid object"
 
-instance FromJSON DateTime where
-  parseJSON (String text) =
-    let now = unsafePerformIO getCurrentDateTime
-    in case parseDate now (T.unpack text) of
-         Left err -> fail $ show err
-         Right date -> return date
-  parseJSON x = fail $ "DateTime: invalid object: " ++ show x
-
 parseAttrs :: [T.Text] -> Maybe Object -> Parser Attributes
 parseAttrs _ Nothing = return M.empty
 parseAttrs excluded (Just obj) = do
@@ -210,9 +221,20 @@ parsePairs obj = do
   let pairs = H.toList obj
   return [(T.unpack name, T.unpack value) | (name, String value) <- pairs]
 
-parseConfigs :: Maybe Object -> Parser [(String, FilePath)]
+parseConfigs :: Maybe Value -> Parser [ParserSpec]
 parseConfigs Nothing = return []
-parseConfigs (Just obj) = parsePairs obj
+parseConfigs (Just (Array a)) = mapM parseCSpec (V.toList a)
+  where
+    parseCSpec (Object o) = do
+        pt <- o .: "type"
+        defParser <- case parserByName pt of
+                       Nothing -> fail $ "Unknown parser type: " ++ pt
+                       Just p  -> return p
+        mask <- o .:? "mask" .!= psMask defParser
+        config <- o .:? "config" .!= psConfigPath defParser
+        return $ ParserSpec pt mask config (psParser defParser)
+    parseCSpec x = fail $ "parseConfigs.array: invalid object: " ++ show x
+parseConfigs (Just x) = fail $ "parseConfigs: invalid object: " ++ show x
 
 parseLogSetup :: Maybe Object -> Parser [(String, Priority)]
 parseLogSetup Nothing = return []
