@@ -5,12 +5,16 @@ module YaLedger.Parser.Common where
 import Control.Applicative ((<$>))
 import Control.Failure
 import Control.Exception hiding (try)
+import Data.Char (ord)
+import Data.List (isPrefixOf)
 import Data.Functor.Identity
 import Data.Decimal
 import qualified Data.ByteString as B
+import qualified Data.ByteString.Lazy as L
 import qualified Data.Map as M
 import Data.Yaml
 import Data.Text (Text)
+import qualified Data.Text.IO as TIO
 import Text.Parsec
 import Text.Parsec.Text
 import qualified Text.Parsec.Token as P
@@ -19,9 +23,31 @@ import System.FilePath
 import System.Environment.XDG.BaseDir
 
 import YaLedger.Types
+import YaLedger.Parser.HTTP
 
 instance Exception e => Failure e Identity where
   failure e = fail $ show e
+
+toLazyByteString :: String -> L.ByteString
+toLazyByteString str = L.pack $ map (fromIntegral . ord) str
+
+readUrl :: String -> IO String
+readUrl str =
+  if "http://" `isPrefixOf` str
+    then loadHTTP str
+    else readFile str
+
+readUrlLBS :: String -> IO L.ByteString
+readUrlLBS str =
+  if "http://" `isPrefixOf` str
+    then toLazyByteString <$> loadHTTP str
+    else L.readFile str
+
+readUrlText :: String -> IO Text
+readUrlText str =
+  if "http://" `isPrefixOf` str
+    then loadHTTPText str
+    else TIO.readFile str
 
 language :: (Stream s m Char, Monad m) => GenLanguageDef s u m
 language    = P.LanguageDef

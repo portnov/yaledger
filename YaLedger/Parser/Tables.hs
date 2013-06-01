@@ -14,7 +14,7 @@ import Data.Maybe
 import Data.List (intercalate)
 import Data.Decimal
 import Data.String
-import Data.Char (toLower)
+import Data.Char (toLower, ord)
 import Data.Yaml
 import Data.Dates.Formats hiding (Fixed)
 import Text.Regex.PCRE

@@ -10,7 +10,6 @@ import Control.Applicative ((<$>))
 import Control.Concurrent.ParallelIO
 import Data.Maybe
 import Data.List
-import qualified Data.Text.IO as TIO
 import Text.Parsec
 import System.Directory
 import System.FilePath
@@ -18,6 +17,7 @@ import System.FilePath.Glob
 
 import YaLedger.Types
 import YaLedger.Logger
+import YaLedger.Parser.Common
 import qualified YaLedger.Parser.CoA as CoA
 import qualified YaLedger.Parser.Map  as Map
 import qualified YaLedger.Parser.Transactions as T
@@ -32,6 +32,13 @@ lookupMask file (spec:xs)
   | match (compile (psMask spec)) file = Just spec
   | otherwise                          = lookupMask file xs
 
+myGlob :: String -> IO [String]
+myGlob str = do
+  files <- glob str
+  if null files
+    then return [str]
+    else return files
+
 -- | Parse all input files using corresponding parsers
 parseInputFiles :: LedgerOptions
                 -> Currencies                      -- ^ Set of declared currencies
@@ -40,7 +47,7 @@ parseInputFiles :: LedgerOptions
                 -> IO [Ext Record]
 parseInputFiles options currs coa masks = do
     $debugIO $ "Start parsing input files by masks: " ++ show masks
-    inputFiles <- concat <$> mapM glob masks
+    inputFiles <- concat <$> mapM myGlob masks
     $debugIO $ "Input files:\n" ++ unlines inputFiles
     records <- parallel (map loadFile inputFiles)
     traceEventIO "All files loaded."
@@ -64,7 +71,7 @@ parseInputFiles options currs coa masks = do
 -- | Read chart of accounts from file
 readCoA :: Currencies -> FilePath -> IO ChartOfAccounts
 readCoA currs path = do
-  content <- TIO.readFile path
+  content <- readUrlText path
   res <- runParserT CoA.pAccountGroup (CoA.emptyPState currs) path content
   case res of
     Right res -> return res
@@ -76,7 +83,7 @@ readAMap coa path = do
   b <- doesFileExist path
   if b
     then do
-         content <- TIO.readFile path
+         content <- readUrlText path
          case runParser Map.pAccountMap (Map.PState coa) path content of
            Right res -> return res
            Left err -> fail $ show err

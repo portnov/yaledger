@@ -618,7 +618,7 @@ loadTransactions opts configPath currs coa path = do
                    $infoIO $ "Using config for native format: " ++ configPath
                    loadParserConfig configPath
               else return defaultNativeParserConfig
-  content <- TIO.readFile path
+  content <- readUrlText path
   now <- getCurrentDateTime
   let !st = emptyPState now opts coa currs (nativeDateFormat config)
   case runParser pRecords st path content of

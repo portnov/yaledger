@@ -10,7 +10,7 @@ import Text.HandsomeSoup
 import Data.Yaml
 
 import YaLedger.Types
-import YaLedger.Parser.Common (loadParserConfig)
+import YaLedger.Parser.Common (loadParserConfig, readUrlLBS)
 import YaLedger.Parser.Tables
 
 data ParserConfig = ParserConfig {
@@ -30,7 +30,7 @@ instance FromJSON ParserConfig where
 
 readHTML :: ParserConfig -> FilePath -> IO [[String]]
 readHTML pc path = do
-  bstr <- L.readFile path
+  bstr <- readUrlLBS path
   string <- convertToUtf8 path (pcEncoding pc) bstr
   let doc = readString [withParseHTML yes, withWarnings no] string
   table <- runX $ getTable (pcTableSelector pc) doc

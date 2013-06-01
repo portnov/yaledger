@@ -7,7 +7,7 @@ import Data.Yaml
 import qualified Data.ByteString.Lazy as L
 
 import YaLedger.Types
-import YaLedger.Parser.Common (loadParserConfig)
+import YaLedger.Parser.Common (loadParserConfig, readUrlLBS)
 import YaLedger.Parser.Tables
 
 data ParserConfig = ParserConfig {
@@ -45,7 +45,7 @@ parseCSV opts pc path currs coa str =
 loadCSV :: LedgerOptions -> FilePath -> Currencies -> ChartOfAccounts -> FilePath -> IO [Ext Record]
 loadCSV opts configPath currs coa csvPath = do
   config <- loadParserConfig configPath 
-  bstr <- L.readFile csvPath
+  bstr <- readUrlLBS csvPath
   csv <- convertToUtf8 csvPath (pcEncoding config) bstr
   parseCSV opts config csvPath currs coa csv
 

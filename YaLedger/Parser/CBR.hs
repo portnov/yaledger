@@ -12,17 +12,16 @@ import Data.Tree.NTree.TypeDefs
 import Text.XML.HXT.Core
 import Data.Yaml
 import Data.Dates
-import Network.HTTP
-import Network.Browser
 import Text.Printf
 import Text.Parsec
 
 import YaLedger.Types hiding (getChildren)
-import YaLedger.Parser.Common (loadParserConfig)
+import YaLedger.Parser.Common (loadParserConfig, readUrlText)
 import YaLedger.Output.Pretty
 import YaLedger.Config.CommonInstances ()
 import YaLedger.Parser.Currencies ()
 import qualified YaLedger.Parser.Transactions as T
+import YaLedger.Parser.HTTP
 
 roubles :: Currency
 roubles = Currency {
@@ -112,13 +111,10 @@ skipXmlDecl str = go 0 str
 -- | Get CBR XML exchange rates description
 getCBRXML :: DateTime -> IO String
 getCBRXML date = do
-  let src :: String
-      src = printf "http://www.cbr.ru/scripts/XML_daily.asp?date_req=%02d/%02d/%04d"
+  let url = printf "http://www.cbr.ru/scripts/XML_daily.asp?date_req=%02d/%02d/%04d"
                    (day date) (month date) (year date)
-  (_, rsp) <- browse $ do
-               setAllowRedirects True -- handle HTTP redirects
-               request $ getRequest src
-  return $ skipXmlDecl (rspBody rsp)
+  rsp <- loadHTTP url
+  return $ skipXmlDecl rsp
 
 parseRates :: String -> [Int] -> IO [(Int, (Double, Double))]
 parseRates str cids = do
@@ -139,7 +135,7 @@ loadCache :: LedgerOptions -> Currencies -> ChartOfAccounts -> FilePath -> IO [E
 loadCache opts currs coa cachePath = do
   now <- getCurrentDateTime
   let !st = T.emptyPState now opts coa currs (Just "YYYY/MM/DD")
-  content <- TIO.readFile cachePath
+  content <- readUrlText cachePath
   case runParser pRates st cachePath content of
     Left err -> fail $ show err
     Right recs -> return recs
