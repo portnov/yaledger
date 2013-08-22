@@ -87,6 +87,10 @@ apply (SetReportStart date) opts = let qry = reportsQuery opts
                                    in  opts {reportsQuery = qry {qStart = Just date}}
 apply (SetReportEnd   date) opts = let qry = reportsQuery opts
                                    in  opts {reportsQuery = qry {qEnd = Just date}}
+apply (SetGrep regex) opts = let qry = reportsQuery opts
+                                 val = Regexp regex
+                             in  opts {reportsQuery = qry {qAttributes = M.insert "description" val (qAttributes qry)}}
+
 apply (SetReportsInterval i) opts = opts {reportsInterval = Just i}
 apply (SetDebugLevel ("", lvl))  opts = opts {defaultLogSeverity = lvl}
 apply (SetDebugLevel (name, lvl))  opts = opts {logSeveritySetup = logSeveritySetup opts ++ [(name,lvl)] }
@@ -157,6 +161,8 @@ parseCmdLine argv = do
                    "Start report from this date",
        Option "E" ["report-to"] (ReqArg (SetReportEnd . date) "DATE")
                    "End report at this date",
+       Option "g" ["grep"] (ReqArg SetGrep "REGEXP")
+                   "Show only records with description matching REGEXP",
        Option "A" ["all-admin"] (NoArg SetAllAdmin)
                    "Process all admin records with any dates and attributes",
        Option "a" ["attribute"] (ReqArg (AddAttribute . attr) "NAME=VALUE")

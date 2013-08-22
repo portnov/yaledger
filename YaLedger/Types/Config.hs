@@ -68,6 +68,7 @@ data SetOption =
   | SetEndDate DateTime
   | SetAllAdmin
   | AddAttribute (String, AttributeValue)
+  | SetGrep String
   | SetReportStart DateTime
   | SetReportEnd DateTime
   | SetReportsInterval DateInterval
