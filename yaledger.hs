@@ -15,6 +15,7 @@ import YaLedger.Reports.Turnovers
 import YaLedger.Reports.IncomeStatement
 import YaLedger.Reports.Stats
 import YaLedger.Reports.Flow
+import YaLedger.Reports.Rates
 
 main :: IO ()
 main =
@@ -30,4 +31,5 @@ main =
      ("holds",    Report Holds),
      ("incomestatement", Report IncomeStatement),
      ("stats",    Report Stats),
+     ("rates",    Report RatesReport),
      ("flow",     Report Flow)]
