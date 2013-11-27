@@ -86,18 +86,24 @@ byOneAccount queries options acc = do
     balances2 <- case currency2 of
                    Nothing -> return balancesAmts
                    Just ccy2 -> zipWithM (\qry amt -> convert (qEnd qry) ccy2 amt) queries balancesAmts
-    let ends   = map qEnd queries
+    let ends = map qEnd queries
     let hideCcys = CNoCurrencies `elem` commonFlags options
     let format = case selectOutputFormat (commonFlags options) of
                    OASCII _ -> tableColumns ASCII
                    OCSV csv -> tableColumns csv
                    OHTML html -> tableColumns html
+    let results = if CNoZeros `elem` commonFlags options
+                    then [(end, bal, bal2) | (end, bal@(x :#_), bal2) <- zip3 ends balances balances2, x /= 0]
+                    else zip3 ends balances balances2
+        ends'      = [ end | (end, _, _) <- results ]
+        balances'  = [ bal | (_, bal, _) <- results ]
+        balances2' = [ bal2 | (_, _, bal2) <- results ]
     outputText $ unlinesText $
-             format $ [([output "DATE"],    ALeft, map showMaybeDate ends),
-                       ([output "BALANCE"], ARight, map (printAmt hideCcys) balances )] ++
+             format $ [([output "DATE"],    ALeft, map showMaybeDate ends'),
+                       ([output "BALANCE"], ARight, map (printAmt hideCcys) balances' )] ++
                       case currency2 of
                         Nothing -> []
-                        Just c -> [([output $ "IN " ++ show c], ARight, map (printAmt hideCcys) balances2)]
+                        Just c -> [([output $ "IN " ++ show c], ARight, map (printAmt hideCcys) balances2')]
 
 printAmt False amt = prettyPrint amt
 printAmt True (x :# _) = prettyPrint x
