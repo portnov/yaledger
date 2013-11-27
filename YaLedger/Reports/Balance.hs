@@ -1,4 +1,4 @@
-{-# LANGUAGE ScopedTypeVariables, FlexibleContexts, OverlappingInstances, TypeFamilies, RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables, FlexibleContexts, OverlappingInstances, TypeFamilies, RecordWildCards, TemplateHaskell #-}
 
 module YaLedger.Reports.Balance
   (Balances (..)) where
@@ -9,6 +9,8 @@ data Balances = Balances
 
 data BOptions =
         Twoside
+      | UseCurrency String
+      | SecondCurrency String
       | Common CommonFlags
   deriving (Eq, Show)
 
@@ -21,6 +23,8 @@ instance ReportClass Balances where
      Option "n" ["negative"] (NoArg $ Common COnlyNegative) "Show only accounts with negative balance",
      Option "a" ["absolute"] (NoArg $ Common CAbsoluteValues) "Show absolute values of all balances",
      Option "g" ["hide-groups"] (NoArg $ Common CHideGroups) "Hide accounts groups in CSV output",
+     Option "c" ["currency"] (ReqArg UseCurrency "CURRENCY") "Show all amounts in given CURRENCY",
+     Option "P" ["second-currency"] (ReqArg SecondCurrency "CURRENCY") "Show all amounts also in given CURRENCY",
      Option ""  ["no-currencies"] (NoArg $ Common CNoCurrencies) "Do not show currencies in amounts",
      Option "l" ["ledger"] (NoArg $ Common CLedgerBalances) "Show ledger balances instead of available balances",
      Option "b" ["both"] (NoArg $ Common CBothBalances) "Show both available and ledger balances",
@@ -56,7 +60,7 @@ byBalance options bi
 balance queries options mbPath = (do
     coa <- getCoAItemL mbPath
     case coa of
-      Leaf {..} -> byOneAccount queries (commonFlags options) leafData
+      Leaf {..} -> byOneAccount queries options leafData
       _         -> if Twoside `elem` options
                      then forM_ queries $ \qry -> do
                               outputText $ showInterval qry
@@ -68,15 +72,35 @@ balance queries options mbPath = (do
     (\l (e :: NoSuchRate) -> handler l e)
 
 byOneAccount queries options acc = do
-    results <- forM queries $ \qry -> runAtomically $ getBalanceAt (qEnd qry) AvailableBalance acc
-    let ends   = map qEnd   queries
-    let format = case selectOutputFormat options of
+    currency <- case [str | UseCurrency str <- options] of
+                  [] -> return $ getCurrency acc
+                  (c:_) -> currencyByName c
+    balancesSrc <- forM queries $ \qry -> runAtomically $ getBalanceAt (qEnd qry) AvailableBalance acc
+    let balancesAmts = map (:# getCurrency acc) balancesSrc
+    balances <- if currency == getCurrency acc
+                  then return balancesAmts
+                  else zipWithM (\qry amt -> convert (qEnd qry) currency amt) queries balancesAmts
+    currency2 <- case [str | SecondCurrency str <- options] of
+                   [] -> return Nothing
+                   (c:_) -> Just <$> currencyByName c
+    balances2 <- case currency2 of
+                   Nothing -> return balancesAmts
+                   Just ccy2 -> zipWithM (\qry amt -> convert (qEnd qry) ccy2 amt) queries balancesAmts
+    let ends   = map qEnd queries
+    let hideCcys = CNoCurrencies `elem` commonFlags options
+    let format = case selectOutputFormat (commonFlags options) of
                    OASCII _ -> tableColumns ASCII
                    OCSV csv -> tableColumns csv
                    OHTML html -> tableColumns html
     outputText $ unlinesText $
-             format [([output "DATE"],    ALeft, map showMaybeDate ends),
-                     ([output "BALANCE"], ARight, map prettyPrint results)]
+             format $ [([output "DATE"],    ALeft, map showMaybeDate ends),
+                       ([output "BALANCE"], ARight, map (printAmt hideCcys) balances )] ++
+                      case currency2 of
+                        Nothing -> []
+                        Just c -> [([output $ "IN " ++ show c], ARight, map (printAmt hideCcys) balances2)]
+
+printAmt False amt = prettyPrint amt
+printAmt True (x :# _) = prettyPrint x
 
 byGroup queries options coa = do
     let btype = if CBothBalances `elem` options
