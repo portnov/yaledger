@@ -10,6 +10,7 @@ module YaLedger.Logger.TH
    allLoggers
   ) where
 
+import Control.Monad
 import Language.Haskell.TH
 import System.Directory
 import System.FilePath.Glob
@@ -21,7 +22,9 @@ listModules :: IO [String]
 listModules = do
     pwd <- getCurrentDirectory
     paths <- globDir1 (compile "**/*.hs") pwd
-    return $ map (clear $ length pwd + 1) paths
+    let result = map (clear $ length pwd + 1) paths
+    forM_ result putStrLn
+    return result
   where
     clear n path = replaceSlash $ drop n $ take (length path - 3) path
 

@@ -281,7 +281,7 @@ loadConfigs cpath coaPath mapPath = do
   currs <- loadCurrencies cpath
   let currsMap = M.fromList [(cSymbol c, c) | c <- currs]
   coa <- readCoA currsMap coaPath
-  amap <- readAMap coa mapPath
+  amap <- readAMap currsMap coa mapPath
   return (currsMap, coa, amap)
 
 withOutputFile :: Throws InternalError l => Ledger l a -> Ledger l a
@@ -319,7 +319,7 @@ runYaLedger options report params = do
 
   records <- parseInputFiles options currsMap coa inputPaths
   $debugIO $ "Records loaded."
-  runLedger options coa amap records $ runEMT $ do
+  runLedger options currsMap coa amap records $ runEMT $ do
     -- Build full map of groups of accounts.
     modify $ \st -> st {
                       lsFullGroupsMap = buildGroupsMap coa [1.. snd (agRange $ branchData coa)]

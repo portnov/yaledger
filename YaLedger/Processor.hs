@@ -191,7 +191,7 @@ processRecord = do
       lift $ setPos pos
       lift $ $debug $ "Setting exchange rates:\n" ++ unlines (map show rates)
       let rates' = map (Ext date 0 pos attrs) rates
-      lift $ modify $ \st -> st {lsRates = rates' ++ lsRates st}
+      lift $ modify $ \st -> st {lsRates = lsRates st ++ rates'}
       return []
 
     Just rec@(Ext _ _ pos _ _) -> do

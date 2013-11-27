@@ -45,6 +45,7 @@ type Parser a = Parsec Text PState a
 instance CMonad (Parsec Text PState) where
   cGetPosition = getPosition
   cGetCoA = getCoA <$> getState
+  cGetCurrencies = declaredCurrencies <$> getState
 
 data NativeParserConfig = NativeParserConfig {
     thousandsSeparator :: Char,

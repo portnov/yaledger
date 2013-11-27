@@ -37,6 +37,7 @@ emptyLedgerState opts coa amap records = do
   queue <- newQueue
   return $ LedgerState {
              lsStartDate = now,
+             lsCurrencies = M.empty,
              lsDefaultCurrency = emptyCurrency,
              lsCoA = coa,
              lsAccountMap = amap,
@@ -82,12 +83,22 @@ runAtomically (EMT (LedgerStateT action)) = do -- `do' in StateT IO
                  return a
       Left (callTrace, e) -> wrapE $ rethrow callTrace (checkedException e)
 
-runLedger :: MonadIO m => LedgerOptions -> ChartOfAccounts -> AccountMap -> [Ext Record] -> LedgerStateT m a -> m a
-runLedger opts coa amap records action = do
+runLedger :: MonadIO m
+          => LedgerOptions
+          -> Currencies
+          -> ChartOfAccounts
+          -> AccountMap
+          -> [Ext Record]
+          -> LedgerStateT m a
+          -> m a
+runLedger opts currs coa amap records action = do
   let LedgerStateT emt = action
   st <- liftIO $ emptyLedgerState opts coa amap records
   -- Use currency of root accounts group as default currency
-  (res, _) <- runStateT emt (st {lsDefaultCurrency = agCurrency $ branchData coa})
+  (res, _) <- runStateT emt (st {
+                                 lsCurrencies = currs,
+                                 lsDefaultCurrency = agCurrency $ branchData coa
+                                })
   return res
 
 -- * IOList

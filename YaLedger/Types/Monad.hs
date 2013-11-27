@@ -44,6 +44,7 @@ data Rules = Rules {
 -- | Ledger state
 data LedgerState = LedgerState {
     lsStartDate       :: DateTime                                      -- ^ Date/Time of YaLedger startup.
+  , lsCurrencies      :: Currencies                                    -- ^ All used currencies
   , lsDefaultCurrency :: Currency
   , lsCoA             :: ChartOfAccounts
   , lsAccountMap      :: AccountMap

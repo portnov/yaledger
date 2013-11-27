@@ -12,14 +12,16 @@ import YaLedger.Kernel.Common
 import YaLedger.Parser.Common
 
 data PState = PState {
-    getCoA :: ChartOfAccounts }
-  deriving (Eq, Show)
+    getCurrencies :: Currencies
+  , getCoA :: ChartOfAccounts
+  } deriving (Eq, Show)
 
 type Parser a = Parsec Text PState a
 
 instance CMonad (Parsec Text PState) where
    cGetPosition = getPosition
    cGetCoA = getCoA <$> getState
+   cGetCurrencies = getCurrencies <$> getState
 
 pAccountMap :: Parser AccountMap
 pAccountMap = pMapEntry `sepEndBy1` many newline

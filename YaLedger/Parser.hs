@@ -78,13 +78,13 @@ readCoA currs path = do
     Left err -> fail $ show err
 
 -- | Read accounts map from file
-readAMap :: ChartOfAccounts -> FilePath -> IO AccountMap
-readAMap coa path = do
+readAMap :: Currencies -> ChartOfAccounts -> FilePath -> IO AccountMap
+readAMap currs coa path = do
   b <- doesFileExist path
   if b
     then do
          content <- readUrlText path
-         case runParser Map.pAccountMap (Map.PState coa) path content of
+         case runParser Map.pAccountMap (Map.PState currs coa) path content of
            Right res -> return res
            Left err -> fail $ show err
     else return []

@@ -11,13 +11,16 @@ module YaLedger.Kernel.Common
    getAccountS,
    accountFullPath,
    accountFullPath',
-   autoPosting
+   autoPosting,
+   currencyByName
   ) where
 
 import Control.Monad
 import Control.Monad.State
 import Control.Monad.Exception
 import Control.Failure
+import Data.Maybe
+import qualified Data.Map as M
 import Data.List (intercalate)
 import Text.Printf
 
@@ -28,10 +31,12 @@ import YaLedger.Kernel.Classification
 class Monad m => CMonad m where
   cGetPosition :: m SourcePos
   cGetCoA :: m ChartOfAccounts
+  cGetCurrencies :: m Currencies
 
 instance Monad m => CMonad (EMT l (LedgerStateT m)) where
   cGetPosition = gets lsPosition
   cGetCoA = gets lsCoA
+  cGetCurrencies = gets lsCurrencies
 
 inRange :: Integer -> (Integer, Integer) -> Bool
 inRange i (m, n) = (m < i) && (i <= n)
@@ -241,4 +246,20 @@ groupFullPath i tree = go [] i tree
       | otherwise = Nothing
 
     go p i (Leaf name acc) = Nothing
+
+currencyByName :: CMonad m => String -> m Currency
+currencyByName name = do
+    ccyMap <- cGetCurrencies
+    case M.lookup name ccyMap of
+      Just ccy -> return ccy
+      Nothing -> do
+                 let ccys = M.elems ccyMap
+                 case filter check ccys of
+                   [] -> fail $ "Unknown currency: " ++ name
+                   [ccy] -> return ccy
+                   ccys -> fail $ "Ambigous currency specification: " ++ name ++ ". Variants are: " ++ unwords (map show ccys)
+  where
+    check ccy =
+         maybe "" show (cIntCode ccy) == name
+      || fromMaybe "" (cStrCode ccy) == name
 

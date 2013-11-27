@@ -1,4 +1,4 @@
-{-# LANGUAGE GADTs, RecordWildCards, ScopedTypeVariables, FlexibleContexts, FlexibleInstances #-}
+{-# LANGUAGE GADTs, RecordWildCards, ScopedTypeVariables, FlexibleContexts, FlexibleInstances, TemplateHaskell #-}
 
 module YaLedger.Kernel.Rates where
 
@@ -12,6 +12,8 @@ import Data.Dates
 import YaLedger.Types
 import YaLedger.Exceptions
 
+import Debug.Trace
+
 -- | Lookup for active exchange rate
 lookupRate :: (Monad m,
                Throws NoSuchRate l)
@@ -22,8 +24,9 @@ lookupRate :: (Monad m,
 lookupRate mbDate from to = do
     now <- gets lsStartDate
     let date = fromMaybe now mbDate
-    rates <- gets lsRates
-    let goodRates = [getContent rate | rate <- rates, getDate rate <= date]
+    rates <- gets (reverse . lsRates)
+    let goodRatesD = [rate | rate <- rates, getDate rate <= date]
+        goodRates = map getContent goodRatesD
     case go goodRates from to goodRates of
       Nothing -> throwP (NoSuchRate from to)
       Just rate -> return rate
