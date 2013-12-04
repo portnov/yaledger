@@ -30,15 +30,17 @@ instance ReportClass Postings where
 
 postings qry options mbPath = do
   coa <- getCoAItemL mbPath
-  let format = case selectOutputFormat options of
-                 OASCII _ -> showPostings ASCII
-                 OCSV csv -> showPostings csv
-                 OHTML html -> showPostings html
+  let format a = case selectOutputFormat options of
+                   OASCII _ -> showPostings a ASCII
+                   OCSV csv -> showPostings a csv
+                   OHTML html -> showPostings a html
+  cfg <- gets lsConfig
   forL coa $ \path acc -> do
+      let assets = isAssets cfg (getAttrs acc)
       credit <- readIOListL =<< creditPostings acc
       debit  <- readIOListL =<< debitPostings  acc
       let postings = sort $ filter (checkQuery qry) (map left credit ++ map right debit)
-          res = unlinesText $ format postings
+          res = unlinesText $ format assets postings
       outputString $ path ++ ":"
       outputText res
 
@@ -48,13 +50,17 @@ left (Ext date i pos attrs posting) = Ext date i pos attrs (Left posting)
 right :: Ext (Posting Decimal Debit) -> Ext (Either (Posting Decimal Credit) (Posting Decimal Debit))
 right (Ext date i pos attrs posting) = Ext date i pos attrs (Right posting)
 
-showPostings :: TableFormat a => a -> [Ext (Either (Posting Decimal Credit) (Posting Decimal Debit))] -> [FormattedText]
-showPostings _ [] = [output "No postings."]
-showPostings f list =
+showPostings :: TableFormat a => Bool -> a -> [Ext (Either (Posting Decimal Credit) (Posting Decimal Debit))] -> [FormattedText]
+showPostings _ _ [] = [output "No postings."]
+showPostings assets f list =
     let dates = map (prettyPrint . getDate) list
         amounts = map getAmountS list
 
-        getAmountS (Ext {getContent = (Left p)}) = prettyPrint (getAmount p)
-        getAmountS (Ext {getContent = (Right p)}) = "-" <> prettyPrint (getAmount p)
+        getAmountS (Ext {getContent = (Left p)})
+          | assets = "-" <> prettyPrint (getAmount p)
+          | otherwise = prettyPrint (getAmount p)
+        getAmountS (Ext {getContent = (Right p)})
+          | assets = prettyPrint (getAmount p)
+          | otherwise = "-" <> prettyPrint (getAmount p)
     in  tableColumns f [([output "DATE"], ALeft, dates), ([output "AMOUNT"], ARight, amounts)]
 
