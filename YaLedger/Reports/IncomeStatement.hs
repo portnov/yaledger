@@ -84,17 +84,28 @@ incomeStatement' qry options mbPath = do
 
     let hideCcys = CNoCurrencies `elem` commonFlags options
 
+    let showQry _ = [output "AMOUNT"]
+        showX fs amt@(x :# _)
+          | CNoCurrencies `elem` fs = prettyPrint x
+          | otherwise = prettyPrint amt
+
     let outputASCII incomes expences = do
         let defcur = getCurrency (amount incomes)
         incomeD  :# _ <- convert (qEnd qry) defcur (amount incomes)
         outcomeD :# _ <- convert (qEnd qry) defcur (amount expences)
-        let incomesS  = map toString $ showTree $ filterLeafs nz incomes
-            expencesS = map toString $ showTree $ filterLeafs nz expences
+        let incomesS  = map toString $ showTree incomes
+            expencesS = map toString $ showTree expences
+            incomesL = mapTree (:[]) (:[]) incomes
+            expencesL = mapTree (:[]) (:[]) expences
             m = max (length incomesS) (length expencesS)
             padE list = list ++ replicate (m - length list) ""
-            res = twoColumns (output "INCOMES") (output "EXPENCES")
-                     (alignMax ALeft $ map output $ padE incomesS)
-                     (alignMax ALeft $ map output $ padE expencesS)
+            res = if IIncomesOnly `elem` options
+                    then showTreeList [output "ACCOUNT"] showQry showX flags 1 [qry] incomesL
+                    else if IExpencesOnly `elem` options
+                           then showTreeList [output "ACCOUNT"] showQry showX flags 1 [qry] expencesL
+                           else twoColumns (output "INCOMES") (output "EXPENCES")
+                                   (alignMax ALeft $ map output $ padE incomesS)
+                                   (alignMax ALeft $ map output $ padE expencesS)
             footer = "    TOTALS: " <> prettyPrint (incomeD - outcomeD) <> show defcur
         outputText $ unlinesText (res ++ [footer])
     
@@ -118,10 +129,12 @@ incomeStatement' qry options mbPath = do
 
     incomes'  <- prepareIncomes <$> treeSaldo qry incomes
     expences' <- treeSaldo qry expences
+    let filteredIncomes = filterLeafs nz incomes'
+        filteredExpences = filterLeafs nz expences'
 
     case selectOutputFormat flags of
-      OASCII _ -> outputASCII incomes' expences'
-      OCSV csv -> outputCSV csv (filterLeafs nz incomes') (filterLeafs nz expences')
+      OASCII _ -> outputASCII filteredIncomes filteredExpences
+      OCSV csv -> outputCSV csv filteredIncomes filteredExpences
 
 printAmt False amt = prettyPrint amt
 printAmt True (x :# _) = prettyPrint x
