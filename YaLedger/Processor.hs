@@ -136,12 +136,9 @@ debugPos pos r =
   lift $ L.debug "YaLedger.Processor" $ "Record " ++ show (extID r) ++ ":\n" ++ pPrint r ++ "  at " ++ show pos
 
 insertRule new [] = [new]
-insertRule new@(name, _, _) list = go list list
-  where
-    go f [] = new: f
-    go f ((n,c,w):rs)
+insertRule new@(name, _, _) ((n,c,w):rs)
       | n == name = new: rs
-      | otherwise = (n,c,w): go f rs
+      | otherwise = (n,c,w): insertRule new rs
 
 -- | Process one record.
 processRecord :: (Throws InternalError l,
@@ -163,6 +160,7 @@ processRecord = do
 
     Just rec@(Ext _ _ pos attrs (RuleR name cond tran)) -> do
       debugPos pos rec
+      lift $ L.debug "Yaledger.Processor" $ "Inserting rule: " ++ name
       lift $ modify $ \st ->
                        let old = lsRules st
                            new = (name, attrs, When cond tran)
@@ -171,6 +169,10 @@ processRecord = do
                                                           debitRules  = insertRule new (debitRules  old) } }
                             Just ECredit -> st {lsRules = old {creditRules = insertRule new (creditRules old) }}
                             Just EDebit  -> st {lsRules = old {debitRules  = insertRule new (debitRules  old) }}
+      res <- lift $ gets lsRules
+      lift $ L.debug "Yaledger.Processor" $ "Resulting rules:\nCredit: " ++
+                                             unwords [n | (n,_,_) <- creditRules res] ++ "\nDebit: " ++
+                                             unwords [n | (n,_,_) <- debitRules res]
       return []
 
     Just rec@(Ext date _ pos attrs (Periodic name interval tran)) -> do

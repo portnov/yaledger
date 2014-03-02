@@ -6,6 +6,7 @@ import Control.Monad
 import qualified Data.Text as T
 import qualified Data.HashMap.Strict as H
 import qualified Data.Map as M
+import qualified Data.Vector as V
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Lazy.Encoding as E
 import qualified Data.ByteString.Lazy as L
@@ -87,11 +88,17 @@ parseGenericConfig reserved v =
       <*> v .:?  "filter" .!= []
       <*> getOther reserved v
 
+data ReString = ReString {getReString :: String}
+  deriving (Eq, Show)
+
+getReString' :: Maybe ReString -> Maybe String
+getReString' = fmap getReString
+
 instance FromJSON FieldConfig where
   parseJSON (Object v) =
     FieldConfig
       <$> v .: "field"
-      <*> v .:? "regexp"
+      <*> (getReString' <$> v .:? "regexp")
       <*> v .:? "optional" .!= False
       <*> getRules v
   parseJSON (String str) =
@@ -99,6 +106,15 @@ instance FromJSON FieldConfig where
   parseJSON (Bool b) =
     pure $ FixedValue (show b)
   parseJSON x = fail $ "Field config: invalid object: " ++ show x
+
+instance FromJSON ReString where
+  parseJSON (String str) = return $ ReString $ T.unpack str
+  parseJSON (Array arr) = do
+    lst <- mapM parseJSON (V.toList arr)
+    return $ ReString $ regexpList lst
+
+regexpList :: [String] -> String
+regexpList lst = intercalate "|" ["(" ++ s ++ ")" | s <- lst]
 
 getRules :: Object -> Parser [(String, String)]
 getRules obj = do
@@ -109,6 +125,9 @@ getRules obj = do
         forM (H.toList rules) $ \(name, value) ->
           case value of
             String str -> return (T.unpack name, T.unpack str)
+            Array arr -> do
+                         lst <- mapM parseJSON (V.toList arr)
+                         return (T.unpack name, regexpList lst)
             Bool b     -> return (T.unpack name, show b)
             x -> fail $ "Tables.getRules: invalid object: " ++ show x
     _ -> fail $ "Rules: invalid object: " ++ show rec
@@ -117,8 +136,8 @@ reservedFields :: IsString s => [s]
 reservedFields =
   ["separator", "currency", "amount",
    "account", "account2",
-   "dateformat", "date",
-   "filter", "hold"]
+   "dateformat", "date", 
+   "encoding", "filter", "hold"]
 
 getOther :: [T.Text] -> Object -> Parser [(String, FieldConfig)]
 getOther reserved obj = do
