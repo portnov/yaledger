@@ -191,9 +191,10 @@ processRecord = do
     Just rec@(Ext date _ pos attrs (SetRate rates)) -> do
       debugPos pos rec
       lift $ setPos pos
-      lift $ $debug $ "Setting exchange rates:\n" ++ unlines (map show rates)
       let rates' = map (Ext date 0 pos attrs) rates
-      lift $ modify $ \st -> st {lsRates = lsRates st ++ rates'}
+          rgroup = getRateGroupName attrs
+      lift $ $debug $ "Setting exchange rates for group " ++ rgroup ++ ":\n" ++ unlines (map show rates)
+      lift $ modify $ \st -> st {lsRates = insertRates rgroup rates' (lsRates st)}
       return []
 
     Just rec@(Ext _ _ pos _ _) -> do
@@ -292,7 +293,8 @@ processTransaction tranID (Ext date _ pos attrs (TEntry p)) = do
     processEntry date tranID pos attrs p
 processTransaction tranID (Ext date _ pos attrs (TReconciliate btype acc x tgt msg)) = do
     setPos pos
-    mbEntry <- reconciliate btype date acc x tgt msg
+    let rgroup = getRateGroupName attrs
+    mbEntry <- reconciliate btype date rgroup acc x tgt msg
     case mbEntry of
       Nothing -> return ()
       Just entry -> processEntry date tranID pos
@@ -307,13 +309,14 @@ processTransaction tranID (Ext date _ pos attrs (TCallTemplate name args)) = do
 
 processTransaction tranID (Ext date _ pos attrs (THold crholds dtholds)) = do
     setPos pos
+    let rgroup = getRateGroupName attrs
 
     forM_ crholds $ \(Hold posting mbEnd) -> do
-      p <- convertPosting' (Just date) posting
+      p <- convertPosting' (Just date) rgroup posting
       runAtomically $ creditHold (postingAccount' p) $ Ext date 0 pos attrs (Hold p mbEnd)
 
     forM_ dtholds $ \(Hold posting mbEnd) -> do
-      p <- convertPosting' (Just date) posting
+      p <- convertPosting' (Just date) rgroup posting
       runAtomically $ debitHold (postingAccount' p) $ Ext date 0 pos attrs (Hold p mbEnd)
 
 processTransaction tranID (Ext date _ pos attrs (TCloseHolds crholds drholds)) = do
@@ -321,6 +324,7 @@ processTransaction tranID (Ext date _ pos attrs (TCloseHolds crholds drholds)) =
     forM_ crholds $ goCloseHold
     forM_ drholds $ goCloseHold
   where
+    rgroup = getRateGroupName attrs
     goCloseHold :: HoldOperations t => CloseHold Amount t -> Ledger l ()
     goCloseHold clh = do
       let p = holdPosting $ holdToClose clh
@@ -328,7 +332,7 @@ processTransaction tranID (Ext date _ pos attrs (TCloseHolds crholds drholds)) =
                  then (<=)
                  else (==)
           qry = searchAttributes clh
-      p' <- convertPosting' (Just date) p
+      p' <- convertPosting' (Just date) rgroup p
       runAtomically $ (closeHold date Nothing op qry p')
                         `catchWithSrcLoc` handleNoSuchHold (searchLesserAmount clh) INFO
 

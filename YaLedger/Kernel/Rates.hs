@@ -18,13 +18,14 @@ import Debug.Trace
 lookupRate :: (Monad m,
                Throws NoSuchRate l)
            => Maybe DateTime    -- ^ Date to search exchange rate for. Nothing for current date.
+           -> RateGroupName            -- ^ Name of rates group
            -> Currency          -- ^ Source currency
            -> Currency          -- ^ Target currency
            -> LedgerT l m Double
-lookupRate mbDate from to = do
+lookupRate mbDate rgroup from to = do
     now <- gets lsStartDate
     let date = fromMaybe now mbDate
-    rates <- gets (reverse . lsRates)
+    rates <- gets (reverse . getRates rgroup . lsRates)
     let goodRatesD = [rate | rate <- rates, getDate rate <= date]
         goodRates = map getContent goodRatesD
     case go goodRates from to goodRates of
@@ -51,13 +52,14 @@ lookupRate mbDate from to = do
 convert :: (Monad m,
             Throws NoSuchRate l)
         => Maybe DateTime    -- ^ Date of which exchange rate should be used
+        -> RateGroupName     -- ^ Name of rates group
         -> Currency          -- ^ Target currency
         -> Amount
         -> LedgerT l m Amount
-convert mbDate c' (x :# c)
+convert mbDate rgroup c' (x :# c)
   | c == c' = return (x :# c)
   | otherwise = do
-    rate <- lookupRate mbDate c c'
+    rate <- lookupRate mbDate rgroup c c'
     -- Round amount to precision of target currency
     let qty = roundTo (fromIntegral $ cPrecision c') (x *. rate)
     return $ qty :# c'
@@ -65,74 +67,80 @@ convert mbDate c' (x :# c)
 convertDelta ::  (Monad m,
             Throws NoSuchRate l)
         => Maybe DateTime    -- ^ Date of which exchange rate should be used
+        -> RateGroupName     -- ^ Name of rates group
         -> Currency          -- ^ Target currency
         -> Delta Amount
         -> LedgerT l m (Delta Amount)
-convertDelta mbDate c (Increase x) = Increase `liftM` convert mbDate c x
-convertDelta mbDate c (Decrease x) = Decrease `liftM` convert mbDate c x
+convertDelta mbDate rgroup c (Increase x) = Increase `liftM` convert mbDate rgroup c x
+convertDelta mbDate rgroup c (Decrease x) = Decrease `liftM` convert mbDate rgroup c x
 
 convertBalanceInfo :: (Monad m,
                        Throws NoSuchRate l)
                    => Maybe DateTime
+                   -> RateGroupName
                    -> Currency
                    -> BalanceInfo Amount
                    -> LedgerT l m (BalanceInfo Decimal)
-convertBalanceInfo mbDate c bi = do
+convertBalanceInfo mbDate rgroup c bi = do
   available <- case biAvailable bi of
                  Nothing -> return Nothing
-                 Just x  -> (Just . (\(a :# _) -> a)) <$> convert mbDate c x
+                 Just x  -> (Just . (\(a :# _) -> a)) <$> convert mbDate rgroup c x
   ledger    <- case biLedger bi of
                  Nothing -> return Nothing
-                 Just x  -> (Just . (\(a :# _) -> a)) <$> convert mbDate c x
+                 Just x  -> (Just . (\(a :# _) -> a)) <$> convert mbDate rgroup c x
   return $ BalanceInfo available ledger
 
 -- | Convert a posting to another currency.
 -- In returned posting, amount is in target currency.
 convertPosting :: Throws NoSuchRate l
                => Maybe DateTime      -- ^ Date of exchange rates
+               -> RateGroupName
                -> Currency            -- ^ Target currency
                -> Posting Amount t
                -> Ledger l (Posting Decimal t)
-convertPosting mbDate to (DPosting acc a b) = do
-  x :# _ <- convert mbDate to a
+convertPosting mbDate rgroup to (DPosting acc a b) = do
+  x :# _ <- convert mbDate rgroup to a
   return $ DPosting acc x b
-convertPosting mbDate to (CPosting acc a b) = do
-  x :# _ <- convert mbDate to a
+convertPosting mbDate rgroup to (CPosting acc a b) = do
+  x :# _ <- convert mbDate rgroup to a
   return $ CPosting acc x b
 
 -- | Convert a posting to currency of it's account.
 convertPosting' :: Throws NoSuchRate l
                => Maybe DateTime        -- ^ Date of exchange rates
+               -> RateGroupName
                -> Posting Amount t
                -> Ledger l (Posting Decimal t)
-convertPosting' mbDate (DPosting acc a b) = do
-  x :# _ <- convert mbDate (getCurrency acc) a
+convertPosting' mbDate rgroup (DPosting acc a b) = do
+  x :# _ <- convert mbDate rgroup (getCurrency acc) a
   return $ DPosting acc x b
-convertPosting' mbDate (CPosting acc a b) = do
-  x :# _ <- convert mbDate (getCurrency acc) a
+convertPosting' mbDate rgroup (CPosting acc a b) = do
+  x :# _ <- convert mbDate rgroup (getCurrency acc) a
   return $ CPosting acc x b
 
 convertAnyPosting :: Throws NoSuchRate l
                => Maybe DateTime        -- ^ Date of exchange rates
+               -> RateGroupName
                -> AnyPosting Amount
                -> Ledger l (AnyPosting Decimal)
-convertAnyPosting mbDate (DP (DPosting acc a b)) = do
-  x :# _ <- convert mbDate (getCurrency acc) a
+convertAnyPosting mbDate rgroup (DP (DPosting acc a b)) = do
+  x :# _ <- convert mbDate rgroup (getCurrency acc) a
   return $ DP $ DPosting acc x b
-convertAnyPosting mbDate (CP (CPosting acc a b)) = do
-  x :# _ <- convert mbDate (getCurrency acc) a
+convertAnyPosting mbDate rgroup (CP (CPosting acc a b)) = do
+  x :# _ <- convert mbDate rgroup (getCurrency acc) a
   return $ CP $ CPosting acc x b
 
 -- | Convert Posting Decimal. Returns only an amount in target currency.
 convertDecimal :: Throws NoSuchRate l
                => Maybe DateTime
+               -> RateGroupName
                -> Currency
                -> Posting Decimal t
                -> Ledger l Decimal
-convertDecimal mbDate to (DPosting acc a _) = do
-  x :# _ <- convert mbDate to (a :# getCurrency acc)
+convertDecimal mbDate rgroup to (DPosting acc a _) = do
+  x :# _ <- convert mbDate rgroup to (a :# getCurrency acc)
   return x
-convertDecimal mbDate to (CPosting acc a _) = do
-  x :# _ <- convert mbDate to (a :# getCurrency acc)
+convertDecimal mbDate rgroup to (CPosting acc a _) = do
+  x :# _ <- convert mbDate rgroup to (a :# getCurrency acc)
   return x
 

@@ -385,6 +385,7 @@ checkEntry date attrs (UEntry dt cr mbCorr currs) = do
   defcur <- gets lsDefaultCurrency
   opts <- gets lsConfig
   coa <- gets lsCoA
+  let rgroup = getRateGroupName attrs
   let currencies    = uniq $ map getCurrency cr ++ map getCurrency dt ++ [defcur]
       firstCurrency = head currencies
       accounts      = map (getID . creditPostingAccount) cr
@@ -394,8 +395,8 @@ checkEntry date attrs (UEntry dt cr mbCorr currs) = do
       source        = head accountNames
 
   -- Convert all postings into firstCurrency
-  dt1 <- mapM (convertPosting (Just date) firstCurrency) dt
-  cr1 <- mapM (convertPosting (Just date) firstCurrency) cr
+  dt1 <- mapM (convertPosting (Just date) rgroup firstCurrency) dt
+  cr1 <- mapM (convertPosting (Just date) rgroup firstCurrency) cr
 
   -- And sum them to check if debit == credit
   let dtSum = sumPostings opts dt1 
@@ -403,8 +404,8 @@ checkEntry date attrs (UEntry dt cr mbCorr currs) = do
 
   -- Convert each posting's sum into currency
   -- of posting's account
-  dt' <- mapM (convertPosting' $ Just date) dt
-  cr' <- mapM (convertPosting' $ Just date) cr
+  dt' <- mapM (convertPosting' (Just date) rgroup) dt
+  cr' <- mapM (convertPosting' (Just date) rgroup) cr
 
   -- Should we add credit / debit posting
   -- to entry?
@@ -427,7 +428,7 @@ checkEntry date attrs (UEntry dt cr mbCorr currs) = do
                                    cqAttributes = M.insert "source" (Optional source) attrs }
                        $debug $ "Kernel.checkEntry: Amount: " ++ show diff ++ "; CQuery: " ++ show qry
                        -- Fill credit / debit entry parts
-                       fillEntry qry date dt' cr' mbCorr (deltaAttachCcy diff firstCurrency)
+                       fillEntry qry date rgroup dt' cr' mbCorr (deltaAttachCcy diff firstCurrency)
   let nCurrencies = length $ nub $ sort $
                           map getCurrency cr ++
                           map getCurrency dt ++
@@ -440,8 +441,8 @@ checkEntry date attrs (UEntry dt cr mbCorr currs) = do
          $debug $ "Credit: " ++ show (getAmount $ head crF) ++
                    ", Debit: " ++ show (getAmount $ head crF)
          -- Convert all postings into default currency
-         crD <- mapM (convertDecimal (Just date) defcur) crF
-         dtD <- mapM (convertDecimal (Just date) defcur) dtF
+         crD <- mapM (convertDecimal (Just date) rgroup defcur) crF
+         dtD <- mapM (convertDecimal (Just date) rgroup defcur) dtF
          $debug $ "crD: " ++ show crD ++ ", dtD: " ++ show dtD
 
          let diffD :: Delta Decimal -- In default currency
@@ -458,7 +459,7 @@ checkEntry date attrs (UEntry dt cr mbCorr currs) = do
                                   cqCurrencies = [defcur],
                                   cqExcept     = accounts,
                                   cqAttributes = attrs' }
-                      correspondence <- lookupCorrespondence qry date (deltaAttachCcy diffD defcur) Nothing
+                      correspondence <- lookupCorrespondence qry date rgroup (deltaAttachCcy diffD defcur) Nothing
                       case correspondence of
                         Right oneAccount -> do
                           path <- accountFullPath' "Kernel.checkEntry" oneAccount coa
@@ -467,7 +468,7 @@ checkEntry date attrs (UEntry dt cr mbCorr currs) = do
                             CP cp -> return $ CreditDifference [cp]
                             DP dp -> return $ DebitDifference  [dp]
                         Left postings -> do
-                          postings <- mapM (convertAnyPosting $ Just date) postings
+                          postings <- mapM (convertAnyPosting (Just date) rgroup) postings
                           autoDifference postings
          return $ CEntry dtF crF rd
     else return $ CEntry dtF crF OneCurrency
@@ -497,10 +498,11 @@ lookupCorrespondence :: (Throws NoCorrespondingAccountFound l,
                          Throws InvalidAccountType l)
                      => CQuery              -- ^ Query to search for account
                      -> DateTime            -- ^ Entry date/time
+                     -> RateGroupName       -- ^ Exchange rates group name
                      -> Delta Amount              -- ^ Amount of credit \/ debit
                      -> Maybe (AnyAccount, HoldUsage) -- ^ (User-specified corresponding account; whether to use hold)
                      -> Ledger l (Either [AnyPosting Amount] AnyAccount)
-lookupCorrespondence qry date deltaAmt mbCorr = do
+lookupCorrespondence qry date rgroup deltaAmt mbCorr = do
   let amount = getAmount deltaAmt
       currency = getCurrency deltaAmt
   coa <- gets lsCoA
@@ -535,7 +537,7 @@ lookupCorrespondence qry date deltaAmt mbCorr = do
                 else do
                      accPath <- accountFullPath' "Kernel.lookupCorrespondence" account coa
                      let accountCurrency = getCurrency account
-                     deltaInAcctCcy <- convertDelta (Just date) accountCurrency deltaAmt
+                     deltaInAcctCcy <- convertDelta (Just date) rgroup accountCurrency deltaAmt
                      let deltaInAcctCcy' = if isAssets opts (getAttrs account)
                                              then negateDelta deltaInAcctCcy
                                              else deltaInAcctCcy
@@ -578,13 +580,13 @@ lookupCorrespondence qry date deltaAmt mbCorr = do
                             -- NB: this recursive call can return one account
                             -- or list of postings.
                             let toRedirectAmt = deltaAttachCcy toRedirect accountCurrency
-                            nextHop <- lookupCorrespondence qry' date
+                            nextHop <- lookupCorrespondence qry' date rgroup
                                            toRedirectAmt Nothing
                             case nextHop of
                               Right hop -> do
                                 -- We can debit `hop' acccount by toRedirect
                                 let lastCurrency = getCurrency hop
-                                lastDelta <- convertDelta (Just date) lastCurrency toRedirectAmt
+                                lastDelta <- convertDelta (Just date) rgroup lastCurrency toRedirectAmt
                                 let lastAmt = getValue lastDelta
                                 hopPath <- accountFullPath' "Kernel.lookupCorrespondence" hop coa
                                 last <- autoPosting opts lastDelta hopPath hop useHold
@@ -602,22 +604,23 @@ fillEntry :: (Throws NoSuchRate l,
               Throws InternalError l)
            => CQuery                    -- ^ Query to search for corresponding account
            -> DateTime                  -- ^ Entry date/time
+           -> RateGroupName             -- ^ Exchange rates group name
            -> [Posting Decimal Debit]   -- ^ Debit postings
            -> [Posting Decimal Credit]  -- ^ Credit postings
            -> Maybe (AnyAccount, HoldUsage)  -- ^ (User-specified corresponding account; whether to use hold on it)
            -> Delta Amount                    -- ^ Difference (credit - debit)
            -> Ledger l ([Posting Decimal Debit], [Posting Decimal Credit])
-fillEntry qry date dt cr mbCorr deltaAmt = do
+fillEntry qry date rgroup dt cr mbCorr deltaAmt = do
   let amount = getAmount deltaAmt
   opts <- gets lsConfig
   coa <- gets lsCoA
-  correspondence <- lookupCorrespondence qry date deltaAmt mbCorr
+  correspondence <- lookupCorrespondence qry date rgroup deltaAmt mbCorr
   let useHold = fromMaybe DontUseHold (snd <$> mbCorr)
   case correspondence of
     Right account -> do
       -- Convert value into currency of found account
       let acctCcy = getCurrency account
-      deltaInAcctCcy <- convertDelta (Just date) acctCcy deltaAmt
+      deltaInAcctCcy <- convertDelta (Just date) rgroup acctCcy deltaAmt
       let delta' = if isAssets opts (getAttrs account)
                      then negateDelta deltaInAcctCcy
                      else deltaInAcctCcy
@@ -658,7 +661,7 @@ fillEntry qry date dt cr mbCorr deltaAmt = do
                      return $ appendPostings [e] dt cr
     Left lpostings -> do
       let diffValue = sum [x | x :# _ <- map anyPostingValue lpostings]
-      postings <- mapM (convertAnyPosting $ Just date) lpostings
+      postings <- mapM (convertAnyPosting (Just date) rgroup) lpostings
       let value = sum (map anyPostingValue postings)
       if value == 0
         then do
@@ -687,17 +690,18 @@ reconciliate :: (Throws NoSuchRate l,
                  Throws InternalError l)
              => BalanceType    -- ^ Which balance is specified in record
              -> DateTime       -- ^ Transaction date/time
+             -> RateGroupName  -- ^ Exchange rates group name
              -> AnyAccount     -- ^ Account
              -> Amount         -- ^ Balance value to set
              -> Maybe AnyAccount            -- ^ User-specified corresponding account, or Nothing to find it automatically
              -> Maybe ReconciliationMessage
              -> Ledger l (Maybe (Entry Amount Unchecked))
-reconciliate btype date account amount tgt msg = do
+reconciliate btype date rgroup account amount tgt msg = do
 
   let correspondence = (\acc -> (acc, DontUseHold)) <$> tgt
 
   calculatedBalance <- runAtomically $ getBalanceAt (Just date) btype account
-  actualBalance :# accountCurrency <- convert (Just date) (getCurrency account) amount
+  actualBalance :# accountCurrency <- convert (Just date) rgroup (getCurrency account) amount
 
   -- diff is in accountCurrency
   let diff = actualBalance - calculatedBalance
@@ -760,13 +764,14 @@ sumGroupBI :: (Monad m,
              Throws InternalError l,
              Throws NoSuchRate l)
          => Maybe DateTime            -- ^ Date of exchange rates
+         -> RateGroupName
          -> AccountGroupData
          -> [BalanceInfo Amount]
          -> LedgerT l m (BalanceInfo Amount)
-sumGroupBI mbDate ag bis = do
+sumGroupBI mbDate rgroup ag bis = do
   setPos $ newPos ("accounts group " ++ agName ag) 0 0
   let c = agCurrency ag
-  bis' <- mapM (convertBalanceInfo mbDate c) bis
+  bis' <- mapM (convertBalanceInfo mbDate rgroup c) bis
   return $ sumBalanceInfo c bis'
 
 -- | Calculate sum of amounts in accounts group.
@@ -780,7 +785,7 @@ sumGroup :: (Monad m,
 sumGroup mbDate ag ams = do
   setPos $ newPos ("accounts group " ++ agName ag) 0 0
   let c = agCurrency ag
-  ams' <- mapM (convert mbDate c) ams
+  ams' <- mapM (convert mbDate defaultRatesGroup c) ams
   let res = sum [x | x :# _ <- ams']
   return $ res :# c
 
@@ -811,9 +816,10 @@ treeBalances :: (Throws NoSuchRate l,
                  Throws InternalError l)
              => BalanceQuery
              -> [Query]
+             -> RateGroupName
              -> ChartOfAccounts
              -> Ledger l (Tree [BalanceInfo Amount] [BalanceInfo Amount])
-treeBalances bqry queries coa =
+treeBalances bqry queries rgroup coa =
     runAtomically $ mapTreeM (sumGroups $ map qEnd queries) balances coa
   where
     balances acc = forM queries $ \qry -> do
@@ -822,5 +828,5 @@ treeBalances bqry queries coa =
 
     sumGroups dates ag list =
       forM (zip dates $ transpose list) $ \(date,ams) ->
-        sumGroupBI date ag ams
+        sumGroupBI date rgroup ag ams
 

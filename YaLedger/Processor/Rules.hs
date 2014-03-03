@@ -52,7 +52,7 @@ check groupsMap t date acc x (Condition {..}) = do
                                 LessThan s -> ((<), s)
                                 Equals s   -> ((==), s)
                                 _ -> error "Processor.Rules.matchC.check: Impossible."
-                condValue :# _ <- convert (Just date) accountCurrency v
+                condValue :# _ <- convert (Just date) defaultRatesGroup accountCurrency v
                 return $ x `op` condValue
     else do
          $debugSTM (printf "Action: %s (%s), accID: %s (%s)" (show t) (show action) (show accID) (show cAccounts))

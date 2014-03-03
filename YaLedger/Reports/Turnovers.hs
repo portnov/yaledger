@@ -26,10 +26,11 @@ instance ReportClass Turnovers where
      Option "z" ["no-zeros"] (NoArg TNoZeros) "Do not show accounts with zero balance",
      Option "t" ["show-totals"] (NoArg TShowTotals) "Show total turnovers",
      Option "s" ["show-saldo"] (NoArg TShowSaldo) "Show saldo (credit - debit)",
+     Option "R" ["rategroup"] (ReqArg (Common . CRateGroup) "GROUP") "Use specified exchange rates group for account groups balances calculation, instead of default",
      Option "C" ["csv"] (OptArg (Common . CCSV) "SEPARATOR") "Output data in CSV format using given fields delimiter (semicolon by default)",
      Option "H" ["html"] (NoArg (Common CHTML)) "Output data in HTML format"]
 
-  initReport _ options _ = setOutputFormat [f | Common f <- options]
+  initReport _ options _ = setOutputFormat (commonFlags options)
 
   runReportL _ queries opts mbPath =
     turnoversL queries opts mbPath
@@ -54,22 +55,25 @@ data TRecord v = TRecord {
   trSaldo    :: Maybe v }
   deriving (Eq, Show)
 
-sumTurnovers mbDate calcTotals calcSaldo ag list = do
+commonFlags :: [TOptions] -> [CommonFlags]
+commonFlags opts = [flag | Common flag <- opts]
+
+sumTurnovers mbDate rgroup calcTotals calcSaldo ag list = do
   let c = agCurrency ag
   list' <- forM list $ \tr -> do
-                cr' :# _  <- convert mbDate c (trCredit tr)
-                dt' :# _  <- convert mbDate c (trDebit tr)
-                inc' <- convertBalanceInfo mbDate c (trIncSaldo tr)
-                out' <- convertBalanceInfo mbDate c (trOutSaldo tr)
+                cr' :# _  <- convert mbDate rgroup c (trCredit tr)
+                dt' :# _  <- convert mbDate rgroup c (trDebit tr)
+                inc' <- convertBalanceInfo mbDate rgroup c (trIncSaldo tr)
+                out' <- convertBalanceInfo mbDate rgroup c (trOutSaldo tr)
                 t'  <- case trTotals tr of
                          Nothing -> return Nothing
                          Just t -> do
-                                   x :# _ <- convert mbDate c t
+                                   x :# _ <- convert mbDate rgroup c t
                                    return (Just x)
                 s <- case trSaldo tr of
                        Nothing -> return Nothing
                        Just s -> do
-                                 x :# _ <- convert mbDate c s
+                                 x :# _ <- convert mbDate rgroup c s
                                  return (Just x)
                 return $ TRecord {
                            trCredit = cr',
@@ -186,7 +190,8 @@ turnovers qry options coa = do
                 else if TLedgerBalances `elem` options
                       then Only LedgerBalance
                       else Only AvailableBalance
-  tree <- mapTreeM (sumTurnovers (qEnd qry) calcTotals calcSaldo) (allTurnovers bqry calcTotals calcSaldo qry) coa
+      rgroup = selectRateGroup (commonFlags options)
+  tree <- mapTreeM (sumTurnovers (qEnd qry) rgroup calcTotals calcSaldo) (allTurnovers bqry calcTotals calcSaldo qry) coa
   let tree' = if TNoZeros `elem` options
                 then filterLeafs noZeroTurns tree
                 else tree

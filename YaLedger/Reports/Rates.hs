@@ -30,6 +30,7 @@ instance ReportClass RatesReport where
 
   reportOptions _ = 
     [Option "f" ["forward-only"] (NoArg RForwardOnly) "Show only rates from currency 1 to currency 2",
+     Option "R" ["rategroup"] (ReqArg (Common . CRateGroup) "GROUP") "Show rates from specified group only",
      Option "C" ["csv"] (OptArg (Common . CCSV) "SEPARATOR") "Output data in CSV format using given fields delimiter (semicolon by default)",
      Option "H" ["html"] (NoArg (Common CHTML)) "Output data in HTML format"]
 
@@ -69,9 +70,12 @@ isExplicit (Ext {getContent = Explicit {}}) = True
 isExplicit _ = False
 
 showRates qry opts params = do
-  allRates <- gets lsRates
+  let selectRates = case [rgroup | CRateGroup rgroup <- commonFlags opts] of
+                      [] -> allRates
+                      (r:_) -> getRates r
+  shownRates <- gets (selectRates . lsRates)
   let forwardOnly = RForwardOnly `elem` opts
-  let rates = filter (checkRate forwardOnly params) $ filter isExplicit $ filter (checkQuery qry) allRates
+  let rates = filter (checkRate forwardOnly params) $ filter isExplicit $ filter (checkQuery qry) shownRates
       format = case selectOutputFormat (commonFlags opts) of
                  OASCII ASCII -> tableColumns ASCII
                  OCSV csv   -> tableColumns csv
@@ -80,6 +84,7 @@ showRates qry opts params = do
       showAmt f x = output $ printf "%0.4f" $ f $ getContent x
   outputText $ unlinesText $
        format $ [([output "DATE"], ALeft, map (prettyPrint . getDate) rates),
+                 ([output "GROUP"], ALeft, map (output . getRateGroupName . getAttributes) rates),
                  ([output "CCY 1"], ALeft, map (showCcy rateCurrencyFrom) rates),
                  ([output "CCY 2"], ALeft, map (showCcy rateCurrencyTo) rates),
                  ([output "AMOUNT 1"], ARight, map (showAmt rateAmountFrom) rates),

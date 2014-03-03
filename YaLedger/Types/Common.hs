@@ -6,7 +6,7 @@ module YaLedger.Types.Common
    Credit, Debit, Free,
    IOList,
    Currency (..), Currencies,
-   Rate (..), Rates,
+   Rate (..), Rates, RateGroupName,
    AccountID, GroupID,
    FreeOr,
    Ext (..), mapExt,
@@ -19,6 +19,8 @@ module YaLedger.Types.Common
    MessageFormat, MessageElement (..),
    SourcePos,
    Queue,
+   allRates, getRates, insertRate, insertRates,
+   defaultRatesGroup, getRateGroupName,
    amountValue,
    absAmount,
    isNotZero,
@@ -35,6 +37,7 @@ import qualified Data.Map as M
 import Data.Hashable
 import Text.Printf
 import Text.Parsec.Pos
+import Data.Maybe
 
 import YaLedger.Types.Attributes
 
@@ -107,7 +110,30 @@ data Rate =
       rateReversible   :: Bool }
   deriving (Eq, Show)
 
-type Rates = [Ext Rate]
+type RateGroupName = String
+
+type Rates = M.Map RateGroupName [Ext Rate]
+
+allRates :: Rates -> [Ext Rate]
+allRates = concat . M.elems
+
+getRates :: RateGroupName -> Rates -> [Ext Rate]
+getRates group rates = fromMaybe [] $ M.lookup group rates
+
+insertRate :: RateGroupName -> Ext Rate -> Rates -> Rates
+insertRate group rate = M.insertWith (++) group [rate]
+
+insertRates :: RateGroupName -> [Ext Rate] -> Rates -> Rates
+insertRates group rates = M.insertWith (++) group rates
+
+defaultRatesGroup :: RateGroupName
+defaultRatesGroup = "default"
+
+getRateGroupName :: Attributes -> RateGroupName
+getRateGroupName attrs =
+  case M.lookup "rategroup" attrs of
+    Just val -> getString val
+    Nothing -> defaultRatesGroup
 
 type AccountID = Integer
 

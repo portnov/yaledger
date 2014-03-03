@@ -95,6 +95,7 @@ library
                    YaLedger.Reports.Holds
                    YaLedger.Reports.Stats
                    YaLedger.Reports.Flow
+                   YaLedger.Reports.Rates
                    YaLedger.Tree
                    YaLedger.Types
                    YaLedger.Types.Common

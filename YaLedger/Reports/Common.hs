@@ -27,6 +27,7 @@ data CommonFlags =
   | CLedgerBalances
   | CBothBalances
   | CNoCurrencies
+  | CRateGroup RateGroupName
   | CCSV (Maybe String)
   | CHTML
   deriving (Eq, Show)
@@ -47,6 +48,12 @@ setOutputFormat flags = do
     OASCII ascii -> outputText $ formatHeader ascii
     OCSV csv     -> outputText $ formatHeader csv
     OHTML html   -> outputText $ formatHeader html
+
+selectRateGroup :: [CommonFlags] -> RateGroupName
+selectRateGroup cflags =
+  case [rgroup | CRateGroup rgroup <- cflags] of
+    [] -> defaultRatesGroup
+    [r] -> r
 
 getOutputFormat :: Ledger l OutputFormat
 getOutputFormat = gets lsOutputFormat

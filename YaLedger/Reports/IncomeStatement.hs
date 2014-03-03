@@ -21,6 +21,7 @@ instance ReportClass IncomeStatement where
      Option ""  ["no-currencies"] (NoArg $ Common CNoCurrencies) "Do not show currencies in amounts",
      Option "I" ["incomes-only"] (NoArg IIncomesOnly) "Show incomes only",
      Option "E" ["expences-only"] (NoArg IExpencesOnly) "Show expences only",
+     Option "R" ["rategroup"] (ReqArg (Common . CRateGroup) "GROUP") "Use specified exchange rates group for account groups balances calculation, instead of default",
      Option "C" ["csv"] (OptArg (Common . CCSV) "SEPARATOR") "Output data in CSV format using given fields delimiter (semicolon by default)"]
   defaultOptions _ = []
   reportHelp _ = ""
@@ -44,6 +45,7 @@ incomeStatement' qry options mbPath = do
     opts <- gets lsConfig
     coa <- getCoAItemL mbPath
     let flags = commonFlags options
+    let rgroup = selectRateGroup flags
     
     $debug $ "Use incomes query: " ++ showA (incomeAccounts opts)
     $debug $ "Use expences query: " ++ showA (expenceAccounts opts)
@@ -91,8 +93,8 @@ incomeStatement' qry options mbPath = do
 
     let outputASCII incomes expences = do
         let defcur = getCurrency (amount incomes)
-        incomeD  :# _ <- convert (qEnd qry) defcur (amount incomes)
-        outcomeD :# _ <- convert (qEnd qry) defcur (amount expences)
+        incomeD  :# _ <- convert (qEnd qry) rgroup defcur (amount incomes)
+        outcomeD :# _ <- convert (qEnd qry) rgroup defcur (amount expences)
         let incomesS  = map toString $ showTree incomes
             expencesS = map toString $ showTree expences
             incomesL = mapTree (:[]) (:[]) incomes

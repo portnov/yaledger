@@ -29,6 +29,7 @@ instance ReportClass Balances where
      Option "l" ["ledger"] (NoArg $ Common CLedgerBalances) "Show ledger balances instead of available balances",
      Option "b" ["both"] (NoArg $ Common CBothBalances) "Show both available and ledger balances",
      Option "t" ["twoside"] (NoArg Twoside) "Show twoside (assets/liablities) report",
+     Option "R" ["rategroup"] (ReqArg (Common . CRateGroup) "GROUP") "Use specified exchange rates group for account groups balances calculation, instead of default",
      Option "C" ["csv"] (OptArg (Common . CCSV) "SEPARATOR") "Output data in CSV format using given fields delimiter (semicolon by default)",
      Option "H" ["html"] (NoArg (Common CHTML)) "Output data in HTML format"]
   defaultOptions _ = []
@@ -72,6 +73,7 @@ balance queries options mbPath = (do
     (\l (e :: NoSuchRate) -> handler l e)
 
 byOneAccount queries options acc = do
+    let rgroup = selectRateGroup (commonFlags options)
     currency <- case [str | UseCurrency str <- options] of
                   [] -> return $ getCurrency acc
                   (c:_) -> currencyByName c
@@ -79,13 +81,13 @@ byOneAccount queries options acc = do
     let balancesAmts = map (:# getCurrency acc) balancesSrc
     balances <- if currency == getCurrency acc
                   then return balancesAmts
-                  else zipWithM (\qry amt -> convert (qEnd qry) currency amt) queries balancesAmts
+                  else zipWithM (\qry amt -> convert (qEnd qry) rgroup currency amt) queries balancesAmts
     currency2 <- case [str | SecondCurrency str <- options] of
                    [] -> return Nothing
                    (c:_) -> Just <$> currencyByName c
     balances2 <- case currency2 of
                    Nothing -> return balancesAmts
-                   Just ccy2 -> zipWithM (\qry amt -> convert (qEnd qry) ccy2 amt) queries balancesAmts
+                   Just ccy2 -> zipWithM (\qry amt -> convert (qEnd qry) rgroup ccy2 amt) queries balancesAmts
     let ends = map qEnd queries
     let hideCcys = CNoCurrencies `elem` commonFlags options
     let format = case selectOutputFormat (commonFlags options) of
@@ -109,12 +111,13 @@ printAmt False amt = prettyPrint amt
 printAmt True (x :# _) = prettyPrint x
 
 byGroup queries options coa = do
+    let rgroup = selectRateGroup options
     let btype = if CBothBalances `elem` options
                   then BothBalances
                   else if CLedgerBalances `elem` options
                         then Only LedgerBalance
                         else Only AvailableBalance
-    results <- treeBalances btype queries coa
+    results <- treeBalances btype queries rgroup coa
     let filteredResults
           | (COnlyPositive `elem` options) ||
             (COnlyNegative `elem` options)  = filterLeafs (any (byBalance options)) results
@@ -133,6 +136,7 @@ byGroup queries options coa = do
 
 twosideReport qry options coa = do
     opts <- gets lsConfig
+    let rgroup = selectRateGroup (commonFlags options)
     let flags = commonFlags options
     let btype = if CBothBalances `elem` flags
                   then BothBalances
@@ -152,8 +156,8 @@ twosideReport qry options coa = do
     if isEmptyTree assets || isEmptyTree liabilities
       then byGroup [qry] flags coa
       else do
-            assetsResults      <- treeBalances btype [qry] assets
-            liabilitiesResults <- treeBalances btype [qry] liabilities
+            assetsResults      <- treeBalances btype [qry] rgroup assets
+            liabilitiesResults <- treeBalances btype [qry] rgroup liabilities
             let balColumn rs = map (\l -> showBI flags (head l)) (allNodes rs)
             let format as ls =
                   let structAs = showTreeStructure as
