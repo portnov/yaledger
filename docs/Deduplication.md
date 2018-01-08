@@ -13,7 +13,7 @@ YaLedger поддерживает обработку дублированных 
 содержит список правил. Каждое правило содержит:
 
 -   new — условия применимости правила. Задаётся набор
-    [атрибутов](Attributes), которые имеют записи, к которым
+    [атрибутов][Attributes], которые имеют записи, к которым
     применяется правило. Например, `{category: "purchase"}` — искать
     дубликаты только для транзакций, у которых атрибут category равен
     “purchase”.
@@ -71,7 +71,7 @@ YaLedger поддерживает обработку дублированных 
 deduplicate:
   - new: {category: purchase}
     # Проверять совпадение дат и счетов; суммы могут отличаться на 5%.
-    "check-attributes": [ date, {amount: 5}, "credit-account", "debit-account" ] 
+    "check-attributes": [ date, {amount: 5}, "credit-account", "debit-account" ]
     # Оставлять только новую транзакцию
     action: delete-old
 
@@ -92,3 +92,4 @@ deduplicate:
         cleared: ?date
 ~~~
 
+[Attributes]: Attributes.md

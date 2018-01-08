@@ -1,21 +1,21 @@
 # Графики и диаграммы в YaLedger
 
 В основную функциональность YaLedger не входит построение графиков и диаграмм, т.к. невозможно в программе для домашней бухгалтерии сделать поддержку диаграмм лучшую, чем в программах, предназначенных для построения диаграмм.
-Вместо этого, большинство [отчётов](Reports) YaLedger поддерживают вывод в CSV (опция `-C`). Полученные данные можно передавать другим программам для дальнейшей обработки.
+Вместо этого, большинство [отчётов][Reports] YaLedger поддерживают вывод в CSV (опция `-C`). Полученные данные можно передавать другим программам для дальнейшей обработки.
 
 Пример возможного результата:
 
-![yaledger charts example](/yaledger/yaledger-charts-edited.png)
+![yaledger charts example][yaledger-charts-edited]
 
 Скрипт для получения подобных диаграмм:
 
 ~~~
     #!/bin/bash
-     
+
     START=12/09/15
-     
+
     set -e
-     
+
     cd ~/stats
     yaledger -d error -S $START reg -C --no-currencies карточка > card.csv
     #yaledger -d error -S $START --monthly stats -zC --no-currencies карточка > cardstats.csv
@@ -23,10 +23,10 @@
     #yaledger -d error -S $START --monthly stats -zC --no-currencies карман > cashstats.csv
     yaledger -d error -S $START --monthly saldo -zagC --no-currencies Root/доходы > salary.csv
     yaledger -d error -S $START --monthly saldo -zagC --no-currencies Root/расходы > expences.csv
-     
+
     sed -i -e "1d" -e "s!BALANCE B/D!BALANCE!" card.csv
     sed -i -e "1d" -e "s!BALANCE B/D!BALANCE!" cash.csv
-     
+
     R --vanilla < yaledger-charts.R
     eog yaledger-charts.png &
 ~~~
@@ -64,7 +64,7 @@
     expences <- read.table("expences.csv", header=T, sep=";")
 
     names(salary) <- Vectorize(meandate)(names(salary))
-    names(expences) <- Vectorize(meandate)(names(expences)) 
+    names(expences) <- Vectorize(meandate)(names(expences))
 
     card <- read.table("card.csv", header=T, sep=";")
     cash <- read.table("cash.csv", header=T, sep=";")
@@ -167,14 +167,14 @@
 `aggregates.R`:
 
 ~~~
-    aggregates <- function(formula, data=NULL, FUNS){ 
-        if(class(FUNS)=="list"){ 
-            f <- function(x) sapply(FUNS, function(fun) fun(x)) 
-        }else{f <- FUNS} 
-        temp <- aggregate(formula, data, f) 
-        out <- data.frame(temp[,-ncol(temp)], temp[,ncol(temp)]) 
-        colnames(out)[1] <- colnames(temp)[1] 
-    return(out) 
+    aggregates <- function(formula, data=NULL, FUNS){
+        if(class(FUNS)=="list"){
+            f <- function(x) sapply(FUNS, function(fun) fun(x))
+        }else{f <- FUNS}
+        temp <- aggregate(formula, data, f)
+        out <- data.frame(temp[,-ncol(temp)], temp[,ncol(temp)])
+        colnames(out)[1] <- colnames(temp)[1]
+    return(out)
     }
 ~~~
 
@@ -192,10 +192,10 @@
       xval = as.numeric(row.names(data))
       summary = rep(0, nrow(data))
       recent = summary
-      
+
       # Create empty plot
       plot(c(-100), c(-100), xlim=c(min(xval, na.rm=T), max(xval, na.rm=T)), ylim=ylim, main=main, xlab=xlab, ylab=ylab)
-      
+
       # One polygon per column
       cols = names(data)
       for (c in 1:length(cols)) {
@@ -221,10 +221,10 @@
       xval = 1: ncol(data)
       summary = rep(0, ncol(data))
       recent = summary
-      
+
       plot.new()
       plot.window(xlim=c(min(xval, na.rm=T), max(xval, na.rm=T)), ylim=ylim, main=main)
-      
+
       # One polygon per row
       rows = 1: nrow(data)
       for (j in rows) {
@@ -246,3 +246,6 @@
     }
 ~~~
 
+[Reports]: Reports.md
+
+[yaledger-charts-edited]: yaledger-charts-edited.png

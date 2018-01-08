@@ -15,18 +15,31 @@
 
 YaLedger в настоящий момент умеет следующие отчёты:
 
--   [balance](Balances) — текущие балансы по счетам.
--   [saldo](Saldo) — сальдо по счетам и группам счетов за период времени.
--   [registry](Registry) — список проводок по счёту или группе счетов.
--   [postings](Postings) — список полупроводок по счёту.
--   [details](Details) — список проводок по каждому из счетов группы.
--   [turnovers](Turnovers) — дебетовые и кредитовые обороты по счетам.
--   [incomestatement](IncomeStatement) — сводка о расходах и доходах.
--   [holds](HoldsReport) — данные об открытых холдах.
--   [stats](StatsReport) — статистика по счетам.
--   [flow](FlowReport) — сводная информация о потоке денег с одной группы счетов на другую.
--   [accounts](AccountsReport) — просто выводит список счетов.
--   [cat](Cat) — выводит все обработанные транзакции в формате,
+-   [balance][Balances] — текущие балансы по счетам.
+-   [saldo][Saldo] — сальдо по счетам и группам счетов за период времени.
+-   [registry][Registry] — список проводок по счёту или группе счетов.
+-   [postings][Postings] — список полупроводок по счёту.
+-   [details][Details] — список проводок по каждому из счетов группы.
+-   [turnovers][Turnovers] — дебетовые и кредитовые обороты по счетам.
+-   [incomestatement][IncomeStatement] — сводка о расходах и доходах.
+-   [holds][HoldsReport] — данные об открытых холдах.
+-   [stats][StatsReport] — статистика по счетам.
+-   [flow][FlowReport] — сводная информация о потоке денег с одной группы счетов на другую.
+-   [accounts][AccountsReport] — просто выводит список счетов.
+-   [cat][Cat] — выводит все обработанные транзакции в формате,
     аналогичном «родному» входному формату.
 
 Если отчёт не указан, то вызывается отчёт balance.
+
+[AccountsReport]: AccountsReport.md
+[Balances]: Balances.md
+[Cat]: Cat.md
+[Details]: Details.md
+[FlowReport]: FlowReport.md
+[HoldsReport]: HoldsReport.md
+[IncomeStatement]: IncomeStatement.md
+[Postings]: Postings.md
+[Registry]: Registry.md
+[Saldo]: Saldo.md
+[StatsReport]: StatsReport.md
+[Turnovers]: Turnovers.md
